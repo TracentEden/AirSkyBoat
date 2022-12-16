@@ -72,9 +72,18 @@ bool CMobController::TryDeaggro()
         return true;
     }
 
+    // default to needing to check condition
+    bool diffConfrontation = PMob->StatusEffectContainer->GetConfrontationEffect() != PTarget->StatusEffectContainer->GetConfrontationEffect();
+    // if a non-confrontation mob is attempting to interact with any confrontation or non-confrontation player (or pet of player) then do not deaggro
+    if (!PMob->StatusEffectContainer->HasStatusEffectByFlag(EFFECTFLAG_CONFRONTATION))
+    {
+        // false (confrontation does not apply)
+        diffConfrontation = false;
+    }
+
     // target is no longer valid, so wipe them from our enmity list
     if (!PTarget || PTarget->isDead() || PTarget->isMounted() || PTarget->loc.zone->GetID() != PMob->loc.zone->GetID() ||
-        PMob->StatusEffectContainer->GetConfrontationEffect() != PTarget->StatusEffectContainer->GetConfrontationEffect() ||
+        diffConfrontation ||
         PMob->allegiance == PTarget->allegiance || CheckDetection(PTarget) || CheckHide(PTarget) || CheckLock(PTarget) ||
         PMob->getBattleID() != PTarget->getBattleID())
     {

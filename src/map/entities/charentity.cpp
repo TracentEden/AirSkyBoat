@@ -889,10 +889,20 @@ bool CCharEntity::ValidTarget(CBattleEntity* PInitiator, uint16 targetFlags)
     {
         return false;
     }
-    if (StatusEffectContainer->GetConfrontationEffect() != PInitiator->StatusEffectContainer->GetConfrontationEffect())
+
+    // default to needing to check condition
+    bool diffConfrontation = StatusEffectContainer->GetConfrontationEffect() != PInitiator->StatusEffectContainer->GetConfrontationEffect();
+    // if a non-confrontation mob is attempting to interact with any confrontation or non-confrontation player (or pet of player) then valid target
+    if (PInitiator->objtype == TYPE_MOB && !PInitiator->StatusEffectContainer->HasStatusEffectByFlag(EFFECTFLAG_CONFRONTATION))
+    {
+        // false (confrontation does not stop)
+        diffConfrontation = false;
+    }
+    if (diffConfrontation)
     {
         return false;
     }
+
     if (isDead())
     {
         return (targetFlags & TARGET_PLAYER_DEAD) != 0;

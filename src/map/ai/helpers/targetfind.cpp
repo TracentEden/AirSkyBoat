@@ -429,7 +429,16 @@ bool CTargetFind::validEntity(CBattleEntity* PTarget)
         return false;
     }
 
-    if (m_PBattleEntity->StatusEffectContainer->GetConfrontationEffect() != PTarget->StatusEffectContainer->GetConfrontationEffect() ||
+    // default to needing to check condition
+    bool diffConfrontation = m_PBattleEntity->StatusEffectContainer->GetConfrontationEffect() != PTarget->StatusEffectContainer->GetConfrontationEffect();
+    //if a non-confrontation mob is attempting to interact with any confrontation or non-confrontation player (or pet of player) then valid target
+    if (m_PBattleEntity->objtype == TYPE_MOB && !m_PBattleEntity->StatusEffectContainer->HasStatusEffectByFlag(EFFECTFLAG_CONFRONTATION) && checkIsPlayer(PTarget))
+    {
+        //false (confrontation does not apply)
+        diffConfrontation = false;
+    }
+
+    if (diffConfrontation ||
         m_PBattleEntity->PBattlefield != PTarget->PBattlefield || m_PBattleEntity->PInstance != PTarget->PInstance ||
         ((m_findFlags & FINDFLAGS_IGNORE_BATTLEID) == FINDFLAGS_NONE && m_PBattleEntity->getBattleID() != PTarget->getBattleID()))
     {

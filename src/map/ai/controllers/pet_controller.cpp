@@ -122,9 +122,19 @@ bool CPetController::TryDeaggro()
         return true;
     }
 
+    // default to needing to check condition
+    bool diffConfrontation = PPet->StatusEffectContainer->GetConfrontationEffect() != PTarget->StatusEffectContainer->GetConfrontationEffect();
+    // if a non-confrontation pet of mob is attempting to interact with any confrontation or non-confrontation player (or pet of player) then do not deaggro
+    if (PPet->PMaster->objtype == TYPE_MOB && !PPet->StatusEffectContainer->HasStatusEffectByFlag(EFFECTFLAG_CONFRONTATION))
+    {
+        // false (confrontation does not apply)
+        diffConfrontation = false;
+    }
+
+    //check if this is only for mob or also PC pet
     // target is no longer valid, so wipe them from our enmity list
     if (PTarget->isDead() || PTarget->isMounted() || PTarget->loc.zone->GetID() != PPet->loc.zone->GetID() ||
-        PPet->StatusEffectContainer->GetConfrontationEffect() != PTarget->StatusEffectContainer->GetConfrontationEffect() ||
+        diffConfrontation ||
         PPet->getBattleID() != PTarget->getBattleID())
     {
         return true;
