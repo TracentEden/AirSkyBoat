@@ -1878,6 +1878,11 @@ void CBattleEntity::OnCastFinished(CMagicState& state, action_t& action)
         PActionTarget->StatusEffectContainer->DelStatusEffectsByFlag(EFFECTFLAG_DETECTABLE);
     }
 
+    if (PSpell->getSkillType() == SKILLTYPE::SKILL_HEALING_MAGIC)
+    {
+        StatusEffectContainer->DelStatusEffect(EFFECT_DIVINE_SEAL);
+    }
+
     this->StatusEffectContainer->DelStatusEffectsByFlag(EFFECTFLAG_MAGIC_END);
 }
 
