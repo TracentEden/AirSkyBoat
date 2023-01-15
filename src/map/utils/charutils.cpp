@@ -6675,7 +6675,7 @@ namespace charutils
         {
             PZone->ForEachChar([varName](CCharEntity* PChar)
             {
-                PChar->removeFromCharVarCache(varName);
+                PChar->updateCharVarCache(varName, 0);
             });
         });
         // clang-format on
