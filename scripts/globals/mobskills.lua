@@ -690,6 +690,14 @@ xi.mobskills.mobFinalAdjustments = function(dmg, mob, skill, target, attackType,
 
     dmg = utils.stoneskin(target, dmg)
 
+    if
+        (attackType == xi.attackType.PHYSICAL or
+        attackType == xi.attackType.RANGED) and
+        target:hasStatusEffect(xi.effect.INVINCIBLE)
+    then
+        return 0
+    end
+
     if dmg > 0 then
         target:updateEnmityFromDamage(mob, dmg)
         target:handleAfflatusMiseryDamage(dmg)
