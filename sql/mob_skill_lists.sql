@@ -1884,7 +1884,6 @@ INSERT INTO `mob_skill_lists` VALUES ('SnowRabbit',405,257); -- foot kick
 INSERT INTO `mob_skill_lists` VALUES ('SnowRabbit',405,259); -- whirl claws
 INSERT INTO `mob_skill_lists` VALUES ('SnowRabbit',405,323); -- wild carrot
 INSERT INTO `mob_skill_lists` VALUES ('SnowRabbit',405,661); -- snow cloud
-INSERT INTO `mob_skill_lists` VALUES ('SnowRabbit',405,1362); -- wild ginseng
 INSERT INTO `mob_skill_lists` VALUES ('Seed_Mandragora',406,2410);
 INSERT INTO `mob_skill_lists` VALUES ('Seed_Orc',407,605);
 INSERT INTO `mob_skill_lists` VALUES ('Seed_Orc',407,606);
@@ -4027,6 +4026,12 @@ INSERT INTO `mob_skill_lists` VALUES ('JailerOfTemperance',4047,1466);
 INSERT INTO `mob_skill_lists` VALUES ('JailerOfTemperance',4047,1467);
 INSERT INTO `mob_skill_lists` VALUES ('JailerOfTemperance',4047,1468);
 INSERT INTO `mob_skill_lists` VALUES ('JailerOfTemperance',4047,1469);
+
+INSERT INTO `mob_skill_lists` VALUES ('BearclawRabbit',4048,257); -- foot kick
+INSERT INTO `mob_skill_lists` VALUES ('BearclawRabbit',4048,259); -- whirl claws
+INSERT INTO `mob_skill_lists` VALUES ('BearclawRabbit',4048,323); -- wild carrot
+INSERT INTO `mob_skill_lists` VALUES ('BearclawRabbit',4048,661); -- snow cloud
+INSERT INTO `mob_skill_lists` VALUES ('BearclawRabbit',4048,1362); -- wild ginseng
 
 -- End of AirSkyBoat section
 
