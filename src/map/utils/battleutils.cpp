@@ -5471,17 +5471,20 @@ namespace battleutils
         return damage;
     }
 
-    int32 PhysicalDmgTaken(CBattleEntity* PDefender, int32 damage, DAMAGE_TYPE damageType, bool IsCovered)
+    int32 PhysicalDmgTaken(CBattleEntity* PDefender, int32 damage, DAMAGE_TYPE damageType, bool IsCovered, bool ignoreDmgMods)
     {
-        float resist = 1.0f + PDefender->getMod(Mod::DMGPHYS) / 10000.f + PDefender->getMod(Mod::DMG) / 10000.f;
+        if (ignoreDmgMods)
+        {
+            float resist = 1.0f + PDefender->getMod(Mod::DMGPHYS) / 10000.f + PDefender->getMod(Mod::DMG) / 10000.f;
+            resist       = std::max(resist, 0.5f);                  // PDT caps at -50%
+            resist += PDefender->getMod(Mod::DMGPHYS_II) / 10000.f; // Add Burtgang reduction after 50% cap. Extends cap to -68%
+            resist = std::max(resist, 0.32f);                       // Total cap with MDT-% II included is 87.5%
 
-        resist = std::max(resist, 0.5f);                        // PDT caps at -50%
-        resist += PDefender->getMod(Mod::DMGPHYS_II) / 10000.f; // Add Burtgang reduction after 50% cap. Extends cap to -68%
-        resist = std::max(resist, 0.32f);                       // Total cap with MDT-% II included is 87.5%
-
-        resist += PDefender->getMod(Mod::UDMG) + PDefender->getMod(Mod::UDMGPHYS) / 10000.f;
-        resist = std::max(resist, 0.f);
-        damage = (int32)(damage * resist);
+            resist += PDefender->getMod(Mod::UDMG) + PDefender->getMod(Mod::UDMGPHYS) / 10000.f;
+            resist = std::max(resist, 0.f);
+            damage = (int32)(damage * resist);
+            ShowDebug("PhysicalDmgTaken - Resist: %f Damage: %i", resist, damage);
+        }
 
         if (damage > 0 && PDefender->objtype == TYPE_PET && PDefender->getMod(Mod::AUTO_STEAM_JACKET) > 0)
         {
@@ -5519,15 +5522,18 @@ namespace battleutils
         return damage;
     }
 
-    int32 RangedDmgTaken(CBattleEntity* PDefender, int32 damage, DAMAGE_TYPE damageType, bool IsCovered)
+    int32 RangedDmgTaken(CBattleEntity* PDefender, int32 damage, DAMAGE_TYPE damageType, bool IsCovered, bool ignoreDmgMods)
     {
-        float resist = 1.0f + PDefender->getMod(Mod::DMGRANGE) / 10000.f + PDefender->getMod(Mod::DMG) / 10000.f;
+        if (ignoreDmgMods)
+        {
+            float resist = 1.0f + PDefender->getMod(Mod::DMGRANGE) / 10000.f + PDefender->getMod(Mod::DMG) / 10000.f;
 
-        resist = std::max(resist, 0.5f);
+            resist = std::max(resist, 0.5f);
 
-        resist += PDefender->getMod(Mod::UDMG) + PDefender->getMod(Mod::UDMGRANGE) / 10000.f;
-        resist = std::max(resist, 0.f);
-        damage = (int32)(damage * resist);
+            resist += PDefender->getMod(Mod::UDMG) + PDefender->getMod(Mod::UDMGRANGE) / 10000.f;
+            resist = std::max(resist, 0.f);
+            damage = (int32)(damage * resist);
+        }
 
         if (damage > 0 && PDefender->objtype == TYPE_PET && PDefender->getMod(Mod::AUTO_STEAM_JACKET) > 0)
         {

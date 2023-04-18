@@ -369,7 +369,9 @@ local function modifyMeleeHitDamage(attacker, target, attackTbl, wsParams, rawDa
     local adjustedDamage = rawDamage
 
     if not wsParams.formless then
-        adjustedDamage = target:physicalDmgTaken(adjustedDamage, attackTbl.damageType)
+        -- need to pass in ignoreDmgMods option to physicalDmgTaken otherwise dmg mods are applied both here
+        -- and in final ws damage by applyDamageTaken
+        adjustedDamage = target:physicalDmgTaken(adjustedDamage, attackTbl.damageType, true)
 
         if attackTbl.weaponType == xi.skill.HAND_TO_HAND then
             adjustedDamage = adjustedDamage * target:getMod(xi.mod.HTH_SDT) / 1000
@@ -829,7 +831,9 @@ xi.weaponskills.doRangedWeaponskill = function(attacker, target, wsID, wsParams,
     attacker:delStatusEffectsByFlag(xi.effectFlag.DETECTABLE)
 
     -- Calculate reductions
-    finaldmg = target:rangedDmgTaken(finaldmg)
+    -- need to pass in ignoreDmgMods option to rangedDmgTaken otherwise dmg mods are applied both here
+    -- and in final ws damage by applyDamageTaken
+    finaldmg = target:rangedDmgTaken(finaldmg, true)
     finaldmg = finaldmg * target:getMod(xi.mod.PIERCE_SDT) / 1000
 
     finaldmg = finaldmg * xi.settings.main.WEAPON_SKILL_POWER -- Add server bonus
