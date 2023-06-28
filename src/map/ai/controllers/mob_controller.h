@@ -48,6 +48,7 @@ public:
     bool         CanAggroTarget(CBattleEntity*);
     void         TapDeaggroTime();
     void         TapDeclaimTime();
+    void         TapNeutralTimeForLeave();
     virtual bool Cast(uint16 targid, SpellID spellid) override;
 
 protected:

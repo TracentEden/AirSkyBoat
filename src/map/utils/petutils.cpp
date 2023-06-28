@@ -1516,6 +1516,9 @@ namespace petutils
         {
             CMobEntity* PMob = static_cast<CMobEntity*>(PPet);
 
+            // track if player used leave command
+            bool usedLeave = false;
+
             if (!PMob->isDead())
             {
                 PMob->PAI->Disengage();
@@ -1537,7 +1540,8 @@ namespace petutils
 
                 // master using leave command
                 auto* state = dynamic_cast<CAbilityState*>(PMaster->PAI->GetCurrentState());
-                if ((state && state->GetAbility()->getID() == ABILITY_LEAVE) || PChar->loc.zoning || PChar->isDead())
+                usedLeave   = (state && state->GetAbility()->getID() == ABILITY_LEAVE);
+                if (usedLeave || PChar->loc.zoning || PChar->isDead())
                 {
                     PMob->PEnmityContainer->Clear();
                     PMob->m_OwnerID.clean();
@@ -1556,6 +1560,13 @@ namespace petutils
             PMob->PMaster    = nullptr;
 
             PMob->PAI->SetController(std::make_unique<CMobController>(PMob));
+
+            // Mob should be neutral for 6 seconds after leave command
+            if (usedLeave && PMob->CanBeNeutral())
+            {
+                PMob->m_neutral = true;
+                static_cast<CMobController*>(PMob->PAI->GetController())->TapNeutralTimeForLeave();
+            }
 
             // clear all enmity towards a charmed mob when it is released
             // use two loops to avoid modifying the container while iterating over it

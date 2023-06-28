@@ -1378,6 +1378,23 @@ void CMobController::TapDeclaimTime()
     m_DeclaimTime = m_Tick;
 }
 
+void CMobController::TapNeutralTimeForLeave()
+{
+    // get tick as unix time
+    auto controllerTick = std::chrono::duration_cast<std::chrono::milliseconds>(m_Tick.time_since_epoch()).count();
+
+    // if controller was just initilized (and thus m_Tick is 0) then use container tick value
+    // subtract 4 seconds to give 6 seconds of neutral time
+    if (controllerTick == 0)
+    {
+        m_NeutralTime = PMob->PAI->getTick() - 4s;
+    }
+    else
+    {
+        m_NeutralTime = m_Tick - 4s;
+    }
+}
+
 bool CMobController::Cast(uint16 targid, SpellID spellid)
 {
     TracyZoneScoped;
