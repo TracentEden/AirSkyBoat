@@ -7,7 +7,6 @@
 -- Range: 15' yalm around Nant'ina
 -- Notes: Only used by Nant'ina
 ---------------------------------------------
-require("scripts/globals/status")
 require("scripts/globals/msg")
 require("scripts/globals/mobskills")
 ---------------------------------------------
@@ -33,6 +32,7 @@ mobskillObject.onMobWeaponSkill = function(target, mob, skill)
     end
 
     skill:setMsg(msg)
+
     return typeEffect
 end
 
