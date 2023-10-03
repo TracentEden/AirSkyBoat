@@ -82,6 +82,14 @@ void CAbilityState::ApplyEnmity()
         if (PTarget->objtype == TYPE_MOB && !(m_PAbility->getCE() == 0 && m_PAbility->getVE() == 0))
         {
             CMobEntity* mob = (CMobEntity*)PTarget;
+
+            // Do not claim and give player enmity if the player ability (e.g., bloodpact) initiates a pet ability and mob is not claimed
+            // let the pet ability itself claim the mob and give the player base enmity
+            if (m_PAbility->isPetAbility() && mob->m_OwnerID.id == 0)
+            {
+                return;
+            }
+
             mob->PEnmityContainer->UpdateEnmity(m_PEntity, m_PAbility->getCE(), m_PAbility->getVE(), false, m_PAbility->getID() == ABILITY_CHARM);
             battleutils::ClaimMob(mob, m_PEntity);
         }

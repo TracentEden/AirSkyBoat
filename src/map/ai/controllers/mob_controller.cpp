@@ -670,10 +670,18 @@ void CMobController::DoCombatTick(time_point tick)
     PMob->PAI->EventHandler.triggerListener("COMBAT_TICK", CLuaBaseEntity(PMob));
     luautils::OnMobFight(PMob, PTarget);
 
+    // handle mob attacking a pet (of player) yet mob also has some enmity towards the player
+    // in this case avatar should still attack that mob (bodyguard behaviour)
+    if (PTarget->objtype == TYPE_PET && PTarget->GetBattleTargetID() == 0 && PTarget->PMaster && PTarget->PMaster->objtype == TYPE_PC &&
+        ((CPetEntity*)PTarget)->getPetType() == PET_TYPE::AVATAR && PMob->PEnmityContainer->GetEnmityList()->count(PTarget->PMaster->id) == 1)
+    {
+        petutils::AttackTarget(PTarget->PMaster, PMob);
+    }
+
     // handle pet behaviour on the targets behalf (faster than in ai_pet_dummy)
     // Avatars defend masters by attacking mobs if the avatar isn't attacking anything currently (bodyguard behaviour)
-    //
     // This change allows pets to auto-engage mobs to allow summoner kiting without the mob having to swing at the player.
+    // This is more general bodyguard case than above case which only applies to players
     if (PTarget->PPet != nullptr && PTarget->PPet->GetBattleTargetID() == 0)
     {
         if (PTarget->PPet->objtype == TYPE_PET && ((CPetEntity*)PTarget->PPet)->getPetType() == PET_TYPE::AVATAR)

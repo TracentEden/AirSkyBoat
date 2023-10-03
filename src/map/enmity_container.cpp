@@ -214,13 +214,29 @@ void CEnmityContainer::UpdateEnmity(CBattleEntity* PEntity, int32 CE, int32 VE, 
 
         m_EnmityList.emplace(PEntity->id, EnmityObject_t{ PEntity, CE, VE, true });
         PEntity->PNotorietyContainer->add(m_EnmityHolder);
+    }
 
-        if (withMaster && PEntity->PMaster != nullptr)
+    // allows adding master to enmity list even if the pet (or charmed mob) is already on the list
+    // also allows placing the master TH on the mob if direct action
+    if (withMaster && PEntity->PMaster != nullptr && (PEntity->objtype == TYPE_PET || (PEntity->objtype == TYPE_MOB && PEntity->PMaster->objtype == TYPE_PC)))
+    {
+        // add master to enmity list if not already there
+        // if already there then mark active as their pet is active
+        auto masterEnmityObj = m_EnmityList.find(PEntity->PMaster->id);
+        if (masterEnmityObj != m_EnmityList.end())
         {
-            // add master to the enmity list (pet and charmed mob)
-            if (PEntity->objtype == TYPE_PET || (PEntity->objtype == TYPE_MOB && PEntity->PMaster != nullptr && PEntity->PMaster->objtype == TYPE_PC))
+            if (!masterEnmityObj->second.active)
             {
-                AddBaseEnmity(PEntity->PMaster);
+                masterEnmityObj->second.active = true;
+            }
+        }
+        else
+        {
+            AddBaseEnmity(PEntity->PMaster);
+            // Apply TH only if this was a direct action and master has TH
+            if (directAction && PEntity->PMaster->getMod(Mod::TREASURE_HUNTER) > m_EnmityHolder->m_THLvl)
+            {
+                m_EnmityHolder->m_THLvl = PEntity->PMaster->getMod(Mod::TREASURE_HUNTER);
             }
         }
     }
