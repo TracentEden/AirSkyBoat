@@ -101,6 +101,13 @@ xi.settings.map =
     -- Modifier to apply to agro'd monster speed. 0 is the retail accurate default. Negative numbers will reduce it.
     MOB_SPEED_MOD = -10,
 
+    -- Percent (out of 1) of the total mobskill distance in which mob will start readying the mobskill
+    -- Beyond this distance the mob will only finish an already started mobskill
+    -- And beyond the total distance the skill will be interrupted
+    MOB_ABILITY_READY_DISTANCE_PERCENT = 0.60,
+    -- Threshold mobskill distance for ignoring the above percent rule
+    MOB_ABILITY_READY_THRESHOLD = 6.8,
+
     -- Allows you to manipulate the constant multiplier in the skill-up rate formulas, having a potent effect on skill-up rates.
     SKILLUP_CHANCE_MULTIPLIER = 1.0,
     CRAFT_CHANCE_MULTIPLIER   = 1.0,

@@ -113,6 +113,11 @@ uint8 CLuaMobSkill::getMobHPP()
     return m_PLuaMobSkill->getHPP();
 }
 
+float CLuaMobSkill::getReadyDistance()
+{
+    return m_PLuaMobSkill->getReadyDistance();
+}
+
 //======================================================//
 
 void CLuaMobSkill::Register()
@@ -130,6 +135,7 @@ void CLuaMobSkill::Register()
     SOL_REGISTER("getTP", CLuaMobSkill::getTP);
     SOL_REGISTER("getMobHP", CLuaMobSkill::getMobHP);
     SOL_REGISTER("getMobHPP", CLuaMobSkill::getMobHPP);
+    SOL_REGISTER("getReadyDistance", CLuaMobSkill::getReadyDistance);
 }
 
 std::ostream& operator<<(std::ostream& os, const CLuaMobSkill& mobskill)

@@ -397,7 +397,7 @@ bool CMobController::MobSkill(int wsList)
         {
             float currentDistance = distance(PMob->loc.p, PActionTarget->loc.p);
 
-            if (currentDistance <= PMobSkill->getDistance())
+            if (currentDistance <= PMobSkill->getReadyDistance())
             {
                 return MobSkill(PActionTarget->targid, PMobSkill->getID());
             }

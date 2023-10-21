@@ -218,6 +218,7 @@ namespace luautils
         lua.set_function("GetReadOnlyItem", &luautils::GetReadOnlyItem);
         lua.set_function("GetAbility", &luautils::GetAbility);
         lua.set_function("GetSpell", &luautils::GetSpell);
+        lua.set_function("GetMobSkill", &luautils::GetMobSkill);
         lua.set_function("SelectDailyItem", &luautils::SelectDailyItem);
         lua.set_function("GetContainerFilenamesList", &luautils::GetContainerFilenamesList);
         lua.set_function("GetCachedInstanceScript", &luautils::GetCachedInstanceScript);
@@ -5219,6 +5220,13 @@ namespace luautils
         TracyZoneScoped;
         CSpell* PSpell = spell::GetSpell(static_cast<SpellID>(id));
         return PSpell ? std::optional<CLuaSpell>(PSpell) : std::nullopt;
+    }
+
+    std::optional<CLuaMobSkill> GetMobSkill(uint16 id)
+    {
+        TracyZoneScoped;
+        CMobSkill* PMobSkill = battleutils::GetMobSkill(id);
+        return PMobSkill ? std::optional<CLuaMobSkill>(PMobSkill) : std::nullopt;
     }
 
     sol::table NearLocation(sol::table const& table, float radius, float theta)

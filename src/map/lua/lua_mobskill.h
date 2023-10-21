@@ -53,6 +53,7 @@ public:
     void   setMsg(uint16 message);
     uint16 getMsg();
     uint16 getTotalTargets();
+    float  getReadyDistance();
 
     static void Register();
 };

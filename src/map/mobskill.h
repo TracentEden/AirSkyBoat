@@ -58,6 +58,7 @@ public:
     uint16 getPetAnimationID() const;
     uint8  getAoe() const;
     float  getDistance() const;
+    float  getReadyDistance() const;
     uint8  getFlag() const;
     uint16 getAnimationTime() const;
     uint16 getActivationTime() const;

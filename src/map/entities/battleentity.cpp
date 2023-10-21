@@ -259,8 +259,8 @@ uint8 CBattleEntity::GetSpeed()
     // Get the percentage of increase/decreate by mod
     auto modAmount = static_cast<float>(getMod(mod)) / 100.0f;
 
-    // Cap unmounted movement speed increase to 25%
-    if (mod == Mod::MOVE && modAmount > 0) // Only clamp position/negatvie if we're increasing speed
+    // Cap unmounted movement speed increase to 25% for PCs
+    if (mod == Mod::MOVE && modAmount > 0 && objtype == TYPE_PC) // Only clamp position/negatvie if we're increasing speed
     {
         if (StatusEffectContainer->GetStatusEffect(EFFECT_FLEE))
         {
@@ -1138,7 +1138,7 @@ uint8 CBattleEntity::GetDeathType()
 
 void CBattleEntity::addModifier(Mod type, int16 amount)
 {
-    if (type == Mod::MOVE)
+    if (type == Mod::MOVE && objtype == TYPE_PC)
     {
         m_MSNonItemValues.push_back(amount);
         m_modStat[type] = CalculateMSFromSources();
@@ -1160,7 +1160,7 @@ void CBattleEntity::addModifiers(std::vector<CModifier>* modList)
     TracyZoneScoped;
     for (auto modifier : *modList)
     {
-        if (modifier.getModID() == Mod::MOVE)
+        if (modifier.getModID() == Mod::MOVE && objtype == TYPE_PC)
         {
             addModifier(modifier.getModID(), modifier.getModAmount()); // Calculations in addModifier already, don't duplicate
         }
@@ -1232,7 +1232,7 @@ void CBattleEntity::addEquipModifiers(std::vector<CModifier>* modList, uint8 ite
             else
             {
                 // Add item with movement speed and prevent stacking
-                if (i.getModID() == Mod::MOVE)
+                if (i.getModID() == Mod::MOVE && objtype == TYPE_PC)
                 {
                     m_MSItemValues.push_back(i.getModAmount());
                     m_modStat[i.getModID()] = CalculateMSFromSources();
@@ -1335,7 +1335,7 @@ void CBattleEntity::setModifiers(std::vector<CModifier>* modList)
 
 void CBattleEntity::delModifier(Mod type, int16 amount)
 {
-    if (type == Mod::MOVE)
+    if (type == Mod::MOVE && objtype == TYPE_PC)
     {
         for (uint16 x = 0; x < m_MSNonItemValues.size(); x++)
         {
@@ -1375,7 +1375,7 @@ void CBattleEntity::delModifiers(std::vector<CModifier>* modList)
     TracyZoneScoped;
     for (auto& i : *modList)
     {
-        if (i.getModID() == Mod::MOVE)
+        if (i.getModID() == Mod::MOVE && objtype == TYPE_PC)
         {
             delModifier(i.getModID(), i.getModAmount()); // Calculations in delModifier already, don't duplicate
         }
@@ -1407,7 +1407,7 @@ void CBattleEntity::delEquipModifiers(std::vector<CModifier>* modList, uint8 ite
             else
             {
                 // Remove item with movement speed and prevent stacking
-                if (i.getModID() == Mod::MOVE)
+                if (i.getModID() == Mod::MOVE && objtype == TYPE_PC)
                 {
                     for (uint16 x = 0; x < m_MSItemValues.size(); x++)
                     {

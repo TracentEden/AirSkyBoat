@@ -344,6 +344,20 @@ float CMobSkill::getDistance() const
     return m_Distance;
 }
 
+float CMobSkill::getReadyDistance() const
+{
+    // default the ready distance to the full distance
+    float mobSkillReadyDistance = m_Distance;
+
+    // calculate the ready distance based on fraction of full distance if
+    // greater than a threshold
+    if (m_Distance >= settings::get<float>("map.MOB_ABILITY_READY_THRESHOLD"))
+    {
+        mobSkillReadyDistance = m_Distance * settings::get<float>("map.MOB_ABILITY_READY_DISTANCE_PERCENT");
+    }
+    return mobSkillReadyDistance;
+}
+
 float CMobSkill::getRadius() const
 {
     if (m_Aoe == 2)

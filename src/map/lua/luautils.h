@@ -46,6 +46,7 @@ extern sol::state lua;
 #define SOL_REGISTER(FuncName, Func) lua[className][FuncName] = &Func
 
 #include "items/item_equipment.h"
+#include "mobskill.h"
 #include "spell.h"
 
 #include "lua_ability.h"
@@ -152,6 +153,7 @@ namespace luautils
     auto GetReadOnlyItem(uint32 id) -> std::optional<CLuaItem>; // Returns a read only lookup item object of the specified ID
     auto GetAbility(uint16 id) -> std::optional<CLuaAbility>;
     auto GetSpell(uint16 id) -> std::optional<CLuaSpell>;
+    auto GetMobSkill(uint16 id) -> std::optional<CLuaMobSkill>;
 
     auto   SpawnMob(uint32 mobid, sol::object const& arg2, sol::object const& arg3) -> std::optional<CLuaBaseEntity>; // Spawn Mob By Mob Id - NMs, BCNM...
     void   DespawnMob(uint32 mobid, sol::object const& arg2);                                                         // Despawn (Fade Out) Mob By Id
