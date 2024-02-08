@@ -3969,13 +3969,15 @@ m:addOverride("xi.globals.mobskills.nerve_gas.onMobSkillCheck", function(target,
         end
     elseif mob:getFamily() == 313 then -- Tinnin can use at will
         return 0
-    else
-        if mob:getAnimationSub() == 0 then
+    elseif mob:getFamily() == 164 then -- Hydra HNM
+        if mob:getAnimationSub() == 6 then -- Three heads
             return 0
         else
             return 1
         end
     end
+
+    return 0
 end)
 
 m:addOverride("xi.globals.mobskills.netherspikes.onMobSkillCheck", function(target, mob, skill)
@@ -4435,7 +4437,7 @@ m:addOverride("xi.globals.mobskills.poison_sting.onMobSkillCheck", function(targ
 end)
 
 m:addOverride("xi.globals.mobskills.polar_blast.onMobSkillCheck", function(target, mob, skill)
-    if mob:getFamily() == 316 then
+    if mob:getFamily() == 316 then -- PW
         local mobSkin = mob:getModelId()
 
         if mobSkin == 1796 then
@@ -4443,17 +4445,19 @@ m:addOverride("xi.globals.mobskills.polar_blast.onMobSkillCheck", function(targe
         else
             return 1
         end
+    elseif mob:getFamily() == 164 then -- Hydra HNM
+        if mob:getAnimationSub() == 5 then -- Two heads
+            return 0
+        else
+            return 1
+        end
     end
 
-    if mob:getAnimationSub() <= 1 then
-        return 0
-    else
-        return 1
-    end
+    return 0
 end)
 
 m:addOverride("xi.globals.mobskills.polar_bulwark.onMobSkillCheck", function(target, mob, skill)
-    if mob:getFamily() == 316 then
+    if mob:getFamily() == 316 then --PW
         local mobSkin = mob:getModelId()
 
         if mobSkin == 1796 then
@@ -4461,13 +4465,15 @@ m:addOverride("xi.globals.mobskills.polar_bulwark.onMobSkillCheck", function(tar
         else
             return 1
         end
+    elseif mob:getFamily() == 164 then -- Hydra HNM
+        if mob:getAnimationSub() == 6 then -- Three heads
+            return 0
+        else
+            return 1
+        end
     end
 
-    if mob:getAnimationSub() == 0 then
-        return 0
-    else
-        return 1
-    end
+    return 0
 end)
 
 m:addOverride("xi.globals.mobskills.pollen.onMobSkillCheck", function(target, mob, skill)
@@ -4632,7 +4638,7 @@ m:addOverride("xi.globals.mobskills.pw_shadow_thrust.onMobSkillCheck", function(
 end)
 
 m:addOverride("xi.globals.mobskills.pyric_blast.onMobSkillCheck", function(target, mob, skill)
-    if mob:getFamily() == 316 then
+    if mob:getFamily() == 316 then --PW
         local mobSkin = mob:getModelId()
 
         if mobSkin == 1796 then
@@ -4640,17 +4646,19 @@ m:addOverride("xi.globals.mobskills.pyric_blast.onMobSkillCheck", function(targe
         else
             return 1
         end
+    elseif mob:getFamily() == 164 then -- Hydra HNM
+        if mob:getAnimationSub() == 6 then -- Three Heads
+            return 0
+        else
+            return 1
+        end
     end
 
-    if mob:getAnimationSub() == 0 then
-        return 0
-    else
-        return 1
-    end
+    return 0
 end)
 
 m:addOverride("xi.globals.mobskills.pyric_bulwark.onMobSkillCheck", function(target, mob, skill)
-    if mob:getFamily() == 316 then
+    if mob:getFamily() == 316 then -- PW
         local mobSkin = mob:getModelId()
 
         if mobSkin == 1796 then
@@ -4658,14 +4666,15 @@ m:addOverride("xi.globals.mobskills.pyric_bulwark.onMobSkillCheck", function(tar
         else
             return 1
         end
+    elseif mob:getFamily() == 164 then -- Hydra HNM
+        if mob:getAnimationSub() == 5 then -- Two heads
+            return 0
+        else
+            return 1
+        end
     end
 
-    -- TODO: Used only when second/left head is alive (animationsub 0 or 1)
-    if mob:getAnimationSub() <= 1 then
-        return 0
-    else
-        return 1
-    end
+    return 0
 end)
 
 m:addOverride("xi.globals.mobskills.quadrastrike.onMobSkillCheck", function(target, mob, skill)
@@ -5182,7 +5191,7 @@ m:addOverride("xi.globals.mobskills.seraph_strike.onMobSkillCheck", function(tar
 end)
 
 m:addOverride("xi.globals.mobskills.serpentine_tail.onMobSkillCheck", function(target, mob, skill)
-    if mob:getFamily() == 316 then
+    if mob:getFamily() == 316 then -- PW
         local mobSkin = mob:getModelId()
 
         if mobSkin == 1796 then
@@ -5192,6 +5201,12 @@ m:addOverride("xi.globals.mobskills.serpentine_tail.onMobSkillCheck", function(t
         end
     elseif mob:getFamily() == 313 then -- Tinnin
         if mob:getAnimationSub() < 2 and target:isBehind(mob, 48) then
+            return 0
+        else
+            return 1
+        end
+    elseif mob:getFamily() == 164 then -- Hydra HNM
+        if target:isBehind(mob, 48) then
             return 0
         else
             return 1
@@ -6245,7 +6260,7 @@ m:addOverride("xi.globals.mobskills.touchdown_bahamut.onMobSkillCheck", function
 end)
 
 m:addOverride("xi.globals.mobskills.tourbillion.onMobSkillCheck", function(target, mob, skill)
-    if mob:getFamily() == 316 then
+    if mob:getFamily() == 316 then -- PW
         local mobSkin = mob:getModelId()
 
         if mobSkin == 1805 then
@@ -6253,11 +6268,14 @@ m:addOverride("xi.globals.mobskills.tourbillion.onMobSkillCheck", function(targe
         else
             return 1
         end
+    elseif mob:getFamily() == 168 then -- Khimaira
+        if mob:getAnimationSub() == 0 then -- Wings are up
+            return 0
+        else
+            return 1
+        end
     end
 
-    --[[TODO: Khimaira should only use this when its wings are up, which is animationsub() == 0.
-    There's no system to put them "down" yet, so it's not really fair to leave it active.
-    Tyger's fair game, though. :)]]
     return 0
 end)
 

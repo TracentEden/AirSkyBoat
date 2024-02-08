@@ -28,29 +28,50 @@ local mobSkills =
 }
 
 entity.onMobSpawn = function(mob)
+    mob:setMobMod(xi.mobMod.WEAPON_BONUS, 48) -- level 85 + 2 + 48 = 135 base weapon dmg
     mob:setMod(xi.mod.DEF, 486) -- 486 + 50 gives 536 DEF
     mob:setMod(xi.mod.EVA, 355)
     mob:setMod(xi.mod.ATT, 804) -- 804 + 66 gives 870 ATT
     mob:setMod(xi.mod.UDMGMAGIC, -5000)
     mob:addMod(xi.mod.MDEF, 12) -- 100 + 12 gives 112 MDEF
+    mob:setMod(xi.mod.DOUBLE_ATTACK, 25)
+    mob:setMod(xi.mod.REGEN, 10)
+    mob:addMod(xi.mod.MEVA, 60)
+    -- use hoplon on spawn
+    mob:useMobAbility(1789)
 end
 
 entity.onMobWeaponSkillPrepare = function(mob, target)
     if
+        target and
         mob:getHPP() <= 25 and
-        math.random() < 0.50
+        math.random(1, 2) == 2
     then
         return 1790 -- Gates of Hell
+    elseif
+        target and
+        mob:getHPP() <= 25 and
+        target:isBehind(mob)
+    then
+        return 1787 -- Scorching Lash
     else
         return mobSkills[math.random(#mobSkills)]
     end
 end
 
 entity.onMobFight = function(mob, target)
-    if mob:getHPP() > 25 then
-        mob:setMod(xi.mod.REGAIN, 10)
-    else
-        mob:setMod(xi.mod.REGAIN, 70)
+    local cerbBoost = mob:getLocalVar("cerbBoost")
+    local hpp = mob:getHPP()
+    
+    if hpp <= 75 and boost == 0 then
+        mob:setMod(xi.mod.REGAIN, 50)
+        mob:setLocalVar("cerbBoost", 1)
+    elseif hpp <= 60 and boost == 1 then
+        mob:setMod(xi.mod.REGAIN, 100)
+        mob:setLocalVar("cerbBoost", 2)
+    elseif hpp <= 25 and boost == 2 then
+        mob:addMod(xi.mod.ATT, 100)
+        mob:setLocalVar("cerbBoost", 3)
     end
 
     if
