@@ -24,8 +24,8 @@
 
 #include <vector>
 
-#include "../common/cbasetypes.h"
-#include "../common/mmo.h"
+#include "common/cbasetypes.h"
+#include "common/mmo.h"
 
 #include "spell.h"
 
@@ -50,12 +50,6 @@ public:
 
 private:
 };
-
-/************************************************************************
- *                                                                       *
- *  namespase для работы с заклинаниями                                  *
- *                                                                       *
- ************************************************************************/
 
 namespace mobSpellList
 {

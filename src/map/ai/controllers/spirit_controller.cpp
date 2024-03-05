@@ -375,103 +375,103 @@ void CSpiritController::LoadLightSpiritSpellList()
     uint8 mLvl = PSpirit->GetMLevel();
     if (mLvl >= 71)
     {
-        PSpirit->m_healAOESpells.push_back(static_cast<uint16>(SpellID::Curaga_IV));
+        PSpirit->m_healAOESpells.emplace_back(static_cast<uint16>(SpellID::Curaga_IV));
     }
     if (mLvl >= 68)
     {
-        PSpirit->m_buffSpells.push_back(static_cast<uint16>(SpellID::Shell_IV));
+        PSpirit->m_buffSpells.emplace_back(static_cast<uint16>(SpellID::Shell_IV));
     }
     if (mLvl >= 65)
     {
-        PSpirit->m_offensiveSpells.push_back(static_cast<uint16>(SpellID::Banish_III));
+        PSpirit->m_offensiveSpells.emplace_back(static_cast<uint16>(SpellID::Banish_III));
     }
     if (mLvl >= 63)
     {
-        PSpirit->m_buffSpells.push_back(static_cast<uint16>(SpellID::Protect_IV));
+        PSpirit->m_buffSpells.emplace_back(static_cast<uint16>(SpellID::Protect_IV));
     }
     if (mLvl >= 61)
     {
-        PSpirit->m_healSingleSpells.push_back(static_cast<uint16>(SpellID::Cure_V));
+        PSpirit->m_healSingleSpells.emplace_back(static_cast<uint16>(SpellID::Cure_V));
     }
     if (mLvl >= 57 && mLvl < 68)
     {
-        PSpirit->m_buffSpells.push_back(static_cast<uint16>(SpellID::Shell_III));
+        PSpirit->m_buffSpells.emplace_back(static_cast<uint16>(SpellID::Shell_III));
     }
     if (mLvl >= 51)
     {
-        PSpirit->m_healAOESpells.push_back(static_cast<uint16>(SpellID::Curaga_III));
+        PSpirit->m_healAOESpells.emplace_back(static_cast<uint16>(SpellID::Curaga_III));
     }
     if (mLvl >= 50)
     {
-        PSpirit->m_offensiveSpells.push_back(static_cast<uint16>(SpellID::Holy));
+        PSpirit->m_offensiveSpells.emplace_back(static_cast<uint16>(SpellID::Holy));
     }
     if (mLvl >= 47 && mLvl < 63)
     {
-        PSpirit->m_buffSpells.push_back(static_cast<uint16>(SpellID::Protect_III));
+        PSpirit->m_buffSpells.emplace_back(static_cast<uint16>(SpellID::Protect_III));
     }
     if (mLvl >= 41)
     {
-        PSpirit->m_healSingleSpells.push_back(static_cast<uint16>(SpellID::Cure_IV));
+        PSpirit->m_healSingleSpells.emplace_back(static_cast<uint16>(SpellID::Cure_IV));
     }
     if (mLvl >= 40)
     {
-        PSpirit->m_buffSpells.push_back(static_cast<uint16>(SpellID::Haste));
+        PSpirit->m_buffSpells.emplace_back(static_cast<uint16>(SpellID::Haste));
     }
     if (mLvl >= 37)
     {
-        PSpirit->m_offensiveSpells.push_back(static_cast<uint16>(SpellID::Flash));
+        PSpirit->m_offensiveSpells.emplace_back(static_cast<uint16>(SpellID::Flash));
     }
     if (mLvl >= 37 && mLvl < 57)
     {
-        PSpirit->m_buffSpells.push_back(static_cast<uint16>(SpellID::Shell_II));
+        PSpirit->m_buffSpells.emplace_back(static_cast<uint16>(SpellID::Shell_II));
     }
     if (mLvl >= 31)
     {
-        PSpirit->m_offensiveSpells.push_back(static_cast<uint16>(SpellID::Dia_II));
+        PSpirit->m_offensiveSpells.emplace_back(static_cast<uint16>(SpellID::Dia_II));
     }
     if (mLvl >= 31)
     {
-        PSpirit->m_healAOESpells.push_back(static_cast<uint16>(SpellID::Curaga_II));
+        PSpirit->m_healAOESpells.emplace_back(static_cast<uint16>(SpellID::Curaga_II));
     }
     if (mLvl >= 30)
     {
-        PSpirit->m_offensiveSpells.push_back(static_cast<uint16>(SpellID::Banish_II));
+        PSpirit->m_offensiveSpells.emplace_back(static_cast<uint16>(SpellID::Banish_II));
     }
     if (mLvl >= 27 && mLvl < 57)
     {
-        PSpirit->m_buffSpells.push_back(static_cast<uint16>(SpellID::Protect_II));
+        PSpirit->m_buffSpells.emplace_back(static_cast<uint16>(SpellID::Protect_II));
     }
     if (mLvl >= 21)
     {
-        PSpirit->m_buffSpells.push_back(static_cast<uint16>(SpellID::Regen));
+        PSpirit->m_buffSpells.emplace_back(static_cast<uint16>(SpellID::Regen));
     }
     if (mLvl >= 21)
     {
-        PSpirit->m_healSingleSpells.push_back(static_cast<uint16>(SpellID::Cure_III));
+        PSpirit->m_healSingleSpells.emplace_back(static_cast<uint16>(SpellID::Cure_III));
     }
     if (mLvl >= 17 && mLvl < 37)
     {
-        PSpirit->m_buffSpells.push_back(static_cast<uint16>(SpellID::Shell));
+        PSpirit->m_buffSpells.emplace_back(static_cast<uint16>(SpellID::Shell));
     }
     if (mLvl >= 16)
     {
-        PSpirit->m_healAOESpells.push_back(static_cast<uint16>(SpellID::Curaga));
+        PSpirit->m_healAOESpells.emplace_back(static_cast<uint16>(SpellID::Curaga));
     }
     if (mLvl >= 11)
     {
-        PSpirit->m_healSingleSpells.push_back(static_cast<uint16>(SpellID::Cure_II));
+        PSpirit->m_healSingleSpells.emplace_back(static_cast<uint16>(SpellID::Cure_II));
     }
     if (mLvl >= 7 && mLvl < 27)
     {
-        PSpirit->m_buffSpells.push_back(static_cast<uint16>(SpellID::Protect));
+        PSpirit->m_buffSpells.emplace_back(static_cast<uint16>(SpellID::Protect));
     }
     if (mLvl >= 5 && mLvl < 65)
     {
-        PSpirit->m_offensiveSpells.push_back(static_cast<uint16>(SpellID::Banish));
+        PSpirit->m_offensiveSpells.emplace_back(static_cast<uint16>(SpellID::Banish));
     }
     if (mLvl >= 1)
     {
-        PSpirit->m_healSingleSpells.push_back(static_cast<uint16>(SpellID::Cure));
+        PSpirit->m_healSingleSpells.emplace_back(static_cast<uint16>(SpellID::Cure));
     }
 }
 

@@ -22,9 +22,9 @@
 #ifndef _CONTROLLER_H
 #define _CONTROLLER_H
 
-#include "../../../common/cbasetypes.h"
-#include "../../../common/mmo.h"
-#include "../../spell.h"
+#include "common/cbasetypes.h"
+#include "common/mmo.h"
+#include "spell.h"
 
 class CBattleEntity;
 
@@ -49,11 +49,11 @@ public:
     }
 
     bool IsAutoAttackEnabled() const;
-    void setAutoAttackEnabled(bool);
+    void SetAutoAttackEnabled(bool);
     bool IsWeaponSkillEnabled() const;
     void SetWeaponSkillEnabled(bool);
     bool IsMagicCastingEnabled() const;
-    void setMagicCastingEnabled(bool);
+    void SetMagicCastingEnabled(bool);
 
     bool canUpdate{ true };
 

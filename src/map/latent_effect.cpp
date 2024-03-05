@@ -144,7 +144,7 @@ bool CLatentEffect::Activate()
             if (m_ModValue == Mod::MOVE)
             {
                 // printf("[+] Adding item with MS Mod from latent effect (Start)\n");
-                m_POwner->m_MSItemValues.push_back(m_ModPower);
+                m_POwner->m_MSItemValues.emplace_back(m_ModPower);
                 m_POwner->setModifier(m_ModValue, m_POwner->CalculateMSFromSources());
                 // printf("[+] Adding item with MS Mod from latent effect (Done)\n");
             }

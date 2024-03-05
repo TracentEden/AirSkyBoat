@@ -61,7 +61,7 @@ public:
     void OnMobSkillFinished(CMobSkillState& state, action_t& action) override;
     void OnWeaponSkillFinished(CWeaponSkillState& state, action_t& action) override;
 
-    uint32              m_TrustID{};
+    uint32 m_TrustID{};
     TRUST_MOVEMENT_TYPE m_MovementType;
 };
 

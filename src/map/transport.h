@@ -22,7 +22,8 @@
 #ifndef _CTRANSPORT_H
 #define _CTRANSPORT_H
 
-#include "../common/cbasetypes.h"
+#include "common/cbasetypes.h"
+#include "common/singleton.h"
 #include "entities/npcentity.h"
 #include <vector>
 
@@ -118,12 +119,9 @@ struct Elevator_t
     void openDoor(CNpcEntity*) const;
 };
 
-class CTransportHandler
+class CTransportHandler : public Singleton<CTransportHandler>
 {
 public:
-    virtual ~CTransportHandler() = default;
-    static CTransportHandler* getInstance();
-
     void startElevator(int32 elevatorID);
     void TransportTimer();
     void insertElevator(Elevator_t elevator);
@@ -132,11 +130,10 @@ public:
 
     void InitializeTransport();
 
-private:
-    static std::unique_ptr<CTransportHandler> _instance;
-
+protected:
     CTransportHandler() = default;
 
+private:
     void startElevator(Elevator_t*);
     void arriveElevator(Elevator_t*);
 

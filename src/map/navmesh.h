@@ -69,9 +69,9 @@ public:
     CNavMesh(uint16 zoneID);
     ~CNavMesh();
 
-    bool  load(std::string const& path);
-    void  reload();
-    void  unload();
+    bool load(std::string const& path);
+    void reload();
+    void unload();
     float GetVerticalLimit();
 
     std::vector<pathpoint_t>     findPath(const position_t& start, const position_t& end);
@@ -135,8 +135,8 @@ private:
 
     std::string                m_filename;
     uint16                     m_zoneID;
-    dtRaycastHit               m_hit;
-    dtPolyRef                  m_hitPath[20];
+    dtRaycastHit               m_hit{};
+    dtPolyRef                  m_hitPath[20]{};
     std::shared_ptr<dtNavMesh> m_navMesh;
     dtNavMeshQuery             m_navMeshQuery;
 };

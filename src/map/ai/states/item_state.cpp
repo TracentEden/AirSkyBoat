@@ -21,21 +21,21 @@ along with this program.  If not, see http://www.gnu.org/licenses/
 
 #include "item_state.h"
 
-#include "../../entities/battleentity.h"
-#include "../../entities/charentity.h"
-#include "../ai_container.h"
+#include "ai/ai_container.h"
+#include "entities/battleentity.h"
+#include "entities/charentity.h"
 
-#include "../../item_container.h"
-#include "../../status_effect_container.h"
-#include "../../universal_container.h"
+#include "item_container.h"
+#include "status_effect_container.h"
+#include "universal_container.h"
 
-#include "../../packets/action.h"
-#include "../../packets/inventory_assign.h"
-#include "../../packets/inventory_finish.h"
-#include "../../packets/inventory_item.h"
+#include "packets/action.h"
+#include "packets/inventory_assign.h"
+#include "packets/inventory_finish.h"
+#include "packets/inventory_item.h"
 
-#include "../../utils/battleutils.h"
-#include "../../utils/charutils.h"
+#include "utils/battleutils.h"
+#include "utils/charutils.h"
 
 CItemState::CItemState(CCharEntity* PEntity, uint16 targid, uint8 loc, uint8 slotid)
 : CState(PEntity, targid)
@@ -229,13 +229,27 @@ bool CItemState::CanChangeState()
 
 void CItemState::TryInterrupt(CBattleEntity* PTarget)
 {
-    UpdateTarget(m_PEntity->IsValidTarget(m_targid, m_PItem->getValidTarget(), m_errorMsg));
+    // todo: interrupt on being hit
+
+    if (PTarget)
+    {
+        UpdateTarget(m_PEntity->IsValidTarget(PTarget->targid, m_PItem->getValidTarget(), m_errorMsg));
+    }
+    else
+    {
+        UpdateTarget(m_PEntity->IsValidTarget(m_targid, m_PItem->getValidTarget(), m_errorMsg));
+    }
 
     uint16 msg = 445; // you cannot use items at this time
 
     if (HasMoved() || m_PEntity->StatusEffectContainer->HasPreventActionEffect())
     {
         msg           = MSGBASIC_ITEM_FAILS_TO_ACTIVATE;
+        m_interrupted = true;
+    }
+    else if (battleutils::IsParalyzed(m_PEntity))
+    {
+        msg           = MSGBASIC_IS_PARALYZED;
         m_interrupted = true;
     }
     else if (!GetTarget())

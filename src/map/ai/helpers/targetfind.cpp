@@ -105,7 +105,7 @@ void CTargetFind::findWithinArea(CBattleEntity* PTarget, AOE_RADIUS radiusType, 
     // this is a buff because i'm targetting my self
     bool withPet = PETS_CAN_AOE_BUFF || (m_findFlags & FINDFLAGS_PET) || (m_PMasterTarget->objtype != m_PBattleEntity->objtype);
 
-    // always try to add original target first (might fail due to validity checks)
+    // always add original target first
     addEntity(PTarget, false); // pet will be added later
 
     // if original target is not valid (not added in addEntity) then should abandon search as ability/spell should not complete
@@ -361,7 +361,7 @@ void CTargetFind::addAllInRange(CBattleEntity* PTarget, float radius, ALLEGIANCE
                     if (PBattleEntity && isWithinArea(&(PBattleEntity->loc.p)) && !PBattleEntity->isDead() &&
                         PBattleEntity->allegiance == ALLEGIANCE_TYPE::PLAYER)
                     {
-                        m_targets.push_back(PBattleEntity);
+                        m_targets.emplace_back(PBattleEntity);
                     }
                 }
             }
@@ -373,7 +373,7 @@ void CTargetFind::addAllInRange(CBattleEntity* PTarget, float radius, ALLEGIANCE
             {
                 if (PChar && isWithinArea(&(PChar->loc.p)) && !PChar->isDead())
                 {
-                    m_targets.push_back(PChar);
+                    m_targets.emplace_back(PChar);
                 }
             });
             // clang-format on
@@ -385,13 +385,13 @@ void CTargetFind::addEntity(CBattleEntity* PTarget, bool withPet)
 {
     if (validEntity(PTarget))
     {
-        m_targets.push_back(PTarget);
+        m_targets.emplace_back(PTarget);
     }
 
     // add my pet too, if its allowed
     if (withPet && PTarget->PPet != nullptr && validEntity(PTarget->PPet))
     {
-        m_targets.push_back(PTarget->PPet);
+        m_targets.emplace_back(PTarget->PPet);
     }
 }
 

@@ -77,7 +77,12 @@ public:
     bool cleanup(bool cleanup);
     void win();
     void lose();
-    void addGroups(sol::table groups, bool hasMultipleArenas);
+    void addGroups(sol::table const& groups, bool hasMultipleArenas);
+
+    bool operator==(const CLuaBattlefield& other) const
+    {
+        return this->m_PLuaBattlefield == other.m_PLuaBattlefield;
+    }
 
     static void Register();
 };

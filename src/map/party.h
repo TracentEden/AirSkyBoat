@@ -22,7 +22,7 @@
 #ifndef _CPARTY_H
 #define _CPARTY_H
 
-#include "../common/cbasetypes.h"
+#include "common/cbasetypes.h"
 #include "map.h"
 
 #include <vector>
@@ -52,7 +52,7 @@ DECLARE_FORMAT_AS_UNDERLYING(PARTYFLAG);
 
 /************************************************************************
  *                                                                      *
- *  Класс группы    персонажей                                              *
+ *  Character group class                                               *
  *                                                                      *
  ************************************************************************/
 
@@ -61,6 +61,7 @@ class CParty
 public:
     CParty(CBattleEntity* PEntity);
     CParty(uint32 id);
+    ~CParty();
 
     uint32 GetPartyID() const;
     uint16 GetMemberFlags(CBattleEntity* PEntity);

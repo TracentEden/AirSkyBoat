@@ -88,7 +88,7 @@ class AHAnnouncementModule : public CPPModule
                             ret = sql->Query(
                                 "UPDATE auction_house SET buyer_name = '%s', sale = %u, sell_date = %u WHERE itemid = %u AND buyer_name IS NULL "
                                 "AND stack = %u AND price <= %u ORDER BY price LIMIT 1",
-                                PChar->GetName(), price, (uint32)time(nullptr), itemid, quantity == 0, price);
+                                PChar->getName(), price, (uint32)time(nullptr), itemid, quantity == 0, price);
 
                             if (ret != SQL_ERROR && sql->AffectedRows() != 0)
                             {

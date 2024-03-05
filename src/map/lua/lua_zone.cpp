@@ -19,19 +19,17 @@
 ===========================================================================
 */
 
+#include "lua_zone.h"
+
 #include "common/logging.h"
 
-#include "campaign_system.h"
 #include "entities/charentity.h"
 #include "entities/npcentity.h"
-#include "mob_modifier.h"
+#include "lua_baseentity.h"
 #include "trigger_area.h"
 #include "utils/mobutils.h"
 #include "zone.h"
 #include "zone_entities.h"
-
-#include "lua_baseentity.h"
-#include "lua_zone.h"
 
 CLuaZone::CLuaZone(CZone* PZone)
 : m_pLuaZone(PZone)
@@ -151,7 +149,7 @@ ZONEID CLuaZone::getID()
 
 const std::string& CLuaZone::getName()
 {
-    return m_pLuaZone->GetName();
+    return m_pLuaZone->getName();
 }
 
 REGION_TYPE CLuaZone::getRegionID()
@@ -245,7 +243,7 @@ std::optional<CLuaBaseEntity> CLuaZone::insertDynamicEntity(sol::table table)
     if (name.empty())
     {
         ShowWarning("Trying to spawn dynamic entity without a name! (%s - %s)",
-                    PEntity->GetName(), m_pLuaZone->GetName());
+                    PEntity->getName(), m_pLuaZone->getName());
 
         // If the name hasn't been provided, use "DefaultName" for NPCs, and whatever comes from the mob_pool for Mobs
         name = PEntity->name;
@@ -261,7 +259,7 @@ std::optional<CLuaBaseEntity> CLuaZone::insertDynamicEntity(sol::table table)
     PEntity->m_bReleaseTargIDOnDisappear = table["releaseIdOnDisappear"].get_or(false);
 
     auto typeKey    = (PEntity->objtype == TYPE_NPC) ? "npcs" : "mobs";
-    auto cacheEntry = lua[sol::create_if_nil]["xi"]["zones"][m_pLuaZone->GetName()][typeKey][lookupName];
+    auto cacheEntry = lua[sol::create_if_nil]["xi"]["zones"][m_pLuaZone->getName()][typeKey][lookupName];
 
     // Bind any functions that are passed in
     for (auto& [entryKey, entryValue] : table)
@@ -469,7 +467,7 @@ sol::table CLuaZone::queryEntitiesByName(std::string const& name)
 
     if (table.empty())
     {
-        ShowWarning("Query for entity name: %s in zone: %s returned no results", name, m_pLuaZone->GetName());
+        ShowWarning("Query for entity name: %s in zone: %s returned no results", name, m_pLuaZone->getName());
     }
 
     return table;

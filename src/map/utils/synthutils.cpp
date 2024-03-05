@@ -47,6 +47,7 @@
 
 #include "charutils.h"
 #include "itemutils.h"
+#include "zone.h"
 #include "zoneutils.h"
 
 namespace synthutils
@@ -140,7 +141,7 @@ namespace synthutils
      *                                                                           *
      ****************************************************************************/
 
-    double getSynthDifficulty(CCharEntity* PChar, uint8 skillID)
+    int16 getSynthDifficulty(CCharEntity* PChar, uint8 skillID)
     {
         Mod ModID = Mod::NONE;
 
@@ -172,10 +173,10 @@ namespace synthutils
                 break;
         }
 
-        uint8  charSkill = PChar->RealSkills.skill[skillID] / 10; // Player skill level is truncated before synth difficulty is calculated
-        double difficult = PChar->CraftContainer->getQuantity(skillID - 40) - (double)(charSkill + PChar->getMod(ModID));
+        uint8 charSkill  = PChar->RealSkills.skill[skillID] / 10; // Player skill level is truncated before synth difficulty is calculated
+        int16 difficulty = PChar->CraftContainer->getQuantity(skillID - 40) - charSkill - PChar->getMod(ModID);
 
-        return difficult;
+        return difficulty;
     }
 
     /*************************************************************
@@ -231,39 +232,45 @@ namespace synthutils
 
     uint8 calcSynthResult(CCharEntity* PChar)
     {
-        uint8  result          = SYNTHESIS_SUCCESS; // We assume by default that we succed
+        uint8 synthResult = SYNTHESIS_SUCCESS; // We assume that we succeed.
         int8   hqtier          = 3;                 // Set base to T3
         bool   canHQ           = true;              // We assume by default that we can HQ
-        double success         = 0;
+        uint8 skillID         = 0; // Current crafting skill being checked.
+	double success         = 0;
         double chance          = 0;
-        double random          = xirand::GetRandomNumber(1.);
-        uint8  checkSkill      = 0;
+        uint8 recipeSkill     = 0; // Recipe current skill level, based on current skill ID being checked.
         double synthDiff       = 0.;
         int16  modSynthSuccess = 0;
         int16  modSynthHqRate  = PChar->getMod(Mod::SYNTH_HQ_RATE);
+        uint8 randomRoll      = 0; // 1 to 100.
 
-        // Section 1: Break handling
-        for (uint8 skillID = SKILL_WOODWORKING; skillID <= SKILL_COOKING; ++skillID)
+        //------------------------------
+        // Section 2: Break handling
+        //------------------------------
+        for (skillID = SKILL_WOODWORKING; skillID <= SKILL_COOKING; ++skillID)
         {
-            checkSkill = PChar->CraftContainer->getQuantity(skillID - 40);
-            if (checkSkill != 0)
-            {
-                synthDiff = getSynthDifficulty(PChar, skillID);
+            recipeSkill = PChar->CraftContainer->getQuantity(skillID - 40);
 
-                if (synthDiff > 0)
+            // Only do stuff if the recipe actually uses that skill.
+            if (recipeSkill != 0)
+            {
+                randomRoll      = xirand::GetRandomNumber(1, 100);    // Random call must be called for each involved skill.
+                synthDifficulty = getSynthDifficulty(PChar, skillID); // Get synth difficulty again, for each skill involved.
+
+                if (synthDifficulty > 0)
                 {
                     hqtier = -1; // No tier
                     break;
                 }
-                else if (synthDiff <= 0 && synthDiff >= -10 && hqtier > 0) // 0-10 levels over recipe
+                else if (synthDifficulty <= 0 && synthDifficulty >= -10 && hqtier > 0) // 0-10 levels over recipe
                 {
                     hqtier = 0; // T0
                 }
-                else if (synthDiff <= -11 && synthDiff >= -30 && hqtier > 1) // 11-30 levels over recipe
+                else if (synthDifficulty <= -11 && synthDifficulty >= -30 && hqtier > 1) // 11-30 levels over recipe
                 {
                     hqtier = 1; // T1
                 }
-                else if (synthDiff <= -31 && synthDiff >= -50 && hqtier > 2) // 31-50 levels over recipe
+                else if (synthDifficulty <= -31 && synthDifficulty >= -50 && hqtier > 2) // 31-50 levels over recipe
                 {
                     hqtier = 2; // T2
                 }
@@ -273,9 +280,9 @@ namespace synthutils
         for (uint8 skillID = SKILL_WOODWORKING; skillID <= SKILL_COOKING; ++skillID)
         {
             checkSkill = PChar->CraftContainer->getQuantity(skillID - 40);
-            if (checkSkill != 0)
+            if (recipeSkill != 0)
             {
-                synthDiff = getSynthDifficulty(PChar, skillID); // Get synth difficulty again, for each skill involved.
+                synthDifficulty = getSynthDifficulty(PChar, skillID); // Get synth difficulty again, for each skill involved.
                 success   = 0.95;
 
                 if (PChar->CraftContainer->getCraftType() == CRAFT_DESYNTHESIS) // if it's a desynth lower success rate
@@ -283,9 +290,9 @@ namespace synthutils
                     success -= 0.50; // Result 0.45/1
                 }
 
-                if (synthDiff > 0)
+                if (synthDifficulty > 0)
                 {
-                    success -= (synthDiff / 10);
+                    success -= (synthDifficulty / 10);
                 }
 
                 success = std::clamp(success, 0.05, 0.95);
@@ -303,7 +310,6 @@ namespace synthutils
                 // Clamp success rate to 0.99
                 // Even if using kitron macaron, breaks can still happen
                 // https://www.bluegartr.com/threads/120352-CraftyMath
-                //   "I get a 99% success rate, so Kitron is doing something and it's not small."
                 // http://www.ffxiah.com/item/5781/kitron-macaron
                 //   "According to one of the Japanese wikis, it is said to decrease the minimum break rate from ~5% to 0.5%-2%."
                 success = std::clamp(success, 0.05, 0.99);
@@ -313,21 +319,23 @@ namespace synthutils
                     success = std::clamp(success, 0.05, 0.66); // Desynth should be 33% Break, 33% NQ, 33% HQ
                 }
 
-                if (random >= success) // Synthesis broke
+                if (randomRoll >= success) // Synthesis broke
                 {
-                    // keep the skill, because of which the synthesis failed.
-                    // use the slotID of the crystal cell, because it was removed at the beginning of the synthesis
+                    // Keep the skill because of which the synthesis failed.
+                    // Use the slotID of the crystal cell, because it was removed at the beginning of the synthesis.
                     PChar->CraftContainer->setInvSlotID(0, skillID);
-                    result = SYNTHESIS_FAIL;
+                    synthResult = SYNTHESIS_FAIL;
                     break;
                 }
             }
         }
 
-        // Section 2: HQ handling
-        if (result != SYNTHESIS_FAIL && canHQ) // It hasn't broken, so lets continue.
+        //------------------------------
+        // Section 3: HQ handling
+        //------------------------------
+        if (synthResult != SYNTHESIS_FAIL && canHQ) // It hasn't broken, so lets continue.
         {
-            switch (hqtier)
+            switch (finalHQTier)
             {
                 case 3:
                     chance = 0.500; // 1/2
@@ -371,70 +379,70 @@ namespace synthutils
                 }
             }
 
-            random = xirand::GetRandomNumber(1.);
+            randomRoll = xirand::GetRandomNumber(1.);
 
-            if (random < chance && canHQ) // We HQ. Proceed to selct HQ Tier
+            if (randomRoll < chance && canHQ) // We HQ. Proceed to selct HQ Tier
             {
                 if (PChar->CraftContainer->getCraftType() != CRAFT_DESYNTHESIS)
                 {
-                    random = xirand::GetRandomNumber(0, 16);
+                    randomRoll = xirand::GetRandomNumber(0, 16);
 
-                    if (random == 0)
+                    if (randomRoll == 0)
                     {
-                        result = SYNTHESIS_HQ3;
+                        synthResult = SYNTHESIS_HQ3;
                     }
-                    else if (random < 4)
+                    else if (randomRoll < 4)
                     {
-                        result = SYNTHESIS_HQ2;
+                        synthResult = SYNTHESIS_HQ2;
                     }
                     else
                     {
-                        result = SYNTHESIS_HQ;
+                        synthResult = SYNTHESIS_HQ;
                     }
                 }
                 else
                 {
-                    random = xirand::GetRandomNumber(1.);
+                    randomRoll = xirand::GetRandomNumber(1.);
 
-                    if (random < 0.0366)
+                    if (randomRoll < 0.0366)
                     {
-                        result = SYNTHESIS_HQ3;
+                        synthResult = SYNTHESIS_HQ3;
                     }
-                    else if (random < 0.2752)
+                    else if (randomRoll < 0.2752)
                     {
-                        result = SYNTHESIS_HQ2;
+                        synthResult = SYNTHESIS_HQ2;
                     }
                     else
                     {
-                        result = SYNTHESIS_HQ;
+                        synthResult = SYNTHESIS_HQ;
                     }
                 }
             }
         }
 
         // Section 3: System handling. The result of the synthesis is written in the quantity field of the crystal cell.
-        PChar->CraftContainer->setQuantity(0, result);
+        PChar->CraftContainer->setQuantity(0, synthResult);
         PChar->CraftContainer->m_failType = PChar->CraftContainer->getCraftType();
 
-        switch (result)
+        switch (synthResult)
         {
             case SYNTHESIS_FAIL:
-                result = RESULT_FAIL;
+                synthResult = RESULT_FAIL;
                 break;
             case SYNTHESIS_SUCCESS:
-                result = RESULT_SUCCESS;
+                synthResult = RESULT_SUCCESS;
                 break;
             case SYNTHESIS_HQ:
-                result = RESULT_HQ;
+                synthResult = RESULT_HQ;
                 break;
             case SYNTHESIS_HQ2:
-                result = RESULT_HQ;
+                synthResult = RESULT_HQ;
                 break;
             case SYNTHESIS_HQ3:
-                result = RESULT_HQ;
+                synthResult = RESULT_HQ;
                 break;
         }
-        return result;
+        return synthResult;
     }
 
     /********************************************************************

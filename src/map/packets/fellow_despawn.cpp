@@ -57,7 +57,7 @@ CFellowDespawnPacket::CFellowDespawnPacket(CBaseEntity* PEntity)
     ref<uint8>(0x2B)       = 0x02;
     ref<uint16>(0x30)      = PEntity->look.size;
     memcpy(data + (0x30), &PEntity->look, sizeof(look_t));
-    // memcpy(data + (0x44), PEntity->GetName().c_str(), PEntity->name.size());
+    // memcpy(data + (0x44), PEntity->getName().c_str(), PEntity->name.size());
 
     auto name       = PEntity->packetName;
     auto nameOffset = 0x44;

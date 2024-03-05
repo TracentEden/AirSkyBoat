@@ -69,7 +69,7 @@ void CTrustController::Despawn()
 void CTrustController::Tick(time_point tick)
 {
     TracyZoneScoped;
-    TracyZoneString(POwner->GetName());
+    TracyZoneString(POwner->getName());
 
     m_Tick = tick;
 

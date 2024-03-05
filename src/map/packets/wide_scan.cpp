@@ -53,5 +53,5 @@ CWideScanPacket::CWideScanPacket(CCharEntity* PChar, CBaseEntity* PEntity)
     ref<uint16>(0x08) = (int16)(PEntity->loc.p.x - PChar->loc.p.x); // x - разница координат персонажа и объекта
     ref<uint16>(0x0A) = (int16)(PEntity->loc.p.z - PChar->loc.p.z); // z - разница координат персонажа и объекта
 
-    // memcpy(data+(0x0C), PEntity->GetName(), (PEntity->name.size() > 14 ? 14 : PEntity->name.size()));
+    // memcpy(data+(0x0C), PEntity->getName(), (PEntity->name.size() > 14 ? 14 : PEntity->name.size()));
 }

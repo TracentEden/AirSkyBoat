@@ -29,7 +29,7 @@ class DisableMogGardenModule : public CPPModule
                 else 
                 {
                     PChar->status = STATUS_TYPE::NORMAL;
-                    ShowWarning("SmallPacket0x05E: Moghouse zoneline abuse by %s", PChar->GetName());
+                    ShowWarning("SmallPacket0x05E: Moghouse zoneline abuse by %s", PChar->getName());
                     return;
                 }
                 uint64 ipp = zoneutils::GetZoneIPP(PChar->loc.destination);

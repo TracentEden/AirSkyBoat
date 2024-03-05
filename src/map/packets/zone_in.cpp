@@ -67,7 +67,7 @@ uint16 GetMogHouseModelID(CCharEntity* PChar)
         case REGION_TYPE::ADOULIN_ISLANDS:
             return 0x0124;
         default:
-            ShowWarning("Default case reached for GetMogHouseID by %s (%u)", PChar->GetName(), PChar->getZone());
+            ShowWarning("Default case reached for GetMogHouseID by %s (%u)", PChar->getName(), PChar->getZone());
             return 0x0100;
     }
     // clang-format on
@@ -130,7 +130,7 @@ CZoneInPacket::CZoneInPacket(CCharEntity* PChar, const EventInfo* currentEvent)
     ref<uint32>(0x04) = PChar->id;
     ref<uint16>(0x08) = PChar->targid;
 
-    memcpy(data + (0x84), PChar->GetName().c_str(), PChar->GetName().size());
+    memcpy(data + (0x84), PChar->getName().c_str(), PChar->getName().size());
 
     ref<uint8>(0x0B) = PChar->loc.p.rotation;
     ref<float>(0x0C) = PChar->loc.p.x;

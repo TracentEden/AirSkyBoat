@@ -22,8 +22,8 @@
 #ifndef _CSPELL_H
 #define _CSPELL_H
 
-#include "../common/cbasetypes.h"
-#include "../common/mmo.h"
+#include "common/cbasetypes.h"
+#include "common/mmo.h"
 
 #include "entities/battleentity.h"
 #include "entities/charentity.h"
@@ -227,10 +227,10 @@ enum SPELLAOE
 
 enum SPELLFLAG
 {
-    SPELLFLAG_NONE            = 0x00,
-    SPELLFLAG_HIT_ALL         = 0x01, // Hit all targets in range regardless of party
-    SPELLFLAG_WIPE_SHADOWS    = 0x02, // Wipe shadows even if single target and miss/resist (example: "Maiden's Virelai")
-    SPELLFLAG_IGNORE_SHADOWS  = 0x04, // Ignore shadows and hit player anyways (example: Mobs "Death" spell)
+    SPELLFLAG_NONE           = 0x00,
+    SPELLFLAG_HIT_ALL        = 0x01, // Hit all targets in range regardless of party
+    SPELLFLAG_WIPE_SHADOWS   = 0x02, // Wipe shadows even if single target and miss/resist (example: "Maiden's Virelai")
+    SPELLFLAG_IGNORE_SHADOWS = 0x04  // Ignore shadows and hit player anyways (example: Mobs "Death" spell)
     SPELLFLAG_ATTACKER_RADIUS = 0x08, // Center the AoE around the attacker; the default is the target.
 };
 

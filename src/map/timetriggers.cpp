@@ -25,22 +25,10 @@
 
 #include "lua/luautils.h"
 
-std::unique_ptr<CTriggerHandler> CTriggerHandler::_instance;
-
-CTriggerHandler* CTriggerHandler::getInstance()
-{
-    if (!_instance)
-    {
-        _instance.reset(new CTriggerHandler);
-    }
-
-    return _instance.get();
-}
-
 void CTriggerHandler::insertTrigger(Trigger_t trigger)
 {
     trigger.lastTrigger = (CVanaTime::getInstance()->getDate() - trigger.minuteOffset) / trigger.period;
-    triggerList.push_back(trigger);
+    triggerList.emplace_back(trigger);
 }
 
 void CTriggerHandler::triggerTimer()

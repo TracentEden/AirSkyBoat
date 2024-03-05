@@ -1178,7 +1178,7 @@ namespace fishingutils
         {
             if (FishList[fish.first]->item)
             {
-                pool.push_back(FishList[fish.first]);
+                pool.emplace_back(FishList[fish.first]);
             }
         }
 
@@ -1195,7 +1195,7 @@ namespace fishingutils
             {
                 if (!mob.second->questOnly)
                 {
-                    pool.push_back(mob.second);
+                    pool.emplace_back(mob.second);
                 }
             }
         }
@@ -2000,7 +2000,7 @@ namespace fishingutils
 
         if (charutils::GetHighestLevel(PChar) < settings::get<uint8>("map.FISHING_MIN_LEVEL"))
         {
-            ShowWarning(fmt::format("Player {} attempting to fish under minimum level", PChar->GetName()));
+            ShowWarning(fmt::format("Player {} attempting to fish under minimum level", PChar->getName()));
             // TODO: Make this more formal. System message for now to indicate to players why this is happening.
             // PChar->pushPacket(new CMessageTextPacket(PChar, MessageOffset + FISHMESSAGEOFFSET_CANNOTFISH_MOMENT));
             PChar->pushPacket(new CChatMessagePacket(PChar, CHAT_MESSAGE_TYPE::MESSAGE_SYSTEM_1, "You are currently below the minimum level required to fish"));
@@ -2010,7 +2010,7 @@ namespace fishingutils
 
         if (PChar->m_moghouseID > 0)
         {
-            ShowError(fmt::format("Player {} attempting to fish inside Mog House", PChar->GetName()));
+            ShowError(fmt::format("Player {} attempting to fish inside Mog House", PChar->getName()));
             anticheat::ReportCheatIncident(PChar, anticheat::CheatID::CHEAT_ID_FISH_BOT,
                                            static_cast<uint32>(PChar->m_charAnticheat.fishingStikes),
                                            "Player is attempting to fish from mog house. Number of strikes has been recorded.");
@@ -2786,7 +2786,7 @@ namespace fishingutils
 
         if (charutils::GetHighestLevel(PChar) < settings::get<uint8>("map.FISHING_MIN_LEVEL"))
         {
-            ShowWarning(fmt::format("Player {} started fishing under minimum level", PChar->GetName()));
+            ShowWarning(fmt::format("Player {} started fishing under minimum level", PChar->getName()));
             // Unlikely anyone can get here legit, since we already disabled "startFishing"
             PChar->animation = ANIMATION_FISHING_STOP;
             return;

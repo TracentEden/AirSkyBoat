@@ -1,4 +1,4 @@
-﻿/*
+/*
 ===========================================================================
   Copyright (c) 2010-2015 Darkstar Dev Teams
   This program is free software: you can redistribute it and/or modify
@@ -17,7 +17,7 @@
 #ifndef _CMODIFIER_H
 #define _CMODIFIER_H
 
-#include "../common/cbasetypes.h"
+#include "common/cbasetypes.h"
 
 enum class Mod
 {
@@ -41,7 +41,7 @@ enum class Mod
     MND = 13, // Mind
     CHR = 14, // Charisma
 
-    // Magic Evasion versus elements (resistance)
+    // Magic Evasion versus elements
     // This has been repeatedly mixed up with SDT - be careful!
     FIRE_MEVA    = 15, // Fire Magic Evasion
     ICE_MEVA     = 16, // Ice Magic Evasion
@@ -274,21 +274,21 @@ enum class Mod
     FOOD_DURATION = 937, // Percentage to increase food duration
 
     // Killer-Effects - (Most by Traits/JobAbility)
-    VERMIN_KILLER            = 224,  // Enhances "Vermin Killer" effect
-    BIRD_KILLER              = 225,  // Enhances "Bird Killer" effect
-    AMORPH_KILLER            = 226,  // Enhances "Amorph Killer" effect
-    LIZARD_KILLER            = 227,  // Enhances "Lizard Killer" effect
-    AQUAN_KILLER             = 228,  // Enhances "Aquan Killer" effect
-    PLANTOID_KILLER          = 229,  // Enhances "Plantiod Killer" effect
-    BEAST_KILLER             = 230,  // Enhances "Beast Killer" effect
-    UNDEAD_KILLER            = 231,  // Enhances "Undead Killer" effect
-    ARCANA_KILLER            = 232,  // Enhances "Arcana Killer" effect
-    DRAGON_KILLER            = 233,  // Enhances "Dragon Killer" effect
-    DEMON_KILLER             = 234,  // Enhances "Demon Killer" effect
-    EMPTY_KILLER             = 235,  // Enhances "Empty Killer" effect
-    HUMANOID_KILLER          = 236,  // Enhances "Humanoid Killer" effect
-    LUMINIAN_KILLER          = 237,  // Enhances "Luminian Killer" effect
-    LUMINION_KILLER          = 238,  // Enhances "Luminion Killer" effect
+    VERMIN_KILLER   = 224, // Enhances "Vermin Killer" effect
+    BIRD_KILLER     = 225, // Enhances "Bird Killer" effect
+    AMORPH_KILLER   = 226, // Enhances "Amorph Killer" effect
+    LIZARD_KILLER   = 227, // Enhances "Lizard Killer" effect
+    AQUAN_KILLER    = 228, // Enhances "Aquan Killer" effect
+    PLANTOID_KILLER = 229, // Enhances "Plantiod Killer" effect
+    BEAST_KILLER    = 230, // Enhances "Beast Killer" effect
+    UNDEAD_KILLER   = 231, // Enhances "Undead Killer" effect
+    ARCANA_KILLER   = 232, // Enhances "Arcana Killer" effect
+    DRAGON_KILLER   = 233, // Enhances "Dragon Killer" effect
+    DEMON_KILLER    = 234, // Enhances "Demon Killer" effect
+    EMPTY_KILLER    = 235, // Enhances "Empty Killer" effect
+    HUMANOID_KILLER = 236, // Enhances "Humanoid Killer" effect
+    LUMINIAN_KILLER = 237, // Enhances "Luminian Killer" effect
+    LUMINION_KILLER = 238, // Enhances "Luminion Killer" effect
     WYRMAL_ABJ_KILLER_EFFECT = 1178, // Wyrmal Abjuration(Crimson / Blood) which makes players susceptible to Dragon Killer effects
 
     // Resistances to enfeebles - Job Traits/Job Abilities/Atmas/Items/Gear
@@ -448,7 +448,7 @@ enum class Mod
     CHARM_CHANCE        = 391,  // extra chance to charm (light+apollo staff ect)
     FERAL_HOWL_DURATION = 503,  // +20% duration per merit when wearing augmented Monster Jackcoat +2
     JUG_LEVEL_RANGE     = 564,  // Decreases the level range of spawned jug pets. Maxes out at 2.
-    SIC_READY_RECAST    = 1052, // TODO: SIC/Ready recast reduction (seconds)
+    SIC_READY_RECAST    = 1052, // SIC/Ready recast reduction (seconds)
 
     // Bard
     MINNE_EFFECT           = 433,  //
@@ -559,41 +559,41 @@ enum class Mod
     ROLL_RANGE        = 528,  // Additional range for COR roll abilities.
     JOB_BONUS_CHANCE  = 542,  // Chance to apply job bonus to COR roll without having the job in the party.
     TRIPLE_SHOT_RATE  = 999,  // Percent increase to Triple Shot Rate
-    QUICK_DRAW_RECAST = 1060, // TODO: Quick Draw Charge Reduction (seconds)
+    QUICK_DRAW_RECAST = 1060, // Quick Draw Charge Reduction (seconds)
 
-    DMG_REFLECT            = 316, // Tracks totals
-    ROLL_ROGUES            = 317, // Tracks totals
-    ROLL_GALLANTS          = 318, // Tracks totals
-    ROLL_CHAOS             = 319, // Tracks totals
-    ROLL_BEAST             = 320, // Tracks totals
-    ROLL_CHORAL            = 321, // Tracks totals
-    ROLL_HUNTERS           = 322, // Tracks totals
-    ROLL_SAMURAI           = 323, // Tracks totals
-    ROLL_NINJA             = 324, // Tracks totals
-    ROLL_DRACHEN           = 325, // Tracks totals
-    ROLL_EVOKERS           = 326, // Tracks totals
-    ROLL_MAGUS             = 327, // Tracks totals
-    ROLL_CORSAIRS          = 328, // Tracks totals
-    ROLL_PUPPET            = 329, // Tracks totals
-    ROLL_DANCERS           = 330, // Tracks totals
-    ROLL_SCHOLARS          = 331, // Tracks totals
-    ROLL_BOLTERS           = 869, // Tracks totals
-    ROLL_CASTERS           = 870, // Tracks totals
-    ROLL_COURSERS          = 871, // Tracks totals
-    ROLL_BLITZERS          = 872, // Tracks totals
-    ROLL_TACTICIANS        = 873, // Tracks totals
-    ROLL_ALLIES            = 874, // Tracks totals
-    ROLL_MISERS            = 875, // Tracks totals
-    ROLL_COMPANIONS        = 876, // Tracks totals
-    ROLL_AVENGERS          = 877, // Tracks totals
-    ROLL_NATURALISTS       = 878, // Tracks totals
-    ROLL_RUNEISTS          = 879, // Tracks totals
-    BUST                   = 332, // # of busts
-    QUICK_DRAW_DMG         = 411, // Flat damage increase to base QD damage
-    QUICK_DRAW_DMG_PERCENT = 834, // Percentage increase to QD damage
-    QUICK_DRAW_MACC        = 191, // Quick draw magic accuracy
-    PHANTOM_ROLL           = 881, // Phantom Roll+ Effect from SOA Rings.
-    PHANTOM_DURATION       = 882, // Phantom Roll Duration +.
+    DMG_REFLECT            = 316,  // Tracks totals
+    ROLL_ROGUES            = 317,  // Tracks totals
+    ROLL_GALLANTS          = 318,  // Tracks totals
+    ROLL_CHAOS             = 319,  // Tracks totals
+    ROLL_BEAST             = 320,  // Tracks totals
+    ROLL_CHORAL            = 321,  // Tracks totals
+    ROLL_HUNTERS           = 322,  // Tracks totals
+    ROLL_SAMURAI           = 323,  // Tracks totals
+    ROLL_NINJA             = 324,  // Tracks totals
+    ROLL_DRACHEN           = 325,  // Tracks totals
+    ROLL_EVOKERS           = 326,  // Tracks totals
+    ROLL_MAGUS             = 327,  // Tracks totals
+    ROLL_CORSAIRS          = 328,  // Tracks totals
+    ROLL_PUPPET            = 329,  // Tracks totals
+    ROLL_DANCERS           = 330,  // Tracks totals
+    ROLL_SCHOLARS          = 331,  // Tracks totals
+    ROLL_BOLTERS           = 869,  // Tracks totals
+    ROLL_CASTERS           = 870,  // Tracks totals
+    ROLL_COURSERS          = 871,  // Tracks totals
+    ROLL_BLITZERS          = 872,  // Tracks totals
+    ROLL_TACTICIANS        = 873,  // Tracks totals
+    ROLL_ALLIES            = 874,  // Tracks totals
+    ROLL_MISERS            = 875,  // Tracks totals
+    ROLL_COMPANIONS        = 876,  // Tracks totals
+    ROLL_AVENGERS          = 877,  // Tracks totals
+    ROLL_NATURALISTS       = 878,  // Tracks totals
+    ROLL_RUNEISTS          = 879,  // Tracks totals
+    BUST                   = 332,  // # of busts
+    QUICK_DRAW_DMG         = 411,  // Flat damage increase to base QD damage
+    QUICK_DRAW_DMG_PERCENT = 834,  // Percentage increase to QD damage
+    QUICK_DRAW_MACC        = 191,  // Quick draw magic accuracy
+    PHANTOM_ROLL           = 881,  // Phantom Roll+ Effect from SOA Rings.
+    PHANTOM_DURATION       = 882,  // Phantom Roll Duration +.
 
     // Puppetmaster
     MANEUVER_BONUS              = 504,  // Maneuver Stat Bonus
@@ -623,17 +623,17 @@ enum class Mod
     AUTOMATON_LVL_BONUS         = 1044, // Automaton: Lv. (Increases automaton's base level above 99)
 
     // Dancer
-    FINISHING_MOVES          = 333, // Tracks # of finishing moves
-    SAMBA_DURATION           = 490, // Samba duration bonus
-    WALTZ_POTENCY            = 491, // Waltz Potency Bonus
-    JIG_DURATION             = 492, // Jig duration bonus in percents
-    VFLOURISH_MACC           = 493, // Violent Flourish accuracy bonus
-    STEP_FINISH              = 494, // Bonus finishing moves from steps
-    STEP_ACCURACY            = 403, // Bonus accuracy for Dancer's steps
-    WALTZ_DELAY              = 497, // Waltz Ability Delay modifier (-1 mod is -1 second)
-    SAMBA_PDURATION          = 498, // Samba percent duration bonus
-    REVERSE_FLOURISH_EFFECT  = 836, // Reverse Flourish effect in tenths of squared term multiplier
-    MAX_FINISHING_MOVE_BONUS = 988, // Increases the maximum number of finishing moves that may be stored
+    FINISHING_MOVES          = 333,  // Tracks # of finishing moves
+    SAMBA_DURATION           = 490,  // Samba duration bonus
+    WALTZ_POTENCY            = 491,  // Waltz Potency Bonus
+    JIG_DURATION             = 492,  // Jig duration bonus in percents
+    VFLOURISH_MACC           = 493,  // Violent Flourish accuracy bonus
+    STEP_FINISH              = 494,  // Bonus finishing moves from steps
+    STEP_ACCURACY            = 403,  // Bonus accuracy for Dancer's steps
+    WALTZ_DELAY              = 497,  // Waltz Ability Delay modifier (-1 mod is -1 second)
+    SAMBA_PDURATION          = 498,  // Samba percent duration bonus
+    REVERSE_FLOURISH_EFFECT  = 836,  // Reverse Flourish effect in tenths of squared term multiplier
+    MAX_FINISHING_MOVE_BONUS = 988,  // Increases the maximum number of finishing moves that may be stored
 
     // Scholar
     BLACK_MAGIC_COST         = 393, // MP cost for black magic (light/dark arts)
@@ -814,14 +814,14 @@ enum class Mod
     PHYS_ABSORB        = 512, // Occasionally absorbs physical damage taken, in percents
     ABSORB_DMG_TO_MP   = 516, // Unlike PLD gear mod, works on all damage types (Ethereal Earring)
 
-    ITEM_ADDEFFECT_TYPE     = 431,  // see procType table in scripts\globals\additional_effects.lua
-    ITEM_SUBEFFECT          = 499,  // Animation ID of Spikes and Additional Effects
-    ITEM_ADDEFFECT_DMG      = 500,  // Damage of an items Additional Effect or Spikes
-    ITEM_ADDEFFECT_CHANCE   = 501,  // Chance of an items Additional Effect or Spikes
-    ITEM_ADDEFFECT_ELEMENT  = 950,  // Element of the Additional Effect or Spikes, for resist purposes
-    ITEM_ADDEFFECT_STATUS   = 951,  // Status Effect ID to try to apply via Additional Effect or Spikes
-    ITEM_ADDEFFECT_POWER    = 952,  // Base Power for effect in MOD_ITEM_ADDEFFECT_STATUS
-    ITEM_ADDEFFECT_DURATION = 953,  // Base Duration for effect in MOD_ITEM_ADDEFFECT_STATUS
+    ITEM_ADDEFFECT_TYPE     = 431, // see procType table in scripts\globals\additional_effects.lua
+    ITEM_SUBEFFECT          = 499, // Animation ID of Spikes and Additional Effects
+    ITEM_ADDEFFECT_DMG      = 500, // Damage of an items Additional Effect or Spikes
+    ITEM_ADDEFFECT_CHANCE   = 501, // Chance of an items Additional Effect or Spikes
+    ITEM_ADDEFFECT_ELEMENT  = 950, // Element of the Additional Effect or Spikes, for resist purposes
+    ITEM_ADDEFFECT_STATUS   = 951, // Status Effect ID to try to apply via Additional Effect or Spikes
+    ITEM_ADDEFFECT_POWER    = 952, // Base Power for effect in MOD_ITEM_ADDEFFECT_STATUS. Must be used for debuffs/buffs.
+    ITEM_ADDEFFECT_DURATION = 953, // Base Duration for effect in MOD_ITEM_ADDEFFECT_STATUS
     ITEM_ADDEFFECT_OPTION   = 1180, // Additional parameters for more specific latents required to proc
 
     GOV_CLEARS = 496, // 4% bonus per Grounds of Valor Page clear
@@ -840,8 +840,8 @@ enum class Mod
     MYTHIC_OCC_ATT_TWICE  = 865, // Proc rate for "Occasionally attacks twice"
     MYTHIC_OCC_ATT_THRICE = 866, // Proc rate for "Occasionally attacks thrice"
 
-    EAT_RAW_FISH = 412, //
-    EAT_RAW_MEAT = 413, //
+    EAT_RAW_FISH    = 412, // Without this, only Mithra can eat raw fish (item cannot be used)
+    EAT_RAW_MEAT    = 413, // Without this, only Galka can eat raw meat (item cannot be used)
 
     ENHANCES_CURSNA_RCVD     = 67,   // Potency of "Cursna" effects received
     ENHANCES_CURSNA          = 310,  // Used by gear with the "Enhances Cursna" or "Cursna+" attribute

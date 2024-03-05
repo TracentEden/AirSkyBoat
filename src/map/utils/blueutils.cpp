@@ -68,7 +68,7 @@ namespace blueutils
                     }
                     else
                     {
-                        ShowWarning("SetBlueSpell: Player %s trying to set spell ID %u they don't have! ", PChar->GetName(), spellID);
+                        ShowWarning("SetBlueSpell: Player %s trying to set spell ID %u they don't have! ", PChar->getName(), spellID);
                     }
                 }
                 SaveSetSpells(PChar);
@@ -90,7 +90,7 @@ namespace blueutils
             CSpell* PSpell = spell::GetSpellByMonsterSkillId(m_UsedSkillId.first);
             if (PSpell != nullptr)
             {
-                PLearnableSpells.push_back(PSpell);
+                PLearnableSpells.emplace_back(PSpell);
             }
         }
 
@@ -108,13 +108,13 @@ namespace blueutils
             {
                 if (member->GetMJob() == JOB_BLU && member->objtype == TYPE_PC)
                 {
-                    PBlueMages.push_back((CCharEntity*)member);
+                    PBlueMages.emplace_back((CCharEntity*)member);
                 }
             }
         }
         else if (PChar->GetMJob() == JOB_BLU)
         {
-            PBlueMages.push_back(PChar);
+            PBlueMages.emplace_back(PChar);
         }
 
         // loop through the list of BLUs and see if they can learn.
@@ -489,7 +489,7 @@ namespace blueutils
                         {
                             charutils::addTrait(PChar, PTrait->getID());
 
-                            PChar->TraitList.push_back(PTrait);
+                            PChar->TraitList.emplace_back(PTrait);
                             PChar->addModifier(PTrait->getMod(), PTrait->getValue());
 
                             break;

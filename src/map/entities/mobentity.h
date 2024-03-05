@@ -116,12 +116,6 @@ struct mobDefaults_t
 
 class CMobSkillState;
 
-/************************************************************************
- *                                                                       *
- *                                                                       *
- *                                                                       *
- ************************************************************************/
-
 class CMobEntity : public CBattleEntity
 {
 public:
@@ -177,7 +171,7 @@ public:
     virtual void Die() override;
 
     virtual void OnWeaponSkillFinished(CWeaponSkillState&, action_t&) override;
-    virtual void OnMobSkillFinished(CMobSkillState&, action_t&);
+    virtual void OnMobSkillFinished(CMobSkillState&, action_t&) override;
     virtual void OnEngage(CAttackState&) override;
 
     virtual bool OnAttack(CAttackState&, action_t&) override;
@@ -278,9 +272,9 @@ public:
 
     bool m_CallForHelpBlocked;
 
-    CEnmityContainer* PEnmityContainer; // система ненависти монстров
+    CEnmityContainer* PEnmityContainer;
 
-    CMobSpellContainer* SpellContainer; // retrieves spells for the mob
+    CMobSpellContainer* SpellContainer;
 
     bool m_IsClaimable;
 
@@ -289,9 +283,9 @@ public:
     static constexpr float magic_range{ 20.f };
 
 protected:
-    void  DistributeRewards();
+    void DistributeRewards();
     float ApplyTH(int16 m_THLvl, int16 rate);
-    void  DropItems(CCharEntity* PChar);
+    void DropItems(CCharEntity* PChar);
 
 private:
     time_point                     m_DespawnTimer{ time_point::min() }; // Despawn Timer to despawn mob after set duration

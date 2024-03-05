@@ -22,7 +22,7 @@
 #ifndef _CTRAIT_H
 #define _CTRAIT_H
 
-#include "../common/cbasetypes.h"
+#include "common/cbasetypes.h"
 
 #include "modifier.h"
 #include <vector>
@@ -148,12 +148,6 @@ enum TRAITTYPE
 
 #define MAX_TRAIT_ID 139
 
-/************************************************************************
- *                                                                       *
- *                                                                       *
- *                                                                       *
- ************************************************************************/
-
 class CTrait
 {
 public:
@@ -222,12 +216,6 @@ private:
     uint8  m_rank{ 0 };
     uint32 m_meritId{ 0 };
 };
-
-/************************************************************************
- *                                                                       *
- *  namespase для работы с traits                                        *
- *                                                                       *
- ************************************************************************/
 
 typedef std::vector<CTrait*> TraitList_t;
 

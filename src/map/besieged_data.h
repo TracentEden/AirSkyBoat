@@ -191,7 +191,7 @@ public:
         strongholdInfos.clear();
         for (const auto& info : updatedStrongholdInfos)
         {
-            strongholdInfos.push_back(info);
+            strongholdInfos.emplace_back(info);
         }
     }
 
@@ -246,7 +246,7 @@ public:
                                               strongholdInfo.strongholdId, strongholdInfo.orders, strongholdInfo.strongholdLevel, strongholdInfo.forces,
                                               strongholdInfo.mirrors, strongholdInfo.prisoners, strongholdInfo.ownsAstralCandescence, strongholdInfo.consecutiveDefeats);
 
-            lines.push_back(strongholdData);
+            lines.emplace_back(strongholdData);
         }
 
         return lines;

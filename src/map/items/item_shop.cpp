@@ -85,19 +85,6 @@ uint16 CItemShop::getInitialQuantity() const
     return m_InitialQuantity;
 }
 
-// Old formula for guild shops - this causes a lot of items to have the incorrect sell price
-// uint16 CItemShop::getSellPrice()
-// {
-//     if (getID() >= 0x2800 && getID() <= 0x6FFF)
-//     {
-//         return (uint16)((getMinPrice() + (getQuantity() / getStackSize()) * (getMinPrice() * 0.10f)) / 12);
-//     }
-//     else
-//     {
-//         return getBasePrice() / 3;
-//     }
-// }
-
 uint16 CItemShop::getSellPrice()
 {
     int itemID = getID();

@@ -33,18 +33,6 @@
 #include "utils/zoneutils.h"
 #include "zone.h"
 
-std::unique_ptr<CTransportHandler> CTransportHandler::_instance;
-
-CTransportHandler* CTransportHandler::getInstance()
-{
-    if (!_instance)
-    {
-        _instance.reset(new CTransportHandler);
-    }
-
-    return _instance.get();
-}
-
 void Transport_Ship::setVisible(bool visible) const
 {
     if (visible)
@@ -129,7 +117,11 @@ void Elevator_t::closeDoor(CNpcEntity* npc) const
 
 void CTransportHandler::InitializeTransport()
 {
-    XI_DEBUG_BREAK_IF(townZoneList.size() != 0);
+    if (townZoneList.size() != 0)
+    {
+        ShowError("townZoneList is not empty.");
+        return;
+    }
 
     const char* fmtQuery = "SELECT id, transport, door, dock_x, dock_y, dock_z, dock_rot, \
                             boundary, zone, anim_arrive, anim_depart, time_offset, time_interval, \
@@ -202,7 +194,7 @@ void CTransportHandler::InitializeTransport()
                 continue;
             }
 
-            townZoneList.push_back(zoneTown);
+            townZoneList.emplace_back(zoneTown);
         }
     }
 
@@ -217,7 +209,7 @@ void CTransportHandler::InitializeTransport()
     {
         while (sql->NextRow() == SQL_SUCCESS)
         {
-            TransportZone_Voyage voyageZone;
+            TransportZone_Voyage voyageZone{};
 
             voyageZone.voyageZone = nullptr;
             voyageZone.voyageZone = zoneutils::GetZone((uint8)sql->GetUIntData(0));
@@ -233,7 +225,7 @@ void CTransportHandler::InitializeTransport()
 
                 voyageZone.state = STATE_TRANSPORTZONE_INIT;
 
-                voyageZoneList.push_back(voyageZone);
+                voyageZoneList.emplace_back(voyageZone);
             }
             else
             {
@@ -567,9 +559,10 @@ void CTransportHandler::insertElevator(Elevator_t elevator)
     {
         Elevator_t* PElevator = &i;
 
-        if (PElevator->Elevator->GetName() == elevator.Elevator->GetName() && PElevator->zoneID == elevator.zoneID)
+        if (PElevator->Elevator->getName() == elevator.Elevator->getName() && PElevator->zoneID == elevator.zoneID)
         {
-            XI_DEBUG_BREAK_IF(true);
+            ShowError("Elevator already exists.");
+            return;
         }
     }
 
@@ -613,7 +606,7 @@ void CTransportHandler::insertElevator(Elevator_t elevator)
     elevator.LowerDoor->animation = (elevator.state == STATE_ELEVATOR_TOP) ? ANIMATION_CLOSE_DOOR : ANIMATION_OPEN_DOOR;
     elevator.UpperDoor->animation = (elevator.state == STATE_ELEVATOR_TOP) ? ANIMATION_OPEN_DOOR : ANIMATION_CLOSE_DOOR;
 
-    ElevatorList.push_back(elevator);
+    ElevatorList.emplace_back(elevator);
 }
 
 /************************************************************************
