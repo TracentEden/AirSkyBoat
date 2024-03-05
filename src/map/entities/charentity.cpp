@@ -163,8 +163,8 @@ CCharEntity::CCharEntity()
         m_missionLog[i].current = 0xFFFF;
     }
 
-    m_missionLog[4].current = 0; // MISSION_TOAU
-    m_missionLog[5].current = 0; // MISSION_WOTG
+    m_missionLog[4].current = 0;   // MISSION_TOAU
+    m_missionLog[5].current = 0;   // MISSION_WOTG
     m_missionLog[6].current = 0; // MISSION_COP
     for (auto& i : m_missionLog)
     {
@@ -176,6 +176,8 @@ CCharEntity::CCharEntity()
     m_acpCurrent = 0;
     m_mkeCurrent = 0;
     m_asaCurrent = 0;
+
+    m_PMonstrosity = nullptr;
 
     m_Costume             = 0;
     m_Monstrosity         = 0;
@@ -321,7 +323,7 @@ void CCharEntity::clearPacketList()
 void CCharEntity::pushPacket(CBasicPacket* packet)
 {
     TracyZoneScoped;
-    TracyZoneString(GetName());
+    TracyZoneString(getName());
     TracyZoneHex16(packet->getType());
 
     moduleutils::OnPushPacket(this, packet);
@@ -336,12 +338,12 @@ void CCharEntity::pushPacket(CBasicPacket* packet)
         else
         {
             PendingPositionPacket = packet;
-            PacketList.push_back(packet);
+            PacketList.emplace_back(packet);
         }
     }
     else
     {
-        PacketList.push_back(packet);
+        PacketList.emplace_back(packet);
     }
 }
 
@@ -357,7 +359,7 @@ void CCharEntity::updateCharPacket(CCharEntity* PChar, ENTITYUPDATE type, uint8 
     {
         // No existing packet update for the given char, so we push new packet
         CCharPacket* packet = new CCharPacket(PChar, type, updatemask);
-        PacketList.push_back(packet);
+        PacketList.emplace_back(packet);
         PendingCharPackets.emplace(PChar->id, packet);
     }
     else
@@ -374,7 +376,7 @@ void CCharEntity::updateEntityPacket(CBaseEntity* PEntity, ENTITYUPDATE type, ui
     {
         // No existing packet update for the given entity, so we push new packet
         CEntityUpdatePacket* packet = new CEntityUpdatePacket(PEntity, type, updatemask);
-        PacketList.push_back(packet);
+        PacketList.emplace_back(packet);
         PendingEntityPackets.emplace(PEntity->id, packet);
     }
     else
@@ -486,7 +488,7 @@ void CCharEntity::resetPetZoningInfo()
 
 bool CCharEntity::shouldPetPersistThroughZoning()
 {
-    PET_TYPE petType;
+    PET_TYPE petType{};
     auto     PPetEntity = dynamic_cast<CPetEntity*>(PPet);
 
     if (PPetEntity == nullptr && !petZoningInfo.respawnPet)
@@ -573,7 +575,7 @@ CItemContainer* CCharEntity::getStorage(uint8 LocationID)
             return m_RecycleBin.get();
     }
 
-    XI_DEBUG_BREAK_IF(LocationID >= CONTAINER_ID::MAX_CONTAINER_ID); // Unresolved storage ID
+    ShowWarning("Unhandled or Invalid Location ID (%d) passed to function.", LocationID);
     return nullptr;
 }
 
@@ -690,7 +692,7 @@ std::vector<CItemEquipment*> CCharEntity::getVisibleEquip()
         item = getEquip(slot);
         if (item != nullptr)
         {
-            visibleItems.push_back(item);
+            visibleItems.emplace_back(item);
         }
     }
 
@@ -719,8 +721,13 @@ void CCharEntity::RemoveTrust(CTrustEntity* PTrust)
         return;
     }
 
+    // clang-format off
     auto trustIt = std::find_if(PTrusts.begin(), PTrusts.end(), [PTrust](auto trust)
-                                { return PTrust == trust; });
+    {
+        return PTrust == trust;
+    });
+    // clang-format on
+
     if (trustIt != PTrusts.end())
     {
         if (PTrust->animation == ANIMATION_DESPAWN)
@@ -928,6 +935,7 @@ bool CCharEntity::ValidTarget(CBattleEntity* PInitiator, uint16 targetFlags)
     {
         return false;
     }
+
     if (isDead())
     {
         return (targetFlags & TARGET_PLAYER_DEAD) != 0;
@@ -956,6 +964,7 @@ bool CCharEntity::ValidTarget(CBattleEntity* PInitiator, uint16 targetFlags)
         {
             return true;
         }
+
         // Can cast on self and others in party but potency gets no bonuses from equipment mods if entrust is active
         if (!PInitiator->StatusEffectContainer->HasStatusEffect(EFFECT_ENTRUST) && PInitiator == this)
         {
@@ -1074,7 +1083,9 @@ void CCharEntity::OnCastFinished(CMagicState& state, action_t& action)
     {
         for (auto&& actionTarget : actionList.actionTargets)
         {
-            if (actionTarget.param > 0 && PSpell->dealsDamage() && PSpell->getSpellGroup() == SPELLGROUP_BLUE &&
+            if (actionTarget.param > 0 &&
+                PSpell->dealsDamage() &&
+                PSpell->getSpellGroup() == SPELLGROUP_BLUE &&
                 (StatusEffectContainer->HasStatusEffect(EFFECT_CHAIN_AFFINITY) || StatusEffectContainer->HasStatusEffect(EFFECT_AZURE_LORE)) &&
                 static_cast<CBlueSpell*>(PSpell)->getPrimarySkillchain() != 0)
             {
@@ -1207,10 +1218,10 @@ void CCharEntity::OnWeaponSkillFinished(CWeaponSkillState& state, action_t& acti
 
             actionTarget_t& actionTarget = actionList.getNewActionTarget();
 
-            uint16         tpHitsLanded;
-            uint16         extraHitsLanded;
-            int32          damage;
-            CBattleEntity* taChar = battleutils::getAvailableTrickAttackChar(this, PTarget);
+            uint16         tpHitsLanded    = 0;
+            uint16         extraHitsLanded = 0;
+            int32          damage          = 0;
+            CBattleEntity* taChar          = battleutils::getAvailableTrickAttackChar(this, PTarget);
 
             actionTarget.reaction                           = REACTION::NONE;
             actionTarget.speceffect                         = SPECEFFECT::NONE;
@@ -1852,11 +1863,15 @@ void CCharEntity::OnRangedAttack(CRangeState& state, action_t& action)
 
         recycleChance += this->PJobPoints->GetJobPointValue(JP_AMMO_CONSUMPTION);
 
-        // Only remove unlimited shot on hit
-        if (hitOccured && this->StatusEffectContainer->HasStatusEffect(EFFECT_UNLIMITED_SHOT))
+        if (this->StatusEffectContainer->HasStatusEffect(EFFECT_UNLIMITED_SHOT))
         {
-            StatusEffectContainer->DelStatusEffect(EFFECT_UNLIMITED_SHOT);
+            // Never consume ammo with Unlimited Shot active
             recycleChance = 100;
+            // Only remove unlimited shot on hit
+            if (hitOccured)
+            {
+                StatusEffectContainer->DelStatusEffect(EFFECT_UNLIMITED_SHOT);
+            }
         }
 
         if (PAmmo != nullptr && xirand::GetRandomNumber(100) > recycleChance)
@@ -1879,18 +1894,6 @@ void CCharEntity::OnRangedAttack(CRangeState& state, action_t& action)
             actionTarget.messageID  = 352;
             actionTarget.reaction   = REACTION::HIT;
             actionTarget.speceffect = SPECEFFECT::CRITICAL_HIT;
-        }
-
-        if (slot == SLOT_RANGED)
-        {
-            if (state.IsRapidShot())
-            {
-                totalDamage = attackutils::CheckForDamageMultiplier(this, PItem, totalDamage, PHYSICAL_ATTACK_TYPE::RAPID_SHOT, SLOT_RANGED, true);
-            }
-            else
-            {
-                totalDamage = attackutils::CheckForDamageMultiplier(this, PItem, totalDamage, PHYSICAL_ATTACK_TYPE::RANGED, SLOT_RANGED, true);
-            }
         }
 
         actionTarget.param =
@@ -1922,11 +1925,6 @@ void CCharEntity::OnRangedAttack(CRangeState& state, action_t& action)
         actionTarget.reaction  = REACTION::EVADE;
         actionTarget.param     = shadowsTaken;
     }
-    // No hit, but unlimited shot is up, so don't consume ammo
-    else if (!hitOccured && this->StatusEffectContainer->HasStatusEffect(EFFECT_UNLIMITED_SHOT))
-    {
-        ammoConsumed = 0;
-    }
 
     if (actionTarget.speceffect == SPECEFFECT::HIT && actionTarget.param > 0)
     {
@@ -1943,7 +1941,7 @@ void CCharEntity::OnRangedAttack(CRangeState& state, action_t& action)
         uint16 power = StatusEffectContainer->GetStatusEffect(EFFECT_SANGE)->GetPower();
 
         // remove shadows
-        while (realHits-- && xirand::GetRandomNumber(100) <= power && battleutils::IsAbsorbByShadow(PTarget, this))
+        while (realHits-- && xirand::GetRandomNumber(100) <= power && battleutils::IsAbsorbByShadow(this, this))
         {
             ;
         }
@@ -2145,8 +2143,9 @@ void CCharEntity::OnRaise()
 void CCharEntity::OnItemFinish(CItemState& state, action_t& action)
 {
     TracyZoneScoped;
-    auto* PTarget          = static_cast<CBattleEntity*>(state.GetTarget());
-    auto* PItem            = state.GetItem();
+    auto* PTarget = static_cast<CBattleEntity*>(state.GetTarget());
+    auto* PItem   = state.GetItem();
+
     bool  isParalyzed      = battleutils::IsParalyzed(this);
     bool  itemLoss         = lua["xi"]["settings"]["map"]["ITEM_PARALYSIS_LOSS"].get<bool>();
     bool  scrollProtection = lua["xi"]["settings"]["map"]["ITEM_PARALYSIS_SCROLL_PROTECTION"].get<bool>();
@@ -2238,7 +2237,7 @@ void CCharEntity::OnItemFinish(CItemState& state, action_t& action)
             loc.zone->PushPacket(this, CHAR_INRANGE_SELF, new CMessageBasicPacket(this, PTarget, 0, 0, MSGBASIC_IS_PARALYZED));
         }
     }
-    else // разблокируем все предметы, кроме экипирвоки
+    else // unlock all items except equipment
     {
         PItem->setSubType(ITEM_UNLOCKED);
 
@@ -2260,9 +2259,9 @@ CBattleEntity* CCharEntity::IsValidTarget(uint16 targid, uint16 validTargetFlags
         if (PTarget->objtype == TYPE_PC && charutils::IsAidBlocked(this, static_cast<CCharEntity*>(PTarget)))
         {
             // Target is blocking assistance
-            errMsg = std::make_unique<CMessageSystemPacket>(0, 0, 225);
+            errMsg = std::make_unique<CMessageSystemPacket>(0, 0, MsgStd::TargetIsCurrentlyBlocking);
             // Interaction was blocked
-            static_cast<CCharEntity*>(PTarget)->pushPacket(new CMessageSystemPacket(0, 0, 226));
+            static_cast<CCharEntity*>(PTarget)->pushPacket(new CMessageSystemPacket(0, 0, MsgStd::BlockedByBlockaid));
         }
         else if (IsMobOwner(PTarget))
         {
@@ -2303,14 +2302,7 @@ void CCharEntity::Die()
 
     if (this->PPet)
     {
-        if (PPet->objtype == TYPE_MOB)
-        {
-            petutils::DetachPet(this);
-        }
-        else
-        {
-            petutils::DespawnPet(this);
-        }
+        petutils::DespawnPet(this);
     }
 
     Die(death_duration);
@@ -2852,16 +2844,7 @@ void CCharEntity::endCurrentEvent()
 
 void CCharEntity::queueEvent(EventInfo* eventToQueue)
 {
-    for (auto& eventElement : eventQueue)
-    {
-        if (eventElement->eventId == eventToQueue->eventId)
-        {
-            ShowError("CCharEntity::queueEvent: Character attempted to start multiple of the same event.");
-            return;
-        }
-    }
-
-    eventQueue.push_back(eventToQueue);
+    eventQueue.emplace_back(eventToQueue);
     tryStartNextEvent();
 }
 
@@ -2913,7 +2896,7 @@ void CCharEntity::skipEvent()
     TracyZoneScoped;
     if (!m_Locked && !isInEvent() && (!currentEvent->cutsceneOptions.empty() || currentEvent->interruptText != 0))
     {
-        pushPacket(new CMessageSystemPacket(0, 0, 117));
+        pushPacket(new CMessageSystemPacket(0, 0, MsgStd::EventSkipped));
         pushPacket(new CReleasePacket(this, RELEASE_TYPE::SKIPPING));
         m_Substate = CHAR_SUBSTATE::SUBSTATE_NONE;
 
@@ -2947,30 +2930,38 @@ int32 CCharEntity::getCharVar(std::string const& charVarName)
 {
     if (auto charVar = charVarCache.find(charVarName); charVar != charVarCache.end())
     {
-        return charVar->second;
+        std::pair cachedVarData    = charVar->second;
+        uint32    currentTimestamp = CVanaTime::getInstance()->getSysTime();
+
+        // If the cached variable is not expired, return it.  Else, fall through so that the
+        // database can be cleaned up.
+        if (cachedVarData.second == 0 || cachedVarData.second > currentTimestamp)
+        {
+            return cachedVarData.first;
+        }
     }
 
     auto value = charutils::FetchCharVar(this->id, charVarName);
 
     charVarCache[charVarName] = value;
-    return value;
+    return value.first;
 }
 
-void CCharEntity::setCharVar(std::string const& charVarName, int32 value)
+void CCharEntity::setCharVar(std::string const& charVarName, int32 value, uint32 expiry /* = 0 */)
 {
-    charVarCache[charVarName] = value;
-    charutils::PersistCharVar(this->id, charVarName, value);
+    charVarCache[charVarName] = { value, expiry };
+    charutils::PersistCharVar(this->id, charVarName, value, expiry);
 }
 
-void CCharEntity::setVolatileCharVar(std::string const& charVarName, int32 value)
+void CCharEntity::setVolatileCharVar(std::string const& charVarName, int32 value, uint32 expiry /* = 0 */)
 {
-    charVarCache[charVarName] = value;
+    charVarCache[charVarName] = { value, expiry };
     charVarChanges.insert(charVarName);
 }
 
-void CCharEntity::updateCharVarCache(std::string const& charVarName, int32 value)
+void CCharEntity::updateCharVarCache(std::string const& charVarName, int32 value, uint32 expiry /* = 0 */)
 {
-    charVarCache[charVarName] = value;
+    charVarCache[charVarName] = { value, expiry };
 }
 
 void CCharEntity::removeFromCharVarCache(std::string const& varName)
@@ -2991,7 +2982,7 @@ void CCharEntity::clearCharVarsWithPrefix(std::string const& prefix)
     {
         if (iter->first.rfind(prefix, 0) == 0)
         {
-            iter->second = 0;
+            iter->second = { 0, 0 };
         }
         ++iter;
     }

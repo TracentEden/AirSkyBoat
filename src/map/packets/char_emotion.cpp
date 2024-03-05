@@ -20,10 +20,10 @@
 */
 
 #include "char_emotion.h"
-#include "../entities/charentity.h"
-#include "../entities/npcentity.h"
-#include "../item_container.h"
-#include "../items/item_weapon.h"
+#include "entities/charentity.h"
+#include "item_container.h"
+#include "items/item_weapon.h"
+#include "entities/npcentity.h"
 
 CCharEmotionPacket::CCharEmotionPacket(CCharEntity* PChar, uint32 TargetID, uint16 TargetIndex, Emote EmoteID, EmoteMode emoteMode, uint16 extra)
 {

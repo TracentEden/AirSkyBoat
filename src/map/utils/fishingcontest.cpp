@@ -480,7 +480,7 @@ namespace fishingcontest
             // Create a new entry
             entry = new fish_ranking_entry();
             strcpy(entry->name, PChar->name.c_str()); // Remember to truncate this to 16 chars max before sending packet
-            FishingContestEntries.push_back(entry);
+            FishingContestEntries.emplace_back(entry);
         }
 
         // Fill out the entry with the current data
@@ -542,7 +542,7 @@ namespace fishingcontest
             const char* Query = "DELETE FROM `fishing_contest_entries` \
                                  WHERE `contestid` = %u \
                                  AND `name` = '%s';";
-            int32       ret   = sql->Query(Query, FishingContest.contestId, PChar->GetName());
+            int32       ret   = sql->Query(Query, FishingContest.contestId, PChar->getName());
             sql->TransactionCommit();
 
             if (ret == SQL_ERROR)
@@ -603,7 +603,7 @@ namespace fishingcontest
                 "AND e.name = '%s';";
 
         // Should return at most 1 entry.  If the r.time value is null, then the reward has not been granted
-        ret = sql->Query(Query, contestId, PChar->GetName());
+        ret = sql->Query(Query, contestId, PChar->getName());
         if (ret != SQL_ERROR)
         {
             if (sql->NumRows() > 0 && sql->NextRow() == SQL_SUCCESS)
@@ -618,7 +618,7 @@ namespace fishingcontest
         }
         else
         {
-            ShowDebug("Unable to retrieve award status on contest %u for player %s.", contestId, PChar->GetName());
+            ShowDebug("Unable to retrieve award status on contest %u for player %s.", contestId, PChar->getName());
         }
 
         return false;
@@ -630,7 +630,7 @@ namespace fishingcontest
 
         const char* Query = "REPLACE INTO `fishing_contest_rewards` (contestid, name, time) VALUES (%u, '%s', %u);";
 
-        int32 ret = sql->Query(Query, contestId, PChar->GetName(), (uint32)time(NULL));
+        int32 ret = sql->Query(Query, contestId, PChar->getName(), (uint32)time(NULL));
         if (ret != SQL_ERROR)
         {
             sql->TransactionCommit();
@@ -638,7 +638,7 @@ namespace fishingcontest
         else
         {
             sql->TransactionRollback();
-            ShowDebug("Unable to set award status on contest %u for player %s.", contestId, PChar->GetName());
+            ShowDebug("Unable to set award status on contest %u for player %s.", contestId, PChar->getName());
         }
     }
 
@@ -818,7 +818,7 @@ namespace fishingcontest
                 listing->submittime  = sql->GetUIntData(9);
                 listing->contestrank = (uint8)sql->GetUIntData(10);
 
-                FishingContestEntries.push_back(listing);
+                FishingContestEntries.emplace_back(listing);
             }
         }
     }

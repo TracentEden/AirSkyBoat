@@ -19,8 +19,8 @@ along with this program.  If not, see http://www.gnu.org/licenses/
 ===========================================================================
 */
 
-#include "../common/logging.h"
-#include "../common/utils.h"
+#include "common/logging.h"
+#include "common/utils.h"
 
 #include "ai/ai_container.h"
 #include "alliance.h"
@@ -41,7 +41,8 @@ along with this program.  If not, see http://www.gnu.org/licenses/
  ************************************************************************/
 
 CEnmityContainer::CEnmityContainer(CMobEntity* holder)
-: m_EnmityHolder(holder)
+: EnmityCap{ settings::get<int32>("map.ENMITY_CAP") }
+, m_EnmityHolder(holder)
 {
 }
 
@@ -233,9 +234,14 @@ void CEnmityContainer::UpdateEnmity(CBattleEntity* PEntity, int32 CE, int32 VE, 
 
 bool CEnmityContainer::HasID(uint32 TargetID)
 {
-    return std::find_if(m_EnmityList.begin(), m_EnmityList.end(), [TargetID](auto elem)
-                        { return elem.first == TargetID && elem.second.active; }) !=
-           m_EnmityList.end();
+    // clang-format off
+    auto maybeID = std::find_if(m_EnmityList.begin(), m_EnmityList.end(), [TargetID](auto elem)
+    {
+        return elem.first == TargetID && elem.second.active;
+    });
+    // clang-format on
+
+    return maybeID != m_EnmityList.end();
 }
 
 /************************************************************************
@@ -244,7 +250,7 @@ bool CEnmityContainer::HasID(uint32 TargetID)
  *                                                                       *
  ************************************************************************/
 
-void CEnmityContainer::UpdateEnmityFromCure(CBattleEntity* PEntity, uint8 level, int32 CureAmount)
+void CEnmityContainer::UpdateEnmityFromCure(CBattleEntity* PEntity, uint8 level, int32 CureAmount, int32 fixedCE, int32 fixedVE)
 {
     TracyZoneScoped;
     if (!IsWithinEnmityRange(PEntity))
@@ -257,10 +263,18 @@ void CEnmityContainer::UpdateEnmityFromCure(CBattleEntity* PEntity, uint8 level,
     float bonus                  = CalculateEnmityBonus(PEntity);
     float tranquilHeartReduction = 1.f - battleutils::HandleTranquilHeart(PEntity);
 
-    CureAmount = (CureAmount < 1 ? 1 : CureAmount);
+    if (fixedCE > 0 || fixedVE > 0)
+    {
+        CE = (int32)(fixedCE * bonus * tranquilHeartReduction);
+        VE = (int32)(fixedVE * bonus * tranquilHeartReduction);
+    }
+    else
+    {
+        CureAmount = (CureAmount < 1 ? 1 : CureAmount);
 
-    CE = (int32)(40.f / battleutils::GetEnmityModCure(level) * CureAmount * bonus * tranquilHeartReduction);
-    VE = (int32)(240.f / battleutils::GetEnmityModCure(level) * CureAmount * bonus * tranquilHeartReduction);
+        CE = (int32)(40.f / battleutils::GetEnmityModCure(level) * CureAmount * bonus * tranquilHeartReduction);
+        VE = (int32)(240.f / battleutils::GetEnmityModCure(level) * CureAmount * bonus * tranquilHeartReduction);
+    }
 
     auto enmity_obj = m_EnmityList.find(PEntity->id);
 
@@ -434,7 +448,6 @@ CBattleEntity* CEnmityContainer::GetHighestEnmity()
                 {
                     continue;
                 }
-
                 active        = PEnmityObject.active;
                 HighestEnmity = Enmity;
                 highest       = it;

@@ -36,7 +36,7 @@ enum ITEM_TYPE
     ITEM_WEAPON     = 0x10,
     ITEM_CURRENCY   = 0x20,
     ITEM_FURNISHING = 0x40,
-    ITEM_LINKSHELL  = 0x80
+    ITEM_LINKSHELL  = 0x80,
 };
 
 // Additional type of object m_subtype
@@ -46,7 +46,7 @@ enum ITEM_SUBTYPE
     ITEM_LOCKED    = 0x01,
     ITEM_CHARGED   = 0x02,
     ITEM_AUGMENTED = 0x04,
-    ITEM_UNLOCKED  = 0xFE
+    ITEM_UNLOCKED  = 0xFE,
 };
 
 // Flags of objects
@@ -67,7 +67,7 @@ enum ITEM_FLAG
     ITEM_FLAG_NOSALE       = 0x1000,
     ITEM_FLAG_NODELIVERY   = 0x2000,
     ITEM_FLAG_EX           = 0x4000, // NoTradePC Polutils Value
-    ITEM_FLAG_RARE         = 0x8000
+    ITEM_FLAG_RARE         = 0x8000,
 };
 
 class CItem
@@ -110,16 +110,16 @@ public:
     void setSent(bool sent);
 
     const std::string& getName();
-    void               setName(std::string name);
+    void               setName(std::string const& name);
 
     const std::string& getSender();
-    void               setSender(std::string sender);
+    void               setSender(std::string const& sender);
 
     const std::string& getReceiver();
-    void               setReceiver(std::string receiver);
+    void               setReceiver(std::string const& receiver);
 
     virtual const std::string getSignature();
-    virtual void              setSignature(std::string signature);
+    virtual void              setSignature(std::string const& signature);
 
     bool isSoultrapper() const;
     void setSoulPlateData(std::string const& name, uint16 mobFamily, uint8 zeni, uint16 skillIndex, uint8 fp);
@@ -128,7 +128,7 @@ public:
     bool isMannequin() const;
 
     static constexpr uint32_t extra_size = 0x18;
-    uint8                     m_extra[extra_size]; // any extra data pertaining to item (augments, furniture location, etc)
+    uint8                     m_extra[extra_size]{}; // any extra data pertaining to item (augments, furniture location, etc)
 
 protected:
     void setType(uint8);

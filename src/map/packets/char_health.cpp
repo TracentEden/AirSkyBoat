@@ -23,9 +23,10 @@
 
 #include "char_health.h"
 
-#include "../entities/charentity.h"
-#include "../entities/fellowentity.h"
-#include "../entities/trustentity.h"
+#include "entities/charentity.h"
+#include "entities/trustentity.h"
+
+#include "monstrosity.h"
 
 CCharHealthPacket::CCharHealthPacket(CCharEntity* PChar)
 {

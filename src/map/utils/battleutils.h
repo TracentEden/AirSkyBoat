@@ -22,14 +22,14 @@
 #ifndef _BATTLEUTILS_H
 #define _BATTLEUTILS_H
 
-#include "../blue_spell.h"
-#include "../merit.h"
-#include "../status_effect.h"
+#include "blue_spell.h"
 #include "common/cbasetypes.h"
+#include "merit.h"
+#include "status_effect.h"
 
 #include <list>
 
-#include "../entities/battleentity.h"
+#include "entities/battleentity.h"
 
 class CAbility;
 class CItemWeapon;
@@ -109,7 +109,6 @@ namespace battleutils
     void LoadMobSkillsList();
     void LoadPetSkillsList();
     void LoadSkillChainDamageModifiers();
-    void LoadDistanceCorrection();
 
     uint8 CheckMultiHits(CBattleEntity* PEntity, CItemWeapon* PWeapon);
 
@@ -153,7 +152,7 @@ namespace battleutils
     uint8 GetHitRate(CBattleEntity* PAttacker, CBattleEntity* PDefender);
     uint8 GetHitRate(CBattleEntity* PAttacker, CBattleEntity* PDefender, uint8 attackNumber);
     uint8 GetHitRate(CBattleEntity* PAttacker, CBattleEntity* PDefender, uint8 attackNumber, int8 offsetAccuracy);
-    uint8 GetCritHitRate(CBattleEntity* PAttacker, CBattleEntity* PDefender, bool ignoreSneakTrickAttack, SLOTTYPE weaponSlot = SLOT_MAIN);
+    uint8 GetCritHitRate(CBattleEntity* PAttacker, CBattleEntity* PDefender, bool ignoreSneakTrickAttack);
     uint8 GetRangedCritHitRate(CBattleEntity* PAttacker, CBattleEntity* PDefender);
     int8  GetDexCritBonus(CBattleEntity* PAttacker, CBattleEntity* PDefender);
     int8  GetAGICritBonus(CBattleEntity* PAttacker, CBattleEntity* PDefender);
@@ -189,7 +188,7 @@ namespace battleutils
     bool  isValidSelfTargetWeaponskill(int wsid);
     bool  CanUseWeaponskill(CCharEntity* PChar, CWeaponSkill* PSkill);
     int16 CalculateBaseTP(int delay);
-    void  GenerateCureEnmity(CBattleEntity* PSource, CBattleEntity* PTarget, int32 amount);
+    void  GenerateCureEnmity(CBattleEntity* PSource, CBattleEntity* PTarget, int32 amount, int32 fixedCE = 0, int32 fixedVE = 0);
     void  GenerateInRangeEnmity(CBattleEntity* PSource, int16 CE, int16 VE);
 
     CItemWeapon*    GetEntityWeapon(CBattleEntity* PEntity, SLOTTYPE Slot);
@@ -260,7 +259,7 @@ namespace battleutils
     void    AddTraits(CBattleEntity* PEntity, TraitList_t* TraitList, uint8 level, bool mobSubJobCheck = false);
     bool    HasClaim(CBattleEntity* PEntity, CBattleEntity* PTarget);
 
-    uint32 CalculateSpellCastTime(CBattleEntity*, CMagicState*, uint16 spellid);
+    uint32 CalculateSpellCastTime(CBattleEntity*, CMagicState*);
     uint16 CalculateSpellCost(CBattleEntity*, CSpell*);
     uint32 CalculateSpellRecastTime(CBattleEntity*, CSpell*);
     int16  CalculateSpellTP(CBattleEntity* PEntity, CSpell* PSpell);

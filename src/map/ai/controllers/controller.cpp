@@ -21,8 +21,8 @@ along with this program.  If not, see http://www.gnu.org/licenses/
 
 #include "controller.h"
 
-#include "../../entities/battleentity.h"
-#include "../ai_container.h"
+#include "ai/ai_container.h"
+#include "entities/battleentity.h"
 
 CController::CController(CBattleEntity* _POwner)
 : m_Tick(server_clock::now())
@@ -92,7 +92,7 @@ bool CController::IsAutoAttackEnabled() const
     return m_AutoAttackEnabled;
 }
 
-void CController::setAutoAttackEnabled(bool enabled)
+void CController::SetAutoAttackEnabled(bool enabled)
 {
     m_AutoAttackEnabled = enabled;
 }
@@ -112,7 +112,7 @@ bool CController::IsMagicCastingEnabled() const
     return m_MagicCastingEnabled;
 }
 
-void CController::setMagicCastingEnabled(bool enabled)
+void CController::SetMagicCastingEnabled(bool enabled)
 {
     m_MagicCastingEnabled = enabled;
 }

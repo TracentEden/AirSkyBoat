@@ -20,8 +20,8 @@ along with this program.  If not, see http://www.gnu.org/licenses/
 */
 
 #include "caught_monster.h"
-#include "../../common/socket.h"
-#include "../entities/charentity.h"
+#include "common/socket.h"
+#include "entities/charentity.h"
 #include <string.h>
 
 CCaughtMonsterPacket::CCaughtMonsterPacket(CCharEntity* PChar, uint16 messageID)
@@ -33,5 +33,5 @@ CCaughtMonsterPacket::CCaughtMonsterPacket(CCharEntity* PChar, uint16 messageID)
     ref<uint32>(0x08) = PChar->targid;
     ref<uint16>(0x0A) = messageID + 0x8000;
 
-    memcpy(data + (0x10), PChar->GetName().c_str(), PChar->GetName().size());
+    memcpy(data + (0x10), PChar->getName().c_str(), PChar->getName().size());
 }

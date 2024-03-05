@@ -35,12 +35,15 @@ CCharRecastContainer::CCharRecastContainer(CCharEntity* PChar)
 : CRecastContainer(PChar)
 , m_PChar(PChar)
 {
-    XI_DEBUG_BREAK_IF(m_PChar == nullptr || m_PChar->objtype != TYPE_PC);
+    if (m_PChar == nullptr || m_PChar->objtype != TYPE_PC)
+    {
+        ShowError("m_PChar is null or not a Player.");
+    }
 }
 
 /************************************************************************
  *                                                                       *
- *  Добавляем запись в контейнер                                         *
+ *  Adding an entry to the container                                     *
  *                                                                       *
  ************************************************************************/
 
@@ -57,7 +60,7 @@ void CCharRecastContainer::Add(RECASTTYPE type, uint16 id, uint32 duration, uint
 
 /************************************************************************
  *                                                                       *
- *  Удаляем все элементы указанного типа                                 *
+ *  Remove all elements of the specified type                            *
  *                                                                       *
  ************************************************************************/
 
@@ -72,7 +75,7 @@ void CCharRecastContainer::Del(RECASTTYPE type)
 
 /************************************************************************
  *                                                                       *
- *  Удаляем указанный элемент указанного типа                            *
+ *  Remove the specified element of the specified type                   *
  *                                                                       *
  ************************************************************************/
 
@@ -145,7 +148,7 @@ RecastList_t* CCharRecastContainer::GetRecastList(RECASTTYPE type)
             return &RecastLootList;
     }
     // Unhandled Scenario
-    XI_DEBUG_BREAK_IF(true);
+    ShowError("Invalid RECASTTYPE received, returning nullptr.");
     return nullptr;
 }
 

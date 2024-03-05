@@ -524,7 +524,7 @@ namespace spell
 
                 PSpellList[static_cast<uint16>(PSpell->getID())] = PSpell;
 
-                auto filename = fmt::format("./scripts/globals/spells/{}.lua", PSpell->getName());
+                auto filename = fmt::format("./scripts/actions/spells/{}.lua", PSpell->getName());
 
                 std::string switchKey = "";
                 switch (PSpell->getSpellGroup())
@@ -575,7 +575,7 @@ namespace spell
                     }
                     break;
                 }
-                filename = fmt::format("./scripts/globals/spells/{}/{}.lua", switchKey, PSpell->getName());
+                filename = fmt::format("./scripts/actions/spells/{}/{}.lua", switchKey, PSpell->getName());
 
                 luautils::CacheLuaObjectFromFile(filename);
             }
@@ -677,11 +677,10 @@ namespace spell
     // Get Spell By ID
     CSpell* GetSpell(SpellID SpellID)
     {
-        XI_DEBUG_BREAK_IF(static_cast<uint16>(SpellID) >= MAX_SPELL_ID);
-
         auto id = static_cast<uint16>(SpellID);
         if (id >= MAX_SPELL_ID)
         {
+            ShowWarning("Spell ID (%d) exceeds MAX_SPELL_ID.", static_cast<uint16>(SpellID));
             return nullptr;
         }
         // False positive: this is CSpell*, so it's OK

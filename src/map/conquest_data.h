@@ -24,6 +24,7 @@ along with this program.  If not, see http://www.gnu.org/licenses/
 #include <string>
 
 #include "common/cbasetypes.h"
+#include "common/sql.h"
 #include "zone.h"
 
 struct region_control_t
@@ -97,7 +98,7 @@ private:
 
     /**
      * Loads the latest conquest data from DB.
-     * Should only ever be done on construction.
+     * Should only ever be done on map initialization.
      * World server should be updating conquest data periodically.
      */
     void load(std::unique_ptr<SqlConnection>& sql);

@@ -1,4 +1,4 @@
-/*
+﻿/*
 ===========================================================================
 
 Copyright (c) 2023 LandSandBoat Dev Teams
@@ -166,7 +166,7 @@ void ConquestData::updateInfluencePoints(std::vector<influence_t> const& influen
     influences.clear();
     for (const auto& influence : influencePoints)
     {
-        influences.push_back(influence);
+        influences.emplace_back(influence);
     }
 }
 
@@ -175,6 +175,6 @@ void ConquestData::updateRegionControls(std::vector<region_control_t> const& upd
     regionControls.clear();
     for (const auto& regionControl : updatedRegionControls)
     {
-        regionControls.push_back(regionControl);
+        regionControls.emplace_back(regionControl);
     }
 }

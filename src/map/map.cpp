@@ -442,7 +442,7 @@ void do_final(int code)
 
     if (code != EXIT_SUCCESS)
     {
-        exit(code);
+        std::exit(code);
     }
 }
 
@@ -510,8 +510,10 @@ int32 do_sockets(fd_set* rfd, duration next)
 {
     message::handle_incoming();
 
-    struct timeval timeout;
-    int32          ret;
+    struct timeval timeout
+    {
+    };
+    int32 ret = 0;
     memcpy(rfd, &readfds, sizeof(*rfd));
 
     timeout.tv_sec  = std::chrono::duration_cast<std::chrono::seconds>(next).count();
@@ -532,8 +534,10 @@ int32 do_sockets(fd_set* rfd, duration next)
 
     if (sFD_ISSET(map_fd, rfd))
     {
-        struct sockaddr_in from;
-        socklen_t          fromlen = sizeof(from);
+        struct sockaddr_in from
+        {
+        };
+        socklen_t fromlen = sizeof(from);
 
         ret = recvudp(map_fd, g_PBuff, MAX_BUFFER_SIZE, 0, (struct sockaddr*)&from, &fromlen);
         if (ret != -1)
@@ -604,8 +608,8 @@ int32 map_decipher_packet(int8* buff, size_t size, sockaddr_in* from, map_sessio
 {
     TracyZoneScoped;
 
-    uint16 tmp;
-    uint16 i;
+    uint16 tmp = 0;
+    uint16 i   = 0;
 
     // counting blocks whose size = 4 byte
     tmp = (uint16)((size - FFXI_HEADER_SIZE) / 4);
@@ -756,7 +760,7 @@ int32 parse(int8* buff, size_t* buffsize, sockaddr_in* from, map_session_data_t*
 
     CCharEntity* PChar = map_session_data->PChar;
 
-    TracyZoneString(PChar->GetName());
+    TracyZoneString(PChar->getName());
 
     uint16 SmallPD_Size = 0;
     uint16 SmallPD_Type = 0;
@@ -782,26 +786,26 @@ int32 parse(int8* buff, size_t* buffsize, sockaddr_in* from, map_session_data_t*
             if (SmallPD_Type != 0x15)
             {
                 DebugPackets("parse: %03hX | %04hX %04hX %02hX from user: %s",
-                             SmallPD_Type, ref<uint16>(SmallPD_ptr, 2), ref<uint16>(buff, 2), SmallPD_Size, PChar->GetName());
+                             SmallPD_Type, ref<uint16>(SmallPD_ptr, 2), ref<uint16>(buff, 2), SmallPD_Size, PChar->getName());
             }
 
             if (settings::get<bool>("map.PACKETGUARD_ENABLED") && PacketGuard::IsRateLimitedPacket(PChar, SmallPD_Type))
             {
-                ShowWarning("[PacketGuard] Rate-limiting packet: Player: %s - Packet: %03hX", PChar->GetName(), SmallPD_Type);
+                ShowWarning("[PacketGuard] Rate-limiting packet: Player: %s - Packet: %03hX", PChar->getName(), SmallPD_Type);
                 continue; // skip this packet
             }
 
             if (settings::get<bool>("map.PACKETGUARD_ENABLED") && !PacketGuard::PacketIsValidForPlayerState(PChar, SmallPD_Type))
             {
                 ShowWarning("[PacketGuard] Caught mismatch between player substate and recieved packet: Player: %s - Packet: %03hX",
-                            PChar->GetName(), SmallPD_Type);
+                            PChar->getName(), SmallPD_Type);
                 // TODO: Plug in optional jailutils usage
                 continue; // skip this packet
             }
 
             if (PChar->loc.zone == nullptr && SmallPD_Type != 0x0A)
             {
-                ShowWarning("This packet is unexpected from %s - Received %03hX earlier without matching 0x0A", PChar->GetName(), SmallPD_Type);
+                ShowWarning("This packet is unexpected from %s - Received %03hX earlier without matching 0x0A", PChar->getName(), SmallPD_Type);
             }
             else
             {
@@ -814,7 +818,7 @@ int32 parse(int8* buff, size_t* buffsize, sockaddr_in* from, map_session_data_t*
         else
         {
             ShowWarning("Bad packet size %03hX | %04hX %04hX %02hX from user: %s", SmallPD_Type, ref<uint16>(SmallPD_ptr, 2), ref<uint16>(buff, 2),
-                        SmallPD_Size, PChar->GetName());
+                        SmallPD_Size, PChar->getName());
         }
     }
 
@@ -838,7 +842,7 @@ int32 parse(int8* buff, size_t* buffsize, sockaddr_in* from, map_session_data_t*
 
     if (ref<uint16>(buff, 2) != map_session_data->server_packet_id)
     {
-        /**
+        /*
          * If the client and server have become out of sync, then caching takes place. However, caching
          * zone packets will result in the client never properly connecting. Ignore those specifically.
          */
@@ -856,6 +860,8 @@ int32 parse(int8* buff, size_t* buffsize, sockaddr_in* from, map_session_data_t*
         map_session_data->server_packet_data = buff;
         return -1;
     }
+
+    // GT: increase the number of the sent packet only if new data is sent
 
     map_session_data->server_packet_id += 1;
 
@@ -887,7 +893,7 @@ int32 send_parse(int8* buff, size_t* buffsize, sockaddr_in* from, map_session_da
     CCharEntity* PChar = map_session_data->PChar;
     TracyZoneString(PChar->name);
 
-    CBasicPacket* PSmallPacket;
+    CBasicPacket* PSmallPacket = nullptr;
 
     uint32 PacketSize  = UINT32_MAX;
     size_t PacketCount = std::clamp<size_t>(PChar->getPacketCount(), 0, MAX_PACKETS_PER_COMPRESSION);
@@ -1022,7 +1028,7 @@ int32 send_parse(int8* buff, size_t* buffsize, sockaddr_in* from, map_session_da
                 return 0;
             }
             ShowWarning(fmt::format("Packet backlog for char {} in {} is {}! Limit is: {}",
-                                    PChar->name, PChar->loc.zone->GetName(), remainingPackets, MAX_PACKET_BACKLOG_SIZE));
+                                    PChar->name, PChar->loc.zone->getName(), remainingPackets, MAX_PACKET_BACKLOG_SIZE));
         }
     }
 
@@ -1142,7 +1148,7 @@ int32 map_cleanup(time_point tick, CTaskMgr::CTask* PTask)
                             PChar->StatusEffectContainer->SaveStatusEffects(true, false);
                             charutils::SaveCharPosition(PChar);
 
-                            ShowDebug("map_cleanup: %s timed out, closing session", PChar->GetName());
+                            ShowDebug("map_cleanup: %s timed out, closing session", PChar->getName());
 
                             PChar->status = STATUS_TYPE::SHUTDOWN;
                             PacketParser[0x00D](map_session_data, PChar, CBasicPacket());
@@ -1158,7 +1164,7 @@ int32 map_cleanup(time_point tick, CTaskMgr::CTask* PTask)
                             sql->Query("DELETE FROM accounts_sessions WHERE charid = %u;", map_session_data->PChar->id);
                         }
 
-                        ShowDebug(fmt::format("Clearing map server session for player: {} in zone: {} (On other map server = {})", PChar->name, PChar->loc.zone ? PChar->loc.zone->GetName() : "None", otherMap ? "Yes" : "No"));
+                        ShowDebug(fmt::format("Clearing map server session for player: {} in zone: {} (On other map server = {})", PChar->name, PChar->loc.zone ? PChar->loc.zone->getName() : "None", otherMap ? "Yes" : "No"));
                         destroy_arr(map_session_data->server_packet_data);
                         destroy(map_session_data->PChar);
                         destroy(map_session_data);

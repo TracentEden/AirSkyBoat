@@ -52,7 +52,6 @@ public:
     uint8  isAoE();
     bool   tookEffect();
     uint16 getTotalTargets();
-    uint32 getPrimaryTargetID();
     uint16 getMagicBurstMessage();
     uint16 getElement();
     uint16 getID();
@@ -62,6 +61,12 @@ public:
     uint8  getSpellFamily();
     uint8  getFlag();
     uint32 getCastTime();
+    uint32 getPrimaryTargetID();
+
+    bool operator==(const CLuaSpell& other) const
+    {
+        return this->m_PLuaSpell == other.m_PLuaSpell;
+    }
 
     static void Register();
 };

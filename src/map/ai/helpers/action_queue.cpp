@@ -20,10 +20,10 @@ along with this program.  If not, see http://www.gnu.org/licenses/
 */
 
 #include "action_queue.h"
-#include "../../entities/baseentity.h"
-#include "../../lua/lua_baseentity.h"
-#include "../../lua/luautils.h"
-#include "../ai_container.h"
+#include "ai/ai_container.h"
+#include "entities/baseentity.h"
+#include "lua/lua_baseentity.h"
+#include "lua/luautils.h"
 
 CAIActionQueue::CAIActionQueue(CBaseEntity* _PEntity)
 : PEntity(_PEntity)
@@ -95,18 +95,4 @@ void CAIActionQueue::handleAction(queueAction_t& action)
 bool CAIActionQueue::isEmpty()
 {
     return actionQueue.empty() && timerQueue.empty();
-}
-
-void CAIActionQueue::clearActionQueue()
-{
-    while (!actionQueue.empty())
-        actionQueue.pop();
-}
-
-void CAIActionQueue::clearTimerQueue()
-{
-    while (!timerQueue.empty())
-    {
-        timerQueue.pop();
-    }
 }

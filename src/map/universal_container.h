@@ -22,7 +22,7 @@
 #ifndef _CUNIVERSALCONTAINER_H
 #define _CUNIVERSALCONTAINER_H
 
-#include "../common/cbasetypes.h"
+#include "common/cbasetypes.h"
 #include <vector>
 
 enum UCONTAINERTYPE
@@ -41,12 +41,12 @@ enum UCONTAINERTYPE
 #define UCONTAINER_SIZE 16
 
 /************************************************************************
- *                                                                        *
- *  Универсальный контейнер общего назначения                            *
- *                                                                        *
+ *                                                                       *
+ *  Universal general purpose container                                  *
+ *                                                                       *
  ************************************************************************/
 
-// главный предмет (gil, кристалл, используемый предмет ...)
+// main item (gil, crystal, used item...)
 
 class CItem;
 class CBaseEntity;
@@ -78,9 +78,9 @@ public:
 private:
     UCONTAINERTYPE m_ContainerType;
 
-    bool                m_lock;
-    uint8               m_count;
-    uint16              m_target;
+    bool                m_lock{};
+    uint8               m_count{};
+    uint16              m_target{};
     std::vector<CItem*> m_PItem;
 };
 

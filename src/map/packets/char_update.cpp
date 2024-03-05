@@ -53,6 +53,7 @@ CCharUpdatePacket::CCharUpdatePacket(CCharEntity* PChar)
     {
         ref<uint8>(0x2D) = 0x80;
     }
+
     if (PChar->StatusEffectContainer->HasStatusEffect(EFFECT_SNEAK))
     {
         ref<uint8>(0x38) = 0x04;
@@ -62,12 +63,14 @@ CCharUpdatePacket::CCharUpdatePacket(CCharEntity* PChar)
     {
         ref<uint8>(0x38) |= 0x10; // Mentor flag.
     }
+
     if (PChar->isNewPlayer())
     {
         ref<uint8>(0x38) |= 0x08; // New player ?
     }
 
     ref<uint8>(0x29) = PChar->GetGender() + (PChar->look.size << 3);
+    // ref<uint8>(0x29) |= 0x02; // this will display the old-style zone-wide treasure pool. All claimed mobs will show red name regardless of which party has claim.
     ref<uint8>(0x2C) = PChar->GetSpeed();
     ref<uint16>(0x2E) |= PChar->speedsub << 1; // Not sure about this, it was a work around when we set speedsub incorrectly..
     ref<uint8>(0x30) = PChar->isInEvent() ? (uint8)ANIMATION_EVENT : PChar->animation;
@@ -95,10 +98,12 @@ CCharUpdatePacket::CCharUpdatePacket(CCharEntity* PChar)
         ref<uint8>(0x32) = (LSColor.G << 4) + 15;
         ref<uint8>(0x33) = (LSColor.B << 4) + 15;
     }
+
     if (PChar->PPet != nullptr)
     {
         ref<uint16>(0x34) = PChar->PPet->targid << 3;
     }
+
     // Status flag: bit 4: frozen anim (terror),
     //  bit 6/7/8 related to Ballista (6 set - normal, 7 set san d'oria, 6+7 set bastok, 8 set windurst)
     uint8 flag = (static_cast<uint8>(PChar->allegiance) << 5);

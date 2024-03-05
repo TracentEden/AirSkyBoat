@@ -141,7 +141,7 @@ namespace attackutils
 
     /************************************************************************
      *                                                                       *
-     *  Multihit calculator.                                                    *
+     *  Multihit calculator.                                                 *
      *                                                                       *
      ************************************************************************/
     uint8 getHitCount(uint8 hits)
@@ -338,14 +338,9 @@ namespace attackutils
                 }
                 break;
         }
-        return std::min<uint8>(num, 8); // не более восьми ударов за одну атаку
+        return std::min<uint8>(num, 8); // no more than eight hits per attack
     }
 
-    /************************************************************************
-     *                                                                       *
-     *  Is parried.                                                         *
-     *                                                                       *
-     ************************************************************************/
     bool IsParried(CBattleEntity* PAttacker, CBattleEntity* PDefender)
     {
         if (!PDefender->StatusEffectContainer->HasPreventActionEffect() && facing(PDefender->loc.p, PAttacker->loc.p, 64))
@@ -355,15 +350,8 @@ namespace attackutils
         return false;
     }
 
-    /************************************************************************
-     *                                                                       *
-     *  Is guarded.                                                         *
-     *                                                                       *
-     ************************************************************************/
     bool IsGuarded(CBattleEntity* PAttacker, CBattleEntity* PDefender)
     {
-        // Per testing done by Genome guard can proc when petrified, stunned, or asleep
-        // https://genomeffxi.livejournal.com/18269.html
         if (facing(PDefender->loc.p, PAttacker->loc.p, 64))
         {
             return (xirand::GetRandomNumber(100) < battleutils::GetGuardRate(PAttacker, PDefender));
@@ -371,14 +359,9 @@ namespace attackutils
         return false;
     }
 
-    /************************************************************************
-     *                                                                       *
-     *  Is blocked.                                                         *
-     *                                                                       *
-     ************************************************************************/
     bool IsBlocked(CBattleEntity* PAttacker, CBattleEntity* PDefender)
     {
-        if (!PDefender->StatusEffectContainer->HasPreventActionEffect() && facing(PDefender->loc.p, PAttacker->loc.p, 64))
+        if (facing(PDefender->loc.p, PAttacker->loc.p, 64) && !PDefender->StatusEffectContainer->HasPreventActionEffect())
         {
             return (xirand::GetRandomNumber<float>(100) < battleutils::GetBlockRate(PAttacker, PDefender));
         }
@@ -387,9 +370,8 @@ namespace attackutils
 
     /************************************************************************
      *                                                                       *
-     *  Handles damage multiplier, relic weapons etc.                        *
+     *  Check for damage multiplier, relic weapons etc.                      *
      *                                                                       *
-     *  Param: allowRelicProc used to gate relic dmg procs.                  *
      ************************************************************************/
     uint32 CheckForDamageMultiplier(CCharEntity* PChar, CItemWeapon* PWeapon, uint32 damage, PHYSICAL_ATTACK_TYPE attackType, uint8 weaponSlot, bool allowRelicProc)
     {

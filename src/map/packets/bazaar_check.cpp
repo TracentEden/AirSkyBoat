@@ -25,7 +25,7 @@
 
 #include "bazaar_check.h"
 
-#include "../entities/charentity.h"
+#include "entities/charentity.h"
 
 CBazaarCheckPacket::CBazaarCheckPacket(CCharEntity* PChar, BAZAARCHECK type)
 {
@@ -36,5 +36,5 @@ CBazaarCheckPacket::CBazaarCheckPacket(CCharEntity* PChar, BAZAARCHECK type)
     ref<uint8>(0x08)  = type;
     ref<uint16>(0x0E) = PChar->targid;
 
-    memcpy(data + (0x10), PChar->GetName().c_str(), PChar->GetName().size());
+    memcpy(data + (0x10), PChar->getName().c_str(), PChar->getName().size());
 }

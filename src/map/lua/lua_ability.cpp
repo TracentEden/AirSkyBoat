@@ -20,13 +20,7 @@
 */
 
 #include "lua_ability.h"
-#include "../ability.h"
-
-/************************************************************************
- *                                                                        *
- *  Конструктор                                                            *
- *                                                                        *
- ************************************************************************/
+#include "ability.h"
 
 CLuaAbility::CLuaAbility(CAbility* PAbility)
 : m_PLuaAbility(PAbility)

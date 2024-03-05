@@ -214,8 +214,8 @@ namespace mobutils
         uint8     sLvl     = PMob->GetSLevel();
         ZONE_TYPE zoneType = PMob->loc.zone->GetType();
 
-        uint8 mJobGrade; // main jobs grade
-        uint8 sJobGrade; // subjobs grade
+        uint8 mJobGrade = 0; // main jobs grade
+        uint8 sJobGrade = 0; // subjobs grade
 
         if (recover == true)
         {
@@ -608,17 +608,17 @@ namespace mobutils
         // Check for possible miss-setups
         if (PMob->getMobMod(MOBMOD_SPECIAL_SKILL) != 0 && PMob->getMobMod(MOBMOD_SPECIAL_COOL) == 0)
         {
-            ShowError("Mobutils::CalculateMobStats Mob (%s, %d) with special skill but no cool down set!", PMob->GetName(), PMob->id);
+            ShowError("mobutils::CalculateMobStats Mob (%s, %d) with special skill but no cool down set!", PMob->getName(), PMob->id);
         }
 
         if (PMob->SpellContainer->HasSpells() && PMob->getMobMod(MOBMOD_MAGIC_COOL) == 0)
         {
-            ShowError("Mobutils::CalculateMobStats Mob (%s, %d) with magic but no cool down set!", PMob->GetName(), PMob->id);
+            ShowError("mobutils::CalculateMobStats Mob (%s, %d) with magic but no cool down set!", PMob->getName(), PMob->id);
         }
 
         if (PMob->getMobMod(MOBMOD_DETECTION) == 0)
         {
-            ShowError("Mobutils::CalculateMobStats Mob (%s, %d, %d) has no detection methods!", PMob->GetName(), PMob->id, PMob->m_Family);
+            ShowError("mobutils::CalculateMobStats Mob (%s, %d, %d) has no detection methods!", PMob->getName(), PMob->id, PMob->m_Family);
         }
     }
 
@@ -626,7 +626,7 @@ namespace mobutils
     {
         JOBTYPE mJob = PMob->GetMJob();
         JOBTYPE sJob = PMob->GetSJob();
-        JOBTYPE job;
+        JOBTYPE job{};
 
         if (grade::GetJobGrade(mJob, 1) > 0 || mJob == JOB_NIN) // check if mainjob gives mp or is NIN
         {
@@ -901,7 +901,7 @@ namespace mobutils
 
     void SetupEventMob(CMobEntity* PMob)
     {
-        // event mob types will always have custom roaming
+        // event mob types will always have scripted roaming (any mob can have it scripted, but these ALWAYS do)
         PMob->m_roamFlags |= ROAMFLAG_SCRIPTED;
         PMob->setMobMod(MOBMOD_ROAM_RESET_FACING, 1);
         PMob->m_maxRoamDistance = 0.5f; // always go back to spawn
@@ -1055,7 +1055,7 @@ namespace mobutils
         {
             if (PMob->getZone() >= 1 && PMob->getZone() <= 252)
             {
-                ShowError("Mob %s level is 0! zoneid %d, poolid %d", PMob->GetName(), PMob->getZone(), PMob->m_Pool);
+                ShowError("Mob %s level is 0! zoneid %d, poolid %d", PMob->getName(), PMob->getZone(), PMob->m_Pool);
             }
         }
     }
@@ -1089,11 +1089,11 @@ Usage:
                 int8 isMobMod = sql->GetIntData(3);
                 if (isMobMod == 1)
                 {
-                    familyMods->mobMods.push_back(mod);
+                    familyMods->mobMods.emplace_back(mod);
                 }
                 else
                 {
-                    familyMods->mods.push_back(mod);
+                    familyMods->mods.emplace_back(mod);
                 }
             }
         }
@@ -1118,11 +1118,11 @@ Usage:
                 int8 isMobMod = sql->GetIntData(3);
                 if (isMobMod == 1)
                 {
-                    poolMods->mobMods.push_back(mod);
+                    poolMods->mobMods.emplace_back(mod);
                 }
                 else
                 {
-                    poolMods->mods.push_back(mod);
+                    poolMods->mods.emplace_back(mod);
                 }
             }
         }
@@ -1144,11 +1144,11 @@ Usage:
                 int8 isMobMod = sql->GetIntData(3);
                 if (isMobMod == 1)
                 {
-                    spawnMods->mobMods.push_back(mod);
+                    spawnMods->mobMods.emplace_back(mod);
                 }
                 else
                 {
-                    spawnMods->mods.push_back(mod);
+                    spawnMods->mods.emplace_back(mod);
                 }
             }
         }
@@ -1219,7 +1219,7 @@ Usage:
 
     void AddCustomMods(CMobEntity* PMob)
     {
-        // find my families custom mods
+        // find my families mods
         ModsList_t* PFamilyMods = GetMobFamilyMods(PMob->m_Family);
 
         if (PFamilyMods != nullptr)
@@ -1236,7 +1236,7 @@ Usage:
             }
         }
 
-        // find my pools custom mods
+        // find my pools mods
         ModsList_t* PPoolMods = GetMobPoolMods(PMob->m_Pool);
 
         if (PPoolMods != nullptr)
@@ -1253,7 +1253,7 @@ Usage:
             }
         }
 
-        // find my pools custom mods
+        // find my IDs mods
         ModsList_t* PSpawnMods = GetMobSpawnMods(PMob->id);
 
         if (PSpawnMods != nullptr)
@@ -1412,15 +1412,21 @@ Usage:
                 PMob->setMobMod(MOBMOD_DETECTION, sql->GetUIntData(69));
 
                 CZone* newZone = zoneutils::GetZone(zoneID);
+                if (newZone)
+                {
+                    // Get dynamic targid
+                    newZone->GetZoneEntities()->AssignDynamicTargIDandLongID(PMob);
 
-                // Get dynamic targid
-                newZone->GetZoneEntities()->AssignDynamicTargIDandLongID(PMob);
+                    // Insert ally into zone's mob list. TODO: Do we need to assign party for allies?
+                    newZone->GetZoneEntities()->m_mobList[PMob->targid] = PMob;
+                }
+                else
+                {
+                    ShowError("Mobutils::InstantiateAlly failed to get zone from zoneutils::GetZone(zoneID)");
+                }
 
                 // Ensure dynamic targid is released on death
                 PMob->m_bReleaseTargIDOnDisappear = true;
-
-                // Insert ally into zone's mob list. TODO: Do we need to assign party for allies?
-                newZone->GetZoneEntities()->m_mobList[PMob->targid] = PMob;
 
                 // must be here first to define mobmods
                 mobutils::InitializeMob(PMob, zoneutils::GetZone(zoneID));

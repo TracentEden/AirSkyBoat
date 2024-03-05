@@ -23,11 +23,11 @@
 
 #include <cstring>
 
+#include "besieged_system.h"
 #include "conquest_data.h"
 #include "conquest_system.h"
 #include "entities/charentity.h"
 #include "map/besieged_data.h"
-#include "map/besieged_system.h"
 
 #include "utils/charutils.h"
 

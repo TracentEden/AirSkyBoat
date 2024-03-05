@@ -76,12 +76,12 @@ void CBaseEntity::FadeOut()
     updatemask |= UPDATE_HP;
 }
 
-const std::string& CBaseEntity::GetName()
+const std::string& CBaseEntity::getName()
 {
     return name;
 }
 
-const std::string& CBaseEntity::GetPacketName()
+const std::string& CBaseEntity::getPacketName()
 {
     return packetName;
 }
@@ -198,7 +198,7 @@ void CBaseEntity::ResetLocalVars()
     m_localVars.clear();
 }
 
-uint32 CBaseEntity::GetLocalVar(const char* var)
+uint32 CBaseEntity::GetLocalVar(std::string var)
 {
     return m_localVars[var];
 }
@@ -208,7 +208,7 @@ std::map<std::string, uint32> CBaseEntity::GetAllLocalVars()
     return m_localVars;
 }
 
-void CBaseEntity::SetLocalVar(const char* var, uint32 val)
+void CBaseEntity::SetLocalVar(std::string var, uint32 val)
 {
     m_localVars[var] = val;
 }

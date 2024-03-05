@@ -20,18 +20,12 @@ along with this program.  If not, see http://www.gnu.org/licenses/
 */
 
 #include "zone_instance.h"
-#include "../common/timer.h"
 #include "ai/ai_container.h"
+#include "common/timer.h"
 #include "entities/charentity.h"
 #include "lua/luautils.h"
 #include "status_effect_container.h"
 #include "utils/zoneutils.h"
-
-/************************************************************************
- *                                                                       *
- *  Класс CZoneInstance                                                  *
- *                                                                       *
- ************************************************************************/
 
 CZoneInstance::CZoneInstance(ZONEID ZoneID, REGION_TYPE RegionID, CONTINENT_TYPE ContinentID, uint8 levelRestriction)
 : CZone(ZoneID, RegionID, ContinentID, levelRestriction)
@@ -40,7 +34,7 @@ CZoneInstance::CZoneInstance(ZONEID ZoneID, REGION_TYPE RegionID, CONTINENT_TYPE
 
 CZoneInstance::~CZoneInstance() = default;
 
-CCharEntity* CZoneInstance::GetCharByName(std::string name)
+CCharEntity* CZoneInstance::GetCharByName(std::string const& name)
 {
     TracyZoneScoped;
     CCharEntity* PEntity = nullptr;
@@ -169,8 +163,13 @@ void CZoneInstance::DecreaseZoneCounter(CCharEntity* PChar)
             if (instance->Failed() || instance->Completed())
             {
                 ShowDebug("[CZoneInstance]DecreaseZoneCounter cleaned up Instance %s", instance->GetName());
+
+                // clang-format off
                 instanceList.erase(std::find_if(instanceList.begin(), instanceList.end(), [&instance](const auto& el)
-                                                { return el.get() == instance; }));
+                {
+                    return el.get() == instance;
+                }));
+                // clang-format on
             }
             else
             {
@@ -183,9 +182,23 @@ void CZoneInstance::DecreaseZoneCounter(CCharEntity* PChar)
 void CZoneInstance::IncreaseZoneCounter(CCharEntity* PChar)
 {
     TracyZoneScoped;
-    XI_DEBUG_BREAK_IF(PChar == nullptr);
-    XI_DEBUG_BREAK_IF(PChar->loc.zone != nullptr);
-    XI_DEBUG_BREAK_IF(PChar->PTreasurePool != nullptr);
+    if (PChar == nullptr)
+    {
+        ShowWarning("PChar is null.");
+        return;
+    }
+
+    if (PChar->loc.zone != nullptr)
+    {
+        ShowWarning("Zone was not null for %s.", PChar->getName());
+        return;
+    }
+
+    if (PChar->PTreasurePool != nullptr)
+    {
+        ShowWarning("PTreasurePool was not empty for %s.", PChar->getName());
+        return;
+    }
 
     // return char to instance (d/c or logout)
     if (!PChar->PInstance)
@@ -232,7 +245,7 @@ void CZoneInstance::IncreaseZoneCounter(CCharEntity* PChar)
     else
     {
         ShowWarning(fmt::format("Failed to place {} in {} ({}). Placing them in that zone's instance exit area.",
-                                PChar->name, this->GetName(), this->GetID())
+                                PChar->name, this->getName(), this->GetID())
                         .c_str());
 
         // instance no longer exists: put them outside (at exit)
@@ -240,7 +253,15 @@ void CZoneInstance::IncreaseZoneCounter(CCharEntity* PChar)
 
         uint16 zoneid = luautils::OnInstanceLoadFailed(this);
 
-        zoneutils::GetZone(zoneid >= MAX_ZONEID ? PChar->loc.prevzone : zoneid)->IncreaseZoneCounter(PChar);
+        CZone* PZone = zoneutils::GetZone(zoneid);
+        if (PZone)
+        {
+            PZone->IncreaseZoneCounter(PChar);
+        }
+        else
+        {
+            zoneutils::GetZone(PChar->loc.prevzone)->IncreaseZoneCounter(PChar);
+        }
     }
 }
 
@@ -401,7 +422,7 @@ void CZoneInstance::ZoneServer(time_point tick)
     }
 }
 
-void CZoneInstance::ForEachChar(std::function<void(CCharEntity*)> func)
+void CZoneInstance::ForEachChar(std::function<void(CCharEntity*)> const& func)
 {
     TracyZoneScoped;
     for (const auto& instance : instanceList)
@@ -413,7 +434,7 @@ void CZoneInstance::ForEachChar(std::function<void(CCharEntity*)> func)
     }
 }
 
-void CZoneInstance::ForEachCharInstance(CBaseEntity* PEntity, std::function<void(CCharEntity*)> func)
+void CZoneInstance::ForEachCharInstance(CBaseEntity* PEntity, std::function<void(CCharEntity*)> const& func)
 {
     TracyZoneScoped;
     for (auto PChar : PEntity->PInstance->GetCharList())
@@ -422,7 +443,7 @@ void CZoneInstance::ForEachCharInstance(CBaseEntity* PEntity, std::function<void
     }
 }
 
-void CZoneInstance::ForEachMobInstance(CBaseEntity* PEntity, std::function<void(CMobEntity*)> func)
+void CZoneInstance::ForEachMobInstance(CBaseEntity* PEntity, std::function<void(CMobEntity*)> const& func)
 {
     TracyZoneScoped;
     for (auto PMob : PEntity->PInstance->m_mobList)
@@ -434,6 +455,6 @@ void CZoneInstance::ForEachMobInstance(CBaseEntity* PEntity, std::function<void(
 CInstance* CZoneInstance::CreateInstance(uint16 instanceid)
 {
     TracyZoneScoped;
-    instanceList.push_back(std::make_unique<CInstance>(this, instanceid));
+    instanceList.emplace_back(std::make_unique<CInstance>(this, instanceid));
     return instanceList.back().get();
 }

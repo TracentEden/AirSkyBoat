@@ -19,7 +19,7 @@
 ===========================================================================
 */
 
-#include "../common/utils.h"
+#include "common/utils.h"
 
 #include <cstring>
 
@@ -109,11 +109,11 @@ void CLinkshell::AddMember(CCharEntity* PChar, int8 type, uint8 lsNum)
 
     if (std::find(members.begin(), members.end(), PChar) != members.end())
     {
-        ShowWarning("CLinkshell::AddMember attempted to add member '%s' who is already in the online member list.", PChar->GetName());
+        ShowWarning("CLinkshell::AddMember attempted to add member '%s' who is already in the online member list.", PChar->getName());
         return;
     }
 
-    members.push_back(PChar);
+    members.emplace_back(PChar);
 
     if (lsNum == 1)
     {
@@ -162,7 +162,7 @@ void CLinkshell::ChangeMemberRank(const std::string& MemberName, uint8 toSack)
     {
         for (auto& member : members)
         {
-            if (strcmpi(MemberName.c_str(), member->GetName().c_str()) == 0)
+            if (strcmpi(MemberName.c_str(), member->getName().c_str()) == 0)
             {
                 CCharEntity* PMember = member;
 
@@ -232,7 +232,7 @@ void CLinkshell::RemoveMemberByName(const std::string& MemberName, uint8 kickerR
     uint32 lsid = m_id;
     for (auto& member : members)
     {
-        if (strcmpi(MemberName.c_str(), member->GetName().c_str()) == 0)
+        if (strcmpi(MemberName.c_str(), member->getName().c_str()) == 0)
         {
             CCharEntity* PMember = member;
 
@@ -315,7 +315,7 @@ void CLinkshell::BreakLinkshell()
     // break logged in and equipped members
     while (!members.empty())
     {
-        RemoveMemberByName(members.at(0)->GetName(), LSTYPE_LINKSHELL, true);
+        RemoveMemberByName(members.at(0)->getName(), LSTYPE_LINKSHELL, true);
     }
     // set the linkshell as broken
     sql->Query("UPDATE linkshells SET broken = 1 WHERE linkshellid = %u LIMIT 1", lsid);
@@ -402,7 +402,12 @@ namespace linkshell
     // add character to online linkshell list, used to send messages
     bool AddOnlineMember(CCharEntity* PChar, CItemLinkshell* PItemLinkshell, uint8 lsNum)
     {
-        XI_DEBUG_BREAK_IF(PChar == nullptr);
+        if (PChar == nullptr)
+        {
+            ShowWarning("PChar is null.");
+            return false;
+        }
+
         if (PItemLinkshell != nullptr && PItemLinkshell->isType(ITEM_LINKSHELL))
         {
             CLinkshell* PLinkshell = nullptr;
@@ -425,7 +430,12 @@ namespace linkshell
     // remove online member so we don't try to send messages to them
     bool DelOnlineMember(CCharEntity* PChar, CItemLinkshell* PItemLinkshell)
     {
-        XI_DEBUG_BREAK_IF(PChar == nullptr);
+        if (PChar == nullptr)
+        {
+            ShowWarning("PChar is null.");
+            return false;
+        }
+
         if (PItemLinkshell != nullptr && PItemLinkshell->isType(ITEM_LINKSHELL))
         {
             try

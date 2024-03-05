@@ -191,16 +191,16 @@ namespace zoneutils
         return nullptr;
     }
 
-    CCharEntity* GetCharToUpdate(uint32 primary, uint32 ternary)
+    CCharEntity* GetCharToUpdate(uint32 primary, uint32 tertiary)
     {
         CCharEntity* PPrimary   = nullptr;
         CCharEntity* PSecondary = nullptr;
-        CCharEntity* PTernary   = nullptr;
+        CCharEntity* PTertiary  = nullptr;
 
         for (auto PZone : g_PZoneList)
         {
             // clang-format off
-            PZone.second->ForEachChar([primary, ternary, &PPrimary, &PSecondary, &PTernary](CCharEntity* PChar)
+            PZone.second->ForEachChar([primary, tertiary, &PPrimary, &PSecondary, &PTertiary](CCharEntity* PChar)
             {
                 if (!PPrimary)
                 {
@@ -212,9 +212,9 @@ namespace zoneutils
                     {
                         PSecondary = PChar;
                     }
-                    else if (PChar->id == ternary)
+                    else if (PChar->id == tertiary)
                     {
-                        PTernary = PChar;
+                        PTertiary = PChar;
                     }
                 }
             });
@@ -230,7 +230,7 @@ namespace zoneutils
             return PSecondary;
         }
 
-        return PTernary;
+        return PTertiary;
     }
 
     std::vector<uint16> GetZonesOnThisProcess()
@@ -253,7 +253,7 @@ namespace zoneutils
         {
             while (sql->NextRow() == SQL_SUCCESS)
             {
-                auto zoneId = static_cast<uint16>(sql->GetUIntData(0));
+                uint16 zoneId = static_cast<uint16>(sql->GetUIntData(0));
                 zonesOnThisProcess.emplace_back(zoneId);
             }
         }
@@ -263,7 +263,7 @@ namespace zoneutils
 
     /************************************************************************
      *                                                                       *
-     *  Uploading a list of NPCs to the specified zone                       *
+     *  Upload a list of NPCs to the specified zone                          *
      *                                                                       *
      ************************************************************************/
 
@@ -323,7 +323,7 @@ namespace zoneutils
 
                             uint32 NpcID = sql->GetUIntData(1);
 
-                            if (PZone->GetType() != ZONE_TYPE::DUNGEON_INSTANCED)
+                            if (!(PZone->GetTypeMask() & ZONE_TYPE::INSTANCED))
                             {
                                 CNpcEntity* PNpc = new CNpcEntity;
                                 PNpc->targid     = NpcID & 0xFFF;
@@ -389,7 +389,7 @@ namespace zoneutils
 
     /************************************************************************
      *                                                                       *
-     *  Uploading a list of MOBs to the specified zone                       *
+     *  Upload a list of MOBs to the specified zone                          *
      *                                                                       *
      ************************************************************************/
 
@@ -453,9 +453,9 @@ namespace zoneutils
                                 continue;
                             }
 
-                            ZONE_TYPE zoneType = PZone->GetType();
+                            ZONE_TYPE zoneType = PZone->GetTypeMask();
 
-                            if (zoneType != ZONE_TYPE::DUNGEON_INSTANCED)
+                            if (!(zoneType & ZONE_TYPE::INSTANCED))
                             {
                                 CMobEntity* PMob = new CMobEntity;
 
@@ -627,7 +627,6 @@ namespace zoneutils
                                 PMob->HPscale = sql->GetFloatData(72);
                                 PMob->MPscale = sql->GetFloatData(73);
 
-                                // TODO: Remove me
                                 // Check if we should be looking up scripts for this mob
                                 // PMob->m_HasSpellScript = (uint8)sql->GetIntData(74);
 
@@ -653,7 +652,7 @@ namespace zoneutils
                                 if (PMob->m_spawnSet > 0)
                                 {
                                     auto& spawnGroup = GetZone(zoneId)->m_SpawnGroups[PMob->m_spawnSet];
-                                    spawnGroup.groupMobs.push_back(PMob);
+                                    spawnGroup.groupMobs.emplace_back(PMob);
                                     spawnGroup.maxSpawns = (uint8)sql->GetUIntData(87);
                                 }
 
@@ -781,7 +780,7 @@ namespace zoneutils
                 }
                 else
                 {
-                    PMob->PAI->Internal_Respawn(std::chrono::milliseconds(PMob->m_RespawnTime)); // Set everything else to respawn
+                    PMob->PAI->Internal_Respawn(std::chrono::milliseconds(PMob->m_RespawnTime));
                 }
             });
 
@@ -791,7 +790,7 @@ namespace zoneutils
 
     /************************************************************************
      *                                                                       *
-     *  Creates a new zone.                                                  *
+     *  Create a new zone.                                                   *
      *                                                                       *
      ************************************************************************/
 
@@ -804,7 +803,7 @@ namespace zoneutils
         {
             ZONE_TYPE zoneType    = static_cast<ZONE_TYPE>(sql->GetUIntData(0));
             uint8     restriction = static_cast<uint8>(sql->GetUIntData(1));
-            if (zoneType == ZONE_TYPE::DUNGEON_INSTANCED)
+            if (zoneType & ZONE_TYPE::INSTANCED)
             {
                 return new CZoneInstance((ZONEID)ZoneID, GetCurrentRegion(ZoneID), GetCurrentContinent(ZoneID), restriction);
             }
@@ -822,14 +821,14 @@ namespace zoneutils
 
     /************************************************************************
      *                                                                       *
-     *  Инициализация зон. Возрождаем всех монстров при старте сервера.      *
+     *  Initialization of zones. Revive all monsters at server start.        *
      *                                                                       *
      ************************************************************************/
 
     void LoadZoneList()
     {
         TracyZoneScoped;
-        g_PTrigger = new CNpcEntity(); // нужно в конструкторе CNpcEntity задавать модель по умолчанию
+        g_PTrigger = new CNpcEntity(); // you need to set the default model in the CNpcEntity constructor
 
         std::vector<uint16> zones;
         const char*         query = "SELECT zoneid FROM zone_settings WHERE IF(%d <> 0, '%s' = zoneip AND %d = zoneport, TRUE);";
@@ -842,7 +841,7 @@ namespace zoneutils
         {
             while (sql->NextRow() == SQL_SUCCESS)
             {
-                zones.push_back(sql->GetUIntData(0));
+                zones.emplace_back(static_cast<uint16>(sql->GetUIntData(0)));
             }
         }
         else
@@ -894,7 +893,7 @@ namespace zoneutils
         // clang-format on
 
         // IDs attached to xi.zone[name] need to be populated before NPCs and Mobs are loaded
-        luautils::PopulateIDLookups();
+        luautils::PopulateIDLookupsByZone();
 
         LoadNPCList();
         LoadMOBList();
@@ -915,7 +914,7 @@ namespace zoneutils
 
     /************************************************************************
      *                                                                       *
-     *  Returns current region from zone id                                  *
+     *  Return current region from zone id                                   *
      *                                                                       *
      ************************************************************************/
 
@@ -1293,7 +1292,7 @@ namespace zoneutils
 
     /************************************************************************
      *                                                                       *
-     *  Освобождаем список зон                                               *
+     *  Clear (free up) the list of zones                                    *
      *                                                                       *
      ************************************************************************/
 
@@ -1337,7 +1336,7 @@ namespace zoneutils
 
     /************************************************************************
      *                                                                       *
-     *  Checks whether or not the zone is a residential area                 *
+     *  Check whether or not the zone is a residential area                  *
      *                                                                       *
      ************************************************************************/
 

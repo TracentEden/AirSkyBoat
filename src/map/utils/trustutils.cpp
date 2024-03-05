@@ -192,7 +192,7 @@ namespace trustutils
 
                 trustID->spellID = (uint32)sql->GetIntData(0);
 
-                g_PTrustIDList.push_back(trustID);
+                g_PTrustIDList.emplace_back(trustID);
             }
         }
 
@@ -336,7 +336,7 @@ namespace trustutils
                 trust->light_meva   = (int16)sql->GetIntData(50);
                 trust->dark_meva    = (int16)sql->GetIntData(51);
 
-                g_PTrustList.push_back(trust);
+                g_PTrustList.emplace_back(trust);
             }
         }
     }

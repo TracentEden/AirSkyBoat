@@ -22,7 +22,7 @@
 #ifndef _CALLIANCE_H
 #define _CALLIANCE_H
 
-#include "../common/cbasetypes.h"
+#include "common/cbasetypes.h"
 #include "map.h"
 
 #include <vector>
@@ -38,6 +38,7 @@ class CAlliance
 public:
     CAlliance(CBattleEntity* PEntity);
     CAlliance(uint32 id);
+    ~CAlliance();
 
     uint32  m_AllianceID;
     CParty* getMainParty();

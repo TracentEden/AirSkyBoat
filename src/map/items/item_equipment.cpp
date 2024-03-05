@@ -21,7 +21,7 @@
 
 #include "item_equipment.h"
 
-#include "../map.h"
+#include "map.h"
 #include <cstring>
 
 CItemEquipment::CItemEquipment(uint16 id)
@@ -44,7 +44,6 @@ CItemEquipment::CItemEquipment(uint16 id)
 
 CItemEquipment::~CItemEquipment()
 {
-    // ни в коем случае не освобождать здесь указатели на модификатоты и спецеффекты. они глобальны.
 }
 
 uint16 CItemEquipment::getModelId() const
@@ -196,7 +195,7 @@ void CItemEquipment::addModifier(CModifier modifier)
         }
         m_absorption = std::min<uint8>(pdt, 100);
     }
-    modList.push_back(modifier);
+    modList.emplace_back(modifier);
 }
 
 int16 CItemEquipment::getModifier(Mod mod) const
@@ -213,19 +212,23 @@ int16 CItemEquipment::getModifier(Mod mod) const
 
 void CItemEquipment::addPetModifier(CPetModifier modifier)
 {
-    petModList.push_back(modifier);
+    petModList.emplace_back(modifier);
 }
 
 void CItemEquipment::addLatent(LATENT ConditionsID, uint16 ConditionsValue, Mod ModValue, int16 ModPower)
 {
     itemLatent latent{ ConditionsID, ConditionsValue, ModValue, ModPower };
-    latentList.push_back(latent);
+    latentList.emplace_back(latent);
 }
 
 bool CItemEquipment::delModifier(Mod mod, int16 modValue)
 {
+    // clang-format off
     auto it = std::find_if(modList.begin(), modList.end(), [mod, modValue](const CModifier& compare)
-                           { return compare.getModID() == mod && compare.getModAmount() == modValue; });
+    {
+        return compare.getModID() == mod && compare.getModAmount() == modValue;
+    });
+    // clang-format on
 
     if (it == modList.end())
     {
@@ -238,8 +241,12 @@ bool CItemEquipment::delModifier(Mod mod, int16 modValue)
 
 bool CItemEquipment::delPetModifier(Mod mod, PetModType petType, int16 modValue)
 {
+    // clang-format off
     auto it = std::find_if(petModList.begin(), petModList.end(), [mod, petType, modValue](const CPetModifier& compare)
-                           { return compare.getModID() == mod && compare.getPetModType() == petType && compare.getModAmount() == modValue; });
+    {
+        return compare.getModID() == mod && compare.getPetModType() == petType && compare.getModAmount() == modValue;
+    });
+    // clang-format on
 
     if (it == petModList.end())
     {

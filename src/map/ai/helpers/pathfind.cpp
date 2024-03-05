@@ -87,7 +87,7 @@ bool CPathFind::RoamAround(const position_t& point, float maxRadius, uint8 maxTu
             return false;
         }
 
-        m_points.push_back({ { point.x - 1 + rand() % 2, point.y, point.z - 1 + rand() % 2, 0, 0 }, 0 });
+        m_points.emplace_back({ { point.x - 1 + rand() % 2, point.y, point.z - 1 + rand() % 2, 0, 0 }, 0 });
     }
 
     return true;
@@ -136,7 +136,7 @@ bool CPathFind::PathTo(const position_t& point, uint8 pathFlags, bool clear)
             Clear();
         }
 
-        m_points.push_back({ point, 0 });
+        m_points.emplace_back({ point, 0 });
     }
 
     return true;
@@ -504,7 +504,7 @@ bool CPathFind::FindPath(const position_t& start, const position_t& end)
 
     if (m_points.empty())
     {
-        DebugNavmesh("CPathFind::FindPath Entity (%s - %d) could not find path", m_POwner->GetName(), m_POwner->id);
+        DebugNavmesh("CPathFind::FindPath Entity (%s - %d) could not find path", m_POwner->getName(), m_POwner->id);
         return false;
     }
 
@@ -536,7 +536,7 @@ bool CPathFind::FindRandomPath(const position_t& start, float maxRadius, uint8 m
             return false;
         }
 
-        m_turnPoints.push_back(status.second);
+        m_turnPoints.emplace_back(status.second);
         startPosition = m_turnPoints[i];
     }
     m_points       = m_POwner->loc.zone->m_navMesh->findPath(start, m_turnPoints[0]);
@@ -561,13 +561,13 @@ bool CPathFind::FindClosestPath(const position_t& start, const position_t& end)
 
     m_points       = m_POwner->loc.zone->m_navMesh->findPath(start, end);
     m_currentPoint = 0;
-    m_points.push_back({ end, 0 }); // this prevents exploits with navmesh / impassible terrain
+    m_points.emplace_back({ end, 0 }); // this prevents exploits with navmesh / impassible terrain
 
     /* this check requirement is never met as intended since m_points are never empty when mob has a path
     if (m_points.empty())
     {
         // this is a trick to make mobs go up / down impassible terrain
-        m_points.push_back(end);
+        m_points.emplace_back(end);
     }
 */
 

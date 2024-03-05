@@ -67,7 +67,7 @@ CMagicState::CMagicState(CBattleEntity* PEntity, uint16 targid, SpellID spellid,
                                                                         errorMsg == 1 ? MSGBASIC_CANNOT_CAST_SPELL : errorMsg));
     }
 
-    m_castTime = std::chrono::milliseconds(battleutils::CalculateSpellCastTime(m_PEntity, this, static_cast<uint16>(m_PSpell->getID())));
+    m_castTime = std::chrono::milliseconds(battleutils::CalculateSpellCastTime(m_PEntity, this));
     m_startPos = m_PEntity->loc.p;
 
     action_t action;
@@ -84,8 +84,14 @@ CMagicState::CMagicState(CBattleEntity* PEntity, uint16 targid, SpellID spellid,
     actionTarget.speceffect = SPECEFFECT::NONE;
     actionTarget.animation  = 0;
     actionTarget.param      = static_cast<uint16>(m_PSpell->getID());
-    actionTarget.messageID  = m_PEntity->objtype == TYPE_MOB ? 3 : 327; // Mobs start casing immediately. Everything else sends a message.
+    actionTarget.messageID  = 327; // <caster> starts casting <spell> on <target>.
 
+    if (PEntity->objtype != TYPE_PC)
+    {
+        actionTarget.messageID = 3; // <caster> starts casting <spell>.
+    }
+
+    // TODO: weaponskill lua object
     m_PEntity->PAI->EventHandler.triggerListener("MAGIC_START", CLuaBaseEntity(m_PEntity), CLuaSpell(m_PSpell.get()), CLuaAction(&action));
 
     m_PEntity->loc.zone->PushPacket(m_PEntity, CHAR_INRANGE_SELF, new CActionPacket(action));
@@ -243,6 +249,7 @@ bool CMagicState::Update(time_point tick)
         }
 
         m_PEntity->loc.zone->PushPacket(m_PEntity, CHAR_INRANGE_SELF, new CActionPacket(action));
+
         Complete();
     }
     else if (IsCompleted() && tick > GetEntryTime() + m_castTime + std::chrono::milliseconds(m_PSpell->getAnimationTime()))
@@ -293,6 +300,7 @@ bool CMagicState::CanCastSpell(CBattleEntity* PTarget, bool isEndOfCast)
         m_errorMsg = std::make_unique<CMessageBasicPacket>(m_PEntity, m_PEntity, static_cast<uint16>(m_PSpell->getID()), 0, MSGBASIC_CANNOT_USE_IN_AREA);
         return false;
     }
+
     if (m_PEntity->StatusEffectContainer->HasStatusEffect({ EFFECT_SILENCE, EFFECT_MUTE, EFFECT_HEALING }))
     {
         m_errorMsg = std::make_unique<CMessageBasicPacket>(m_PEntity, m_PEntity, static_cast<uint16>(m_PSpell->getID()), 0, MSGBASIC_UNABLE_TO_CAST_SPELLS);

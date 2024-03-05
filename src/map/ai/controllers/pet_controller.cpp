@@ -21,44 +21,43 @@ along with this program.  If not, see http://www.gnu.org/licenses/
 
 #include "pet_controller.h"
 
-#include "../../../common/utils.h"
-#include "../../entities/petentity.h"
-#include "../../status_effect_container.h"
-#include "../../utils/petutils.h"
-#include "../ai_container.h"
+#include "ai/ai_container.h"
+#include "common/utils.h"
+#include "entities/petentity.h"
+#include "status_effect_container.h"
+#include "utils/petutils.h"
 
 CPetController::CPetController(CPetEntity* _PPet)
 : CMobController(_PPet)
 , PPet(_PPet)
 {
-    //#TODO: this probably will have to depend on pet type (automaton does WS on its own..)
+    // #TODO: this probably will have to depend on pet type (automaton does WS on its own..)
     SetWeaponSkillEnabled(false);
 }
 
 void CPetController::Tick(time_point tick)
 {
     TracyZoneScoped;
-    TracyZoneString(PPet->GetName());
+    TracyZoneString(PPet->getName());
 
     if (PPet->shouldDespawn(tick))
     {
         petutils::DetachPet(PPet->PMaster, PPet->isCharmed && tick > PPet->charmTime);
         return;
     }
-
     CMobController::Tick(tick);
 }
 
 void CPetController::DoRoamTick(time_point tick)
 {
-    if ((PPet->PMaster == nullptr || PPet->PMaster->id == 0 || PPet->PMaster->name == "" || PPet->PMaster->isDead()) && PPet->isAlive() && PPet->objtype != TYPE_MOB)
+    if ((PPet->PMaster == nullptr || PPet->PMaster->isDead()) && PPet->isAlive() && PPet->objtype != TYPE_MOB)
     {
         PPet->Die();
         return;
     }
 
-    // if pet can't follow then don't
-    if (!PPet->PAI->CanFollowPath())
+    // if pet cannot change state (for example because pet is asleep) then just return
+    if (!PPet->PAI->CanChangeState())
     {
         return;
     }

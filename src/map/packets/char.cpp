@@ -25,9 +25,9 @@
 
 #include "char.h"
 
-#include "../entities/charentity.h"
-#include "../status_effect_container.h"
-#include "../utils/itemutils.h"
+#include "entities/charentity.h"
+#include "status_effect_container.h"
+#include "utils/itemutils.h"
 
 CCharPacket::CCharPacket(CCharEntity* PChar, ENTITYUPDATE type, uint8 updatemask)
 {
@@ -181,7 +181,7 @@ void CCharPacket::updateWith(CCharEntity* PChar, ENTITYUPDATE type, uint8 update
                 ref<uint8>(0x42) = 0x50 + PChar->StatusEffectContainer->GetStatusEffect(EFFECT_COLURE_ACTIVE)->GetPower();
             }
 
-            ref<uint8>(0x43) = 0x04;
+            ref<uint8>(0x43) = 0x04; // Seen as 0x0C and 0x06 in Monstrosity?
 
             if (updatemask & UPDATE_LOOK)
             {
@@ -206,7 +206,7 @@ void CCharPacket::updateWith(CCharEntity* PChar, ENTITYUPDATE type, uint8 update
 
             if (updatemask & UPDATE_NAME)
             {
-                memcpy(data + (0x5A), PChar->GetName().c_str(), PChar->GetName().size());
+                memcpy(data + (0x5A), PChar->getName().c_str(), PChar->getName().size());
             }
         }
         break;

@@ -503,10 +503,10 @@ struct zoneWeather_t
 
 /************************************************************************
  *                                                                       *
- *  zoneLine - уникальный идентификатор пути из одной точки какой-либо   *
- *  зоны в другую точку какой-либо зоны. Зоной отправления является зона,*
- *  хранящая данный zoneLineID. Зона прибытия и точное местоназначение   *
- *  определены в структуре.                                              *
+ *  zoneLine - unique identifier of a path from one point in a zone to   *
+ *  another point in another zone. The departure area is the area,       *
+ *  storing zoneLineID data. Arrival area and exact destination area     *
+ *  defined in the structure.                                            *
  *                                                                       *
  ************************************************************************/
 
@@ -656,7 +656,7 @@ public:
     uint16             GetTax() const;
     WEATHER            GetWeather();
     uint32             GetWeatherChangeTime() const;
-    const std::string& GetName();
+    const std::string& getName();
     zoneLine_t*        GetZoneLine(uint32 zoneLineID);
 
     uint16 GetSoloBattleMusic() const;
@@ -675,44 +675,44 @@ public:
     void   SetLocalVar(const char* var, uint32 val);
     void   ResetLocalVars();
 
-    virtual CCharEntity* GetCharByName(std::string name); // finds the player if exists in zone
+    virtual CCharEntity* GetCharByName(std::string const& name);
     virtual CCharEntity* GetCharByID(uint32 id);
 
     // Gets an entity - ignores instances (use CBaseEntity->GetEntity if possible)
-    virtual CBaseEntity* GetEntity(uint16 targid, uint8 filter = -1); // we get a pointer to any entity in the zone
+    virtual CBaseEntity* GetEntity(uint16 targid, uint8 filter = -1); // Get a pointer to any entity in the zone
 
-    bool IsWeatherStatic() const; // The weather in the zone does not require changes (never changes)
+    bool IsWeatherStatic() const;
     bool CanUseMisc(uint16 misc) const;
     void SetWeather(WEATHER weatherCondition);
     void UpdateWeather();
 
-    virtual void SpawnPCs(CCharEntity* PChar);       // We display the characters in the zone
-    virtual void SpawnMOBs(CCharEntity* PChar);      // We display MOBS in the zone
-    virtual void SpawnPETs(CCharEntity* PChar);      // We display Pets in the zone
-    virtual void SpawnNPCs(CCharEntity* PChar);      // display NPCS in the zone
-    virtual void SpawnTRUSTs(CCharEntity* PChar);    // displayTrusTsInZone
-    virtual void SpawnMoogle(CCharEntity* PChar);    // We display Moogle in Moghouse
-    virtual void SpawnTransport(CCharEntity* PChar); // We display transport
+    virtual void SpawnPCs(CCharEntity* PChar);
+    virtual void SpawnMOBs(CCharEntity* PChar);
+    virtual void SpawnPETs(CCharEntity* PChar);
+    virtual void SpawnNPCs(CCharEntity* PChar);
+    virtual void SpawnTRUSTs(CCharEntity* PChar);
+    virtual void SpawnMoogle(CCharEntity* PChar);    // Spawn Moogle in Moghouse in zone (if applicable)
+    virtual void SpawnTransport(CCharEntity* PChar); // Spawn ships/boats in the zone
     void         SavePlayTime();
 
-    virtual void WideScan(CCharEntity* PChar, uint16 radius); // scanning the area with a given radius
+    virtual void WideScan(CCharEntity* PChar, uint16 radius);
 
-    virtual void DecreaseZoneCounter(CCharEntity* PChar); // Add the character to the zone
-    virtual void IncreaseZoneCounter(CCharEntity* PChar); // We remove the character from the zone
+    virtual void DecreaseZoneCounter(CCharEntity* PChar); // Remove a character to the zone
+    virtual void IncreaseZoneCounter(CCharEntity* PChar); // Add a character from the zone
 
-    virtual void InsertNPC(CBaseEntity* PNpc);     // Add to the NPC zone
-    virtual void InsertMOB(CBaseEntity* PMob);     // Add to the mob zone
-    virtual void InsertPET(CBaseEntity* PPet);     // Add to the pet zone
-    virtual void InsertTRUST(CBaseEntity* PTrust); // addATrustToTheZone
+    virtual void InsertNPC(CBaseEntity* PNpc);
+    virtual void InsertMOB(CBaseEntity* PMob);
+    virtual void InsertPET(CBaseEntity* PPet);
+    virtual void InsertTRUST(CBaseEntity* PTrust);
 
-    virtual void DeletePET(CBaseEntity* PPet); // derefs the pet's ID from this zone
+    virtual void DeletePET(CBaseEntity* PPet);
     virtual void DeleteTRUST(CBaseEntity* PTrust);
 
-    virtual void FindPartyForMob(CBaseEntity* PEntity);          // We are looking for a group for a monster
-    virtual void TransportDepart(uint16 boundary, uint16 zone);  // transport is sent, it is necessary to collect passengers
-    virtual void updateCharLevelRestriction(CCharEntity* PChar); // removesTheCharacter'sLevelRestrictionIfTheZoneHasALevelRestrictionItAppliesTheZone'sAfterRemovingIt
+    virtual void FindPartyForMob(CBaseEntity* PEntity);
+    virtual void TransportDepart(uint16 boundary, uint16 zone);  // Collect passengers if ship/boat is departing
+    virtual void updateCharLevelRestriction(CCharEntity* PChar); // Removes the character's level restriction. If the zone has a level restriction, it is applied after it is removed.
 
-    void InsertTriggerArea(CTriggerArea* triggerArea); // Add an active area to the zone
+    void InsertTriggerArea(CTriggerArea* triggerArea);
 
     virtual void TOTDChange(TIMETYPE TOTD);
     virtual void PushPacket(CBaseEntity*, GLOBAL_MESSAGE_TYPE, CBasicPacket*);
@@ -723,7 +723,7 @@ public:
     bool           IsZoneActive() const;
     CZoneEntities* GetZoneEntities();
 
-    weatherVector_t m_WeatherVector; // the probability of each weather type
+    weatherVector_t m_WeatherVector; // The probability of each weather type
 
     std::map<uint8, spawnGroup_t> m_SpawnGroups; // Map of spawn groups
 
@@ -746,12 +746,12 @@ public:
     CBattlefieldHandler* m_BattlefieldHandler; // BCNM Instances in this zone
     CCampaignHandler*    m_CampaignHandler;    // WOTG campaign information for this zone
 
-    CNavMesh* m_navMesh;            // zones navmesh for finding paths
+    CNavMesh* m_navMesh   = nullptr;
     bool      m_updatedNavmesh;     // Flag to turn off special path code.
     bool      m_zoneCarefulPathing; // Zonewide careful pathing, should only be used with updated meshes.
     ZoneLos*  lineOfSight = nullptr;
 
-    time_point m_LoadedAt; // time zone was loaded
+    time_point m_LoadedAt; // The time the zone was loaded
 
     void SetZoneDirection(uint8 direction);
     void SetZoneAnimation(uint8 animation);
@@ -772,8 +772,8 @@ private:
     CONTINENT_TYPE m_continentID;
     uint8          m_levelRestriction;
     std::string    m_zoneName;
-    uint16         m_zonePort;
-    uint32         m_zoneIP;
+    uint16         m_zonePort{};
+    uint32         m_zoneIP{};
     bool           m_useNavMesh;
 
     WEATHER m_Weather;
@@ -781,25 +781,25 @@ private:
 
     CZoneEntities* m_zoneEntities;
 
-    uint16 m_tax;
-    uint16 m_miscMask;
+    uint16 m_tax{};
+    uint16 m_miscMask{};
 
-    zoneMusic_t m_zoneMusic;
+    zoneMusic_t m_zoneMusic{};
 
     std::unordered_map<std::string, uint32> m_LocalVars;
 
     triggerAreaList_t m_triggerAreaList;
-    zoneLineList_t    m_zoneLineList;
+    zoneLineList_t m_zoneLineList;
 
-    void LoadZoneLines();    // список zonelines (можно было бы заменить этот метод методом InsertZoneLine)
-    void LoadZoneWeather();  // погода
-    void LoadZoneSettings(); // настройки зоны
+    void LoadZoneSettings();
+    void LoadZoneLines();
+    void LoadZoneWeather();
 
     CTreasurePool* m_TreasurePool;
 
     static const uint16 ReducedVerticalAggroZones[];
 
-    time_point m_timeZoneEmpty; // The time_point when the last player left the zone
+    time_point m_timeZoneEmpty; // The time point when the last player left the zone
 
     uint8  m_ZoneDirection;     // which direction for transport to travel (0 or 4)
     uint8  m_ZoneAnimation;     // which zone animation to use (i.e. manaclipper)
@@ -809,9 +809,8 @@ private:
     std::unordered_map<std::string, QueryByNameResult_t> m_queryByNameResults;
 
 protected:
-    CTaskMgr::CTask* ZoneTimer;             // The pointer to the created timer is Zoneserver.necessary for the possibility of stopping it
-    CTaskMgr::CTask* ZoneTimerTriggerAreas; //
-
+    CTaskMgr::CTask* ZoneTimer; // The pointer to the created timer is Zoneserver.necessary for the possibility of stopping it
+    CTaskMgr::CTask* ZoneTimerTriggerAreas;
     void createZoneTimers();
     void CharZoneIn(CCharEntity* PChar);
     void CharZoneOut(CCharEntity* PChar);

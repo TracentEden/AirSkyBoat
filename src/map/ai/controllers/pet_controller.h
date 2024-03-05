@@ -41,12 +41,11 @@ protected:
     virtual void HandleEnmity() override
     {
     }
+    virtual bool TryDeaggro() override;
     virtual void TryLink() override
     {
     }
     virtual bool Ability(uint16 targid, uint16 abilityid) override;
-
-    bool TryDeaggro() override;
 
 private:
     CPetEntity* const PPet;

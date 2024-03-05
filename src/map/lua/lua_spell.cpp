@@ -21,9 +21,9 @@
 
 #include "common/logging.h"
 
-#include "../spell.h"
-#include "../utils/battleutils.h"
 #include "lua_spell.h"
+#include "spell.h"
+#include "utils/battleutils.h"
 
 /************************************************************************
  *                                                                        *
@@ -91,6 +91,11 @@ void CLuaSpell::setCastTime(uint32 casttime)
     m_PLuaSpell->setCastTime(casttime);
 }
 
+uint32 CLuaSpell::getPrimaryTargetID()
+{
+    return m_PLuaSpell->getPrimaryTargetID();
+}
+
 bool CLuaSpell::canTargetEnemy()
 {
     return m_PLuaSpell->canTargetEnemy();
@@ -99,11 +104,6 @@ bool CLuaSpell::canTargetEnemy()
 uint16 CLuaSpell::getTotalTargets()
 {
     return m_PLuaSpell->getTotalTargets();
-}
-
-uint32 CLuaSpell::getPrimaryTargetID()
-{
-    return m_PLuaSpell->getPrimaryTargetID();
 }
 
 uint16 CLuaSpell::getMagicBurstMessage()
@@ -174,7 +174,6 @@ void CLuaSpell::Register()
     SOL_REGISTER("getMagicBurstMessage", CLuaSpell::getMagicBurstMessage);
     SOL_REGISTER("getElement", CLuaSpell::getElement);
     SOL_REGISTER("getTotalTargets", CLuaSpell::getTotalTargets);
-    SOL_REGISTER("getPrimaryTargetID", CLuaSpell::getPrimaryTargetID);
     SOL_REGISTER("getSkillType", CLuaSpell::getSkillType);
     SOL_REGISTER("getID", CLuaSpell::getID);
     SOL_REGISTER("getMPCost", CLuaSpell::getMPCost);
@@ -182,6 +181,7 @@ void CLuaSpell::Register()
     SOL_REGISTER("getSpellFamily", CLuaSpell::getSpellFamily);
     SOL_REGISTER("getFlag", CLuaSpell::getFlag);
     SOL_REGISTER("getCastTime", CLuaSpell::getCastTime);
+    SOL_REGISTER("getPrimaryTargetID", CLuaSpell::getPrimaryTargetID);
 }
 
 std::ostream& operator<<(std::ostream& os, const CLuaSpell& spell)

@@ -23,13 +23,13 @@
 
 #include <cstring>
 
-#include "../entities/charentity.h"
 #include "bazaar_close.h"
+#include "entities/charentity.h"
 
 CBazaarClosePacket::CBazaarClosePacket(CCharEntity* PChar)
 {
     this->setType(0x107);
     this->setSize(0x16);
 
-    memcpy(data + (0x04), PChar->GetName().c_str(), PChar->GetName().size());
+    memcpy(data + (0x04), PChar->getName().c_str(), PChar->getName().size());
 }

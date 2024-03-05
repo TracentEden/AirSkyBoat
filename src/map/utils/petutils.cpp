@@ -195,11 +195,6 @@ std::vector<Pet_t*> g_PPetList;
 
 namespace petutils
 {
-    /************************************************************************
-     *                                                                      *
-     *  Загружаем список прототипов питомцев                                    *
-     *                                                                      *
-     ************************************************************************/
 
     void LoadPetList()
     {
@@ -236,7 +231,7 @@ namespace petutils
                 slash_sdt, pierce_sdt, h2h_sdt, impact_sdt, \
                 fire_sdt, ice_sdt, wind_sdt, earth_sdt, lightning_sdt, water_sdt, light_sdt, dark_sdt, \
                 fire_meva, ice_meva, wind_meva, earth_meva, lightning_meva, water_meva, light_meva, dark_meva, \
-                cmbDelay, name_prefix, mob_pools.skill_list_id \
+                cmbDelay, name_prefix, mob_pools.skill_list_id, damageType \
                 FROM pet_list, mob_pools, mob_resistances, mob_family_system \
                 WHERE pet_list.poolid = mob_pools.poolid AND mob_resistances.resist_id = mob_pools.resist_id AND mob_pools.familyid = mob_family_system.familyID";
 
@@ -322,17 +317,12 @@ namespace petutils
                 Pet->cmbDelay       = (uint16)sql->GetIntData(48);
                 Pet->name_prefix    = (uint8)sql->GetUIntData(49);
                 Pet->m_MobSkillList = (uint16)sql->GetUIntData(50);
+                Pet->m_dmgType      = (DAMAGE_TYPE)sql->GetUIntData(52);
 
-                g_PPetList.push_back(Pet);
+                g_PPetList.emplace_back(Pet);
             }
         }
     }
-
-    /************************************************************************
-     *                                                                      *
-     *  Освобождаем список прототипов питомцев                              *
-     *                                                                      *
-     ************************************************************************/
 
     void FreePetList()
     {
@@ -389,19 +379,19 @@ namespace petutils
             switch (rank)
             {
                 case 1:
-                    return (uint16)(153 + (lvl - 50) * 5.0f); // A
+                    return (uint16)(153 + (lvl - 50) * 5.0f);
                 case 2:
-                    return (uint16)(147 + (lvl - 50) * 4.9f); // B
+                    return (uint16)(147 + (lvl - 50) * 4.9f);
                 case 3:
-                    return (uint16)(136 + (lvl - 50) * 4.8f); // C
+                    return (uint16)(136 + (lvl - 50) * 4.8f);
                 case 4:
-                    return (uint16)(126 + (lvl - 50) * 4.7f); // D
+                    return (uint16)(126 + (lvl - 50) * 4.7f);
                 case 5:
-                    return (uint16)(116 + (lvl - 50) * 4.5f); // E
+                    return (uint16)(116 + (lvl - 50) * 4.5f);
                 case 6:
-                    return (uint16)(106 + (lvl - 50) * 4.4f); // F
+                    return (uint16)(106 + (lvl - 50) * 4.4f);
                 case 7:
-                    return (uint16)(96 + (lvl - 50) * 4.3f); // G
+                    return (uint16)(96 + (lvl - 50) * 4.3f);
             }
         }
         else
@@ -409,42 +399,41 @@ namespace petutils
             switch (rank)
             {
                 case 1:
-                    return (uint16)(6 + (lvl - 1) * 3.0f); // A
+                    return (uint16)(6 + (lvl - 1) * 3.0f);
                 case 2:
-                    return (uint16)(5 + (lvl - 1) * 2.9f); // B
+                    return (uint16)(5 + (lvl - 1) * 2.9f);
                 case 3:
-                    return (uint16)(5 + (lvl - 1) * 2.8f); // C
+                    return (uint16)(5 + (lvl - 1) * 2.8f);
                 case 4:
-                    return (uint16)(4 + (lvl - 1) * 2.7f); // D
+                    return (uint16)(4 + (lvl - 1) * 2.7f);
                 case 5:
-                    return (uint16)(4 + (lvl - 1) * 2.5f); // E
+                    return (uint16)(4 + (lvl - 1) * 2.5f);
                 case 6:
-                    return (uint16)(3 + (lvl - 1) * 2.4f); // F
+                    return (uint16)(3 + (lvl - 1) * 2.4f);
                 case 7:
-                    return (uint16)(3 + (lvl - 1) * 2.3f); // G
+                    return (uint16)(3 + (lvl - 1) * 2.3f);
             }
         }
         return 0;
     }
-
     uint16 GetBaseToRank(uint8 rank, uint16 lvl)
     {
         switch (rank)
         {
             case 1:
-                return (5 + ((lvl - 1) * 50) / 100); // A
+                return (5 + ((lvl - 1) * 50) / 100);
             case 2:
-                return (4 + ((lvl - 1) * 45) / 100); // B
+                return (4 + ((lvl - 1) * 45) / 100);
             case 3:
-                return (4 + ((lvl - 1) * 40) / 100); // C
+                return (4 + ((lvl - 1) * 40) / 100);
             case 4:
-                return (3 + ((lvl - 1) * 35) / 100); // D
+                return (3 + ((lvl - 1) * 35) / 100);
             case 5:
-                return (3 + ((lvl - 1) * 30) / 100); // E
+                return (3 + ((lvl - 1) * 30) / 100);
             case 6:
-                return (2 + ((lvl - 1) * 25) / 100); // F
+                return (2 + ((lvl - 1) * 25) / 100);
             case 7:
-                return (2 + ((lvl - 1) * 20) / 100); // G
+                return (2 + ((lvl - 1) * 20) / 100);
         }
         return 0;
     }
@@ -795,21 +784,21 @@ namespace petutils
         int32 scaleOver60       = 2; // Column number with a modifier for calculating MP after level 60
         // int32 scaleOver75       = 3; // Column number with a modifier for calculating Stats after level 75
 
-        uint8 grade;
+        uint8 grade = 0;
 
-        uint8   mLvl = PPet->GetMLevel();
+        uint8   mlvl = PPet->GetMLevel();
         JOBTYPE mjob = PPet->GetMJob();
         JOBTYPE sjob = PPet->GetSJob();
         // Calculate HP gain from main job
-        int32 mainLevelOver30     = std::clamp(mLvl - 30, 0, 30); // Calculate condition +1HP every lvl after level 30
-        int32 mainLevelUpTo60     = (mLvl < 60 ? mLvl - 1 : 59);  // First calculation mode up to level 60 (Used the same for MP)
-        int32 mainLevelOver60To75 = std::clamp(mLvl - 60, 0, 15); // Second calculation mode after level 60
-        int32 mainLevelOver75     = (mLvl < 75 ? 0 : mLvl - 75);  // Third calculation mode after level 75
+        int32 mainLevelOver30     = std::clamp(mlvl - 30, 0, 30); // Calculate condition +1HP every lvl after level 30
+        int32 mainLevelUpTo60     = (mlvl < 60 ? mlvl - 1 : 59);  // First calculation mode up to level 60 (Used the same for MP)
+        int32 mainLevelOver60To75 = std::clamp(mlvl - 60, 0, 15); // Second calculation mode after level 60
+        int32 mainLevelOver75     = (mlvl < 75 ? 0 : mlvl - 75);  // Third calculation mode after level 75
 
         // Calculate the bonus amount of HP
-        int32 mainLevelOver10           = (mLvl < 10 ? 0 : mLvl - 10);  // +2HP on every level after 10
-        int32 mainLevelOver50andUnder60 = std::clamp(mLvl - 50, 0, 10); // +2HP at each level between level 50 and 60
-        int32 mainLevelOver60           = (mLvl < 60 ? 0 : mLvl - 60);
+        int32 mainLevelOver10           = (mlvl < 10 ? 0 : mlvl - 10);  // +2HP on every level after 10
+        int32 mainLevelOver50andUnder60 = std::clamp(mlvl - 50, 0, 10); // +2HP at each level between level 50 and 60
+        int32 mainLevelOver60           = (mlvl < 60 ? 0 : mlvl - 60);
 
         // Calculate raceStat jobStat bonusStat sJobStat
         // Calculate by race
@@ -820,7 +809,7 @@ namespace petutils
                    (grade::GetHPScale(grade, scaleOver30Column) * mainLevelOver30) + (grade::GetHPScale(grade, scaleOver60Column) * mainLevelOver60To75) +
                    (grade::GetHPScale(grade, scaleOver75Column) * mainLevelOver75);
 
-        // raceStat = (int32)(statScale[grade][baseValueColumn] + statScale[grade][scaleTo60Column] * (mLvl - 1));
+        // raceStat = (int32)(statScale[grade][baseValueColumn] + statScale[grade][scaleTo60Column] * (mlvl - 1));
 
         // Calculation by main job
         grade = grade::GetJobGrade(mjob, 0);
@@ -907,6 +896,7 @@ namespace petutils
 
         static_cast<CItemWeapon*>(PPet->m_Weapons[SLOT_RANGED])->setSkillType(SKILL_AUTOMATON_RANGED);
         static_cast<CItemWeapon*>(PPet->m_Weapons[SLOT_RANGED])->setDamage((PPet->GetSkill(SKILL_AUTOMATON_RANGED) / 9) * 2 + 3);
+        static_cast<CItemWeapon*>(PPet->m_Weapons[SLOT_RANGED])->setDmgType(DAMAGE_TYPE::PIERCING);
 
         CAutomatonEntity* PAutomaton = static_cast<CAutomatonEntity*>(PPet);
 
@@ -916,26 +906,22 @@ namespace petutils
         switch (PAutomaton->getFrame())
         {
             default: // case FRAME_HARLEQUIN:
-                PPet->WorkingSkills.evasion = battleutils::GetMaxSkill(2, mLvl > 99 ? 99 : mLvl);
-                PPet->setModifier(Mod::DEF, battleutils::GetMaxSkill(10, mLvl > 99 ? 99 : mLvl));
-                PPet->m_dmgType = DAMAGE_TYPE::IMPACT;
+                PPet->WorkingSkills.evasion = battleutils::GetMaxSkill(2, mlvl > 99 ? 99 : mlvl);
+                PPet->setModifier(Mod::DEF, battleutils::GetMaxSkill(10, mlvl > 99 ? 99 : mlvl));
                 break;
             case FRAME_VALOREDGE:
                 PPet->setModifier(Mod::SHIELDBLOCKRATE, 45);
                 PPet->setMobMod(MOBMOD_CAN_SHIELD_BLOCK, 1);
-                PPet->WorkingSkills.evasion = battleutils::GetMaxSkill(5, mLvl > 99 ? 99 : mLvl);
-                PPet->setModifier(Mod::DEF, battleutils::GetMaxSkill(5, mLvl > 99 ? 99 : mLvl));
-                PPet->m_dmgType = DAMAGE_TYPE::SLASHING;
+                PPet->WorkingSkills.evasion = battleutils::GetMaxSkill(5, mlvl > 99 ? 99 : mlvl);
+                PPet->setModifier(Mod::DEF, battleutils::GetMaxSkill(5, mlvl > 99 ? 99 : mlvl));
                 break;
             case FRAME_SHARPSHOT:
-                PPet->WorkingSkills.evasion = battleutils::GetMaxSkill(1, mLvl > 99 ? 99 : mLvl);
-                PPet->setModifier(Mod::DEF, battleutils::GetMaxSkill(11, mLvl > 99 ? 99 : mLvl));
-                PPet->m_dmgType = DAMAGE_TYPE::PIERCING;
+                PPet->WorkingSkills.evasion = battleutils::GetMaxSkill(1, mlvl > 99 ? 99 : mlvl);
+                PPet->setModifier(Mod::DEF, battleutils::GetMaxSkill(11, mlvl > 99 ? 99 : mlvl));
                 break;
             case FRAME_STORMWAKER:
-                PPet->WorkingSkills.evasion = battleutils::GetMaxSkill(10, mLvl > 99 ? 99 : mLvl);
-                PPet->setModifier(Mod::DEF, battleutils::GetMaxSkill(12, mLvl > 99 ? 99 : mLvl));
-                PPet->m_dmgType = DAMAGE_TYPE::IMPACT;
+                PPet->WorkingSkills.evasion = battleutils::GetMaxSkill(10, mlvl > 99 ? 99 : mlvl);
+                PPet->setModifier(Mod::DEF, battleutils::GetMaxSkill(12, mlvl > 99 ? 99 : mlvl));
                 break;
         }
 
@@ -1133,9 +1119,6 @@ namespace petutils
             PPet->addModifier(Mod::MACC, PMaster->getMod(Mod::PET_MACC_MEVA));
             PPet->addModifier(Mod::MEVA, PMaster->getMod(Mod::PET_MACC_MEVA));
         }
-
-        // Set damageType for Avatars and Wyvern
-        PPet->m_dmgType = DAMAGE_TYPE::SLASHING;
     }
 
     void CalculateAvatarStats(CBattleEntity* PMaster, CPetEntity* PPet)
@@ -1175,11 +1158,11 @@ namespace petutils
         }
         else
         { // should never happen
-            ShowDebug("%s summoned an avatar but is not SMN main or SMN sub! Please report. ", PMaster->GetName());
+            ShowDebug("%s summoned an avatar but is not SMN main or SMN sub! Please report. ", PMaster->getName());
             PPet->SetMLevel(1);
         }
 
-        LoadAvatarStats(PMaster, PPet); // follows mobs calcs with subjob
+        LoadAvatarStats(PMaster, PPet); // follows PC calcs (w/o SJ)
 
         PPet->m_SpellListContainer = mobSpellList::GetMobSpellList(PPetData->spellList);
 
@@ -1196,12 +1179,10 @@ namespace petutils
 
         // In a 2014 update SE updated Avatar base damage
         // Based on testing this value appears to be Level now instead of Level * 0.74f
-        // uint16 weaponDamage = 1 + mLvl;
         uint16 weaponDamage = 10 + (mLvl * 0.5);
         if (petID == PETID_CARBUNCLE || petID == PETID_CAIT_SITH)
         {
             weaponDamage = 3 + (mLvl * 0.5);
-            // weaponDamage = static_cast<uint16>(floor(mLvl * 0.9f));
         }
 
         static_cast<CItemWeapon*>(PPet->m_Weapons[SLOT_MAIN])->setDamage(weaponDamage);
@@ -1287,9 +1268,6 @@ namespace petutils
         // Set D evasion and def
         PPet->setModifier(Mod::EVA, battleutils::GetMaxSkill(SKILL_HAND_TO_HAND, JOB_WAR, mLvl > 99 ? 99 : mLvl));
         PPet->setModifier(Mod::DEF, battleutils::GetMaxSkill(SKILL_HAND_TO_HAND, JOB_WAR, mLvl > 99 ? 99 : mLvl));
-
-        // Set wyvern damageType to slashing damage. "Wyverns do slashing damage..." https://www.bg-wiki.com/ffxi/Wyvern_(Dragoon_Pet)
-        PPet->m_dmgType = DAMAGE_TYPE::SLASHING;
 
         // Job Point: Wyvern Max HP
         if (PMaster->objtype == TYPE_PC)
@@ -1432,11 +1410,9 @@ namespace petutils
     {
         // set C magic evasion
         PPet->setModifier(Mod::MEVA, battleutils::GetMaxSkill(SKILL_ELEMENTAL_MAGIC, JOB_RDM, PPet->GetMLevel() > 99 ? 99 : PPet->GetMLevel()));
-        PMaster->applyPetModifiers(PPet);
-
-        // Max [HP/MP] Boost traits
-        PPet->UpdateHealth();
         PPet->health.tp = 0;
+        PMaster->applyPetModifiers(PPet);
+        PPet->UpdateHealth();
         PPet->health.hp = PPet->GetMaxHP();
         PPet->health.mp = PPet->GetMaxMP();
 
@@ -1494,15 +1470,13 @@ namespace petutils
         }
     }
 
-    /************************************************************************
-     *                                                                      *
-     *                                                                      *
-     *                                                                      *
-     ************************************************************************/
-
     void SpawnPet(CBattleEntity* PMaster, uint32 PetID, bool spawningFromZone)
     {
-        XI_DEBUG_BREAK_IF(PMaster->PPet != nullptr);
+        if (PMaster->PPet != nullptr)
+        {
+            ShowWarning("Pet was not null for %s.", PMaster->getName());
+            return;
+        }
 
         if (PMaster->objtype == TYPE_PC &&
             (PetID == PETID_HARLEQUINFRAME || PetID == PETID_VALOREDGEFRAME || PetID == PETID_SHARPSHOTFRAME || PetID == PETID_STORMWAKERFRAME))
@@ -1631,9 +1605,23 @@ namespace petutils
 
     void DetachPet(CBattleEntity* PMaster, bool petUncharm)
     {
-        XI_DEBUG_BREAK_IF(PMaster == nullptr);
-        XI_DEBUG_BREAK_IF(PMaster->PPet == nullptr);
-        XI_DEBUG_BREAK_IF(PMaster->objtype != TYPE_PC);
+        if (PMaster == nullptr)
+        {
+            ShowWarning("PMaster is null.");
+            return;
+        }
+
+        if (PMaster->PPet == nullptr)
+        {
+            ShowWarning("Pet is null for %s.", PMaster->getName());
+            return;
+        }
+
+        if (PMaster->objtype != TYPE_PC)
+        {
+            ShowWarning("Non-PC passed into function (%s)", PMaster->getName());
+            return;
+        }
 
         CBattleEntity* PPet  = PMaster->PPet;
         CCharEntity*   PChar = static_cast<CCharEntity*>(PMaster);
@@ -1659,6 +1647,7 @@ namespace petutils
                 if (PMob->PEnmityContainer->IsWithinEnmityRange(PMob->PMaster) && petUncharm)
                 {
                     PMob->PEnmityContainer->UpdateEnmity(PChar, 1, 1);
+                    // need to set battle target to prevent mob enmity clear if in attack state when uncharming
                     PMob->SetBattleTargetID(PChar->targid);
                 }
                 else
@@ -1691,25 +1680,6 @@ namespace petutils
             PMob->PMaster    = nullptr;
 
             PMob->PAI->SetController(std::make_unique<CMobController>(PMob));
-
-            // clear all enmity towards a charmed mob when it is released
-            // use two loops to avoid modifying the container while iterating over it
-            auto&                  notorietyContainer = PMob->PNotorietyContainer;
-            std::list<CMobEntity*> mobsToPacify;
-
-            // first collect the mobs with hate towards the formerly charmed mob
-            for (auto* entityWithEnmity : *notorietyContainer)
-            {
-                if (entityWithEnmity->objtype == TYPE_MOB)
-                {
-                    mobsToPacify.push_back(static_cast<CMobEntity*>(entityWithEnmity));
-                }
-            }
-            // then remove the formerly charmed mob from those mobs enmity containers
-            for (auto* mobToPacify : mobsToPacify)
-            {
-                mobToPacify->PEnmityContainer->Clear(PMob->id);
-            }
         }
         else if (PPet->objtype == TYPE_PET)
         {
@@ -1752,16 +1722,19 @@ namespace petutils
         PChar->pushPacket(new CPetSyncPacket(PChar));
     }
 
-    /************************************************************************
-     *                                                                      *
-     *                                                                      *
-     *                                                                      *
-     ************************************************************************/
-
     void DespawnPet(CBattleEntity* PMaster)
     {
-        XI_DEBUG_BREAK_IF(PMaster == nullptr);
-        XI_DEBUG_BREAK_IF(PMaster->PPet == nullptr);
+        if (PMaster == nullptr)
+        {
+            ShowWarning("PMaster is null.");
+            return;
+        }
+
+        if (PMaster->PPet == nullptr)
+        {
+            ShowWarning("Pet is null for %s.", PMaster->getName());
+            return;
+        }
 
         petutils::DetachPet(PMaster);
     }
@@ -2018,8 +1991,17 @@ namespace petutils
 
     void LoadPet(CBattleEntity* PMaster, uint32 PetID, bool spawningFromZone)
     {
-        XI_DEBUG_BREAK_IF(PMaster == nullptr);
-        XI_DEBUG_BREAK_IF(PetID >= MAX_PETID);
+        if (PMaster == nullptr)
+        {
+            ShowWarning("PMaster is null.");
+            return;
+        }
+
+        if (PetID >= MAX_PETID)
+        {
+            ShowWarning("PetID (%d) exceeds MAX_PETID", PetID);
+            return;
+        }
 
         Pet_t* PPetData = *std::find_if(g_PPetList.begin(), g_PPetList.end(), [PetID](Pet_t* t)
                                         { return t->PetID == PetID; });
@@ -2167,7 +2149,7 @@ namespace petutils
             PPet->look.size = MODEL_AUTOMATON;
         }
 
-        // Set core member values
+
         PPet->m_name_prefix  = PPetData->name_prefix;
         PPet->m_Family       = PPetData->m_Family;
         PPet->m_MobSkillList = PPetData->m_MobSkillList;
@@ -2219,6 +2201,8 @@ namespace petutils
         PPet->status        = STATUS_TYPE::NORMAL;
         PPet->m_ModelRadius = PPetData->radius;
         PPet->m_EcoSystem   = PPetData->EcoSystem;
+        // set the damage type of the pet
+        static_cast<CItemWeapon*>(PPet->m_Weapons[SLOT_MAIN])->setDmgType(PPetData->m_dmgType);
 
         PMaster->PPet = PPet;
     }

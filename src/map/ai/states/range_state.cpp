@@ -20,8 +20,8 @@ along with this program.  If not, see http://www.gnu.org/licenses/
 */
 
 #include "range_state.h"
+
 #include "ai/ai_container.h"
-#include "entities/battleentity.h"
 #include "entities/charentity.h"
 #include "entities/trustentity.h"
 #include "items/item_weapon.h"
@@ -53,10 +53,7 @@ CRangeState::CRangeState(CBattleEntity* PEntity, uint16 targid)
     }
 
     auto delay = m_PEntity->GetRangedWeaponDelay(false);
-
-    m_initialDamage = PEntity->GetRangedWeaponDmg();
-    m_initialDelay  = delay;
-    delay           = battleutils::GetSnapshotReduction(m_PEntity, delay);
+    delay      = battleutils::GetSnapshotReduction(m_PEntity, delay);
 
     // TODO: Allow trusts to use this
     if (auto* PChar = dynamic_cast<CCharEntity*>(m_PEntity))
@@ -106,19 +103,7 @@ bool CRangeState::Update(time_point tick)
     {
         auto* PTarget = m_PEntity->IsValidTarget(m_targid, TARGET_ENEMY, m_errorMsg);
 
-        if (tick > GetEntryTime())
-        {
-            if (m_initialDamage != m_PEntity->GetRangedWeaponDmg() || m_initialDelay != m_PEntity->GetRangedWeaponDelay(false))
-            {
-                if (auto PChar = dynamic_cast<CCharEntity*>(m_PEntity))
-                {
-                    m_errorMsg = std::make_unique<CMessageBasicPacket>(PChar, PChar, 0, 0, MSGBASIC_NO_RANGED_WEAPON);
-                }
-            }
-        }
-
         CanUseRangedAttack(PTarget, true);
-
         if (HasMoved())
         {
             m_errorMsg = std::make_unique<CMessageBasicPacket>(m_PEntity, m_PEntity, 0, 0, MSGBASIC_MOVE_AND_INTERRUPT);
@@ -141,7 +126,7 @@ bool CRangeState::Update(time_point tick)
             {
                 PChar->pushPacket(m_errorMsg.release());
             }
-
+            // reset aim time so interrupted players only have to wait the correct 2.7s until next shot
             m_aimTime = std::chrono::seconds(0);
             m_PEntity->loc.zone->PushPacket(m_PEntity, CHAR_INRANGE_SELF, new CActionPacket(action));
         }
@@ -155,13 +140,13 @@ bool CRangeState::Update(time_point tick)
         Complete();
     }
 
-    if (IsCompleted())
+    if (IsCompleted() && tick > GetEntryTime() + m_aimTime + m_returnWeaponDelay)
     {
-        if (tick > GetEntryTime() + m_aimTime + m_returnWeaponDelay)
+        if (auto* PChar = dynamic_cast<CCharEntity*>(m_PEntity))
         {
-            ((CCharEntity*)m_PEntity)->m_LastRangedAttackTime = GetEntryTime() + m_aimTime + m_returnWeaponDelay;
-            return true;
+            PChar->m_LastRangedAttackTime = GetEntryTime() + m_aimTime + m_returnWeaponDelay;
         }
+        return true;
     }
 
     return false;
@@ -233,10 +218,15 @@ bool CRangeState::CanUseRangedAttack(CBattleEntity* PTarget, bool isEndOfAttack)
         m_errorMsg = std::make_unique<CMessageBasicPacket>(m_PEntity, PTarget, 0, 0, MSGBASIC_CANNOT_PERFORM_ACTION);
         return false;
     }
-    if (m_PEntity->PAI->getTick() - ((CCharEntity*)m_PEntity)->m_LastRangedAttackTime < m_freePhaseTime)
+
+    // make sure player is waiting the appropriate time between ranged attacks
+    if (auto PChar = dynamic_cast<CCharEntity*>(m_PEntity))
     {
-        m_errorMsg = std::make_unique<CMessageBasicPacket>(m_PEntity, PTarget, 0, 0, MSGBASIC_WAIT_LONGER);
-        return false;
+        if (m_PEntity->PAI->getTick() - PChar->m_LastRangedAttackTime < m_freePhaseTime)
+        {
+            m_errorMsg = std::make_unique<CMessageBasicPacket>(m_PEntity, PTarget, 0, 0, MSGBASIC_WAIT_LONGER);
+            return false;
+        }
     }
 
     uint8 anim = m_PEntity->animation;
