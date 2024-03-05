@@ -40,6 +40,7 @@
 #include "linkshell.h"
 #include "map.h"
 #include "message.h"
+#include "monstrosity.h"
 #include "notoriety_container.h"
 #include "party.h"
 #include "spell.h"
@@ -123,7 +124,7 @@ const uint16 CZone::ReducedVerticalAggroZones[] = {
 
 CZone::CZone(ZONEID ZoneID, REGION_TYPE RegionID, CONTINENT_TYPE ContinentID, uint8 levelRestriction)
 : m_zoneID(ZoneID)
-, m_zoneType(ZONE_TYPE::NONE)
+, m_zoneType(ZONE_TYPE::UNKNOWN)
 , m_regionID(RegionID)
 , m_continentID(ContinentID)
 , m_levelRestriction(levelRestriction)
@@ -163,8 +164,36 @@ CZone::CZone(ZONEID ZoneID, REGION_TYPE RegionID, CONTINENT_TYPE ContinentID, ui
 CZone::~CZone()
 {
     destroy(m_TreasurePool);
-    destroy(m_CampaignHandler);
     destroy(m_zoneEntities);
+    destroy(m_BattlefieldHandler);
+
+    if (m_CampaignHandler)
+    {
+        destroy(m_CampaignHandler);
+    }
+
+    if (m_navMesh)
+    {
+        destroy(m_navMesh);
+    }
+
+    if (lineOfSight)
+    {
+        destroy(lineOfSight);
+    }
+
+    // Manually delete and clear m_triggerAreaList
+    for (auto triggerArea : m_triggerAreaList)
+    {
+        destroy(triggerArea);
+    }
+    m_triggerAreaList.clear();
+
+    for (auto zoneLine : m_zoneLineList)
+    {
+        destroy(zoneLine);
+    }
+    m_zoneLineList.clear();
 }
 
 ZONEID CZone::GetID()
@@ -172,7 +201,7 @@ ZONEID CZone::GetID()
     return m_zoneID;
 }
 
-ZONE_TYPE CZone::GetType()
+ZONE_TYPE CZone::GetTypeMask()
 {
     return m_zoneType;
 }
@@ -356,23 +385,23 @@ void CZone::LoadZoneLines()
         "zone_settings.zonetype " // 6
         "FROM zonelines INNER JOIN zone_settings "
         "ON zonelines.tozone = zone_settings.zoneid "
-        "WHERE zonelines.fromzone = %u;";
+        "WHERE zonelines.fromzone = %u";
 
-    int32 ret = sql->Query(fmtQuery, m_zoneID);
+    int32 ret = _sql->Query(fmtQuery, m_zoneID);
 
-    if (ret != SQL_ERROR && sql->NumRows() != 0)
+    if (ret != SQL_ERROR && _sql->NumRows() != 0)
     {
-        while (sql->NextRow() == SQL_SUCCESS)
+        while (_sql->NextRow() == SQL_SUCCESS)
         {
             zoneLine_t* zl = new zoneLine_t;
 
-            zl->m_zoneLineID     = (uint32)sql->GetIntData(0);
-            zl->m_toZone         = (uint16)sql->GetIntData(1);
-            zl->m_toPos.x        = sql->GetFloatData(2);
-            zl->m_toPos.y        = sql->GetFloatData(3);
-            zl->m_toPos.z        = sql->GetFloatData(4);
-            zl->m_toPos.rotation = (uint8)sql->GetIntData(5);
-            zl->m_toZoneType     = (ZONE_TYPE)sql->GetUIntData(6);
+            zl->m_zoneLineID     = (uint32)_sql->GetIntData(0);
+            zl->m_toZone         = (uint16)_sql->GetIntData(1);
+            zl->m_toPos.x        = _sql->GetFloatData(2);
+            zl->m_toPos.y        = _sql->GetFloatData(3);
+            zl->m_toPos.z        = _sql->GetFloatData(4);
+            zl->m_toPos.rotation = (uint8)_sql->GetIntData(5);
+            zl->m_toZoneType     = (ZONE_TYPE)_sql->GetUIntData(6);
 
             m_zoneLineList.emplace_back(zl);
         }
@@ -396,13 +425,13 @@ void CZone::LoadZoneLines()
 void CZone::LoadZoneWeather()
 {
     TracyZoneScoped;
-    static const char* Query = "SELECT weather FROM zone_weather WHERE zone = %u;";
+    static const char* Query = "SELECT weather FROM zone_weather WHERE zone = %u";
 
-    int32 ret = sql->Query(Query, m_zoneID);
-    if (ret != SQL_ERROR && sql->NumRows() != 0)
+    int32 ret = _sql->Query(Query, m_zoneID);
+    if (ret != SQL_ERROR && _sql->NumRows() != 0)
     {
-        sql->NextRow();
-        auto* weatherBlob = reinterpret_cast<uint16*>(sql->GetData(0));
+        _sql->NextRow();
+        auto* weatherBlob = reinterpret_cast<uint16*>(_sql->GetData(0));
         for (uint16 i = 0; i < WEATHER_CYCLE; i++)
         {
             if (weatherBlob[i])
@@ -443,24 +472,24 @@ void CZone::LoadZoneSettings()
                                "WHERE zoneid = %u "
                                "LIMIT 1";
 
-    if (sql->Query(Query, m_zoneID) != SQL_ERROR && sql->NumRows() != 0 && sql->NextRow() == SQL_SUCCESS)
+    if (_sql->Query(Query, m_zoneID) != SQL_ERROR && _sql->NumRows() != 0 && _sql->NextRow() == SQL_SUCCESS)
     {
-        m_zoneName.insert(0, (const char*)sql->GetData(0));
+        m_zoneName.insert(0, (const char*)_sql->GetData(0));
 
-        inet_pton(AF_INET, (const char*)sql->GetData(1), &m_zoneIP);
-        m_zonePort              = (uint16)sql->GetUIntData(2);
-        m_zoneMusic.m_songDay   = (uint16)sql->GetUIntData(3);          // background music (day)
-        m_zoneMusic.m_songNight = (uint16)sql->GetUIntData(4);          // background music (night)
-        m_zoneMusic.m_bSongS    = (uint16)sql->GetUIntData(5);          // solo battle music
-        m_zoneMusic.m_bSongM    = (uint16)sql->GetUIntData(6);          // party battle music
-        m_tax                   = (uint16)(sql->GetFloatData(7) * 100); // tax for bazaar
-        m_miscMask              = (uint16)sql->GetUIntData(8);
-        m_updatedNavmesh        = (bool)sql->GetIntData(10);
-        m_zoneCarefulPathing    = (bool)sql->GetIntData(11);
+        inet_pton(AF_INET, (const char*)_sql->GetData(1), &m_zoneIP);
+        m_zonePort              = (uint16)_sql->GetUIntData(2);
+        m_zoneMusic.m_songDay   = (uint16)_sql->GetUIntData(3);          // background music (day)
+        m_zoneMusic.m_songNight = (uint16)_sql->GetUIntData(4);          // background music (night)
+        m_zoneMusic.m_bSongS    = (uint16)_sql->GetUIntData(5);          // solo battle music
+        m_zoneMusic.m_bSongM    = (uint16)_sql->GetUIntData(6);          // party battle music
+        m_tax                   = (uint16)(_sql->GetFloatData(7) * 100); // tax for bazaar
+        m_miscMask              = (uint16)_sql->GetUIntData(8);
+        m_updatedNavmesh        = (bool)_sql->GetIntData(10);
+        m_zoneCarefulPathing    = (bool)_sql->GetIntData(11);
 
-        m_zoneType = static_cast<ZONE_TYPE>(sql->GetUIntData(9));
+        m_zoneType = static_cast<ZONE_TYPE>(_sql->GetUIntData(9));
 
-        if (sql->GetData(12) != nullptr) // сейчас нельзя использовать bcnmid, т.к. они начинаются с нуля
+        if (_sql->GetData(10) != nullptr) // bcnmid cannot be used now, because they start from scratch
         {
             m_BattlefieldHandler = new CBattlefieldHandler(this);
         }
@@ -468,9 +497,9 @@ void CZone::LoadZoneSettings()
         {
             m_TreasurePool = new CTreasurePool(TREASUREPOOL_ZONE);
         }
-        if (m_CampaignHandler->m_PZone == nullptr)
+        if (m_CampaignHandler && m_CampaignHandler->m_PZone == nullptr)
         {
-            m_CampaignHandler = nullptr;
+            destroy(m_CampaignHandler);
         }
     }
     else
@@ -500,7 +529,7 @@ void CZone::LoadNavMesh()
 
 void CZone::LoadZoneLos()
 {
-    if (GetType() == ZONE_TYPE::CITY || (m_miscMask & MISC_LOS_OFF))
+    if (GetTypeMask() & ZONE_TYPE::CITY || (m_miscMask & MISC_LOS_OFF))
     {
         // Skip cities and zones with line of sight turned off
         return;
@@ -509,7 +538,7 @@ void CZone::LoadZoneLos()
     if (lineOfSight)
     {
         // Clean up previous object if one exists.
-        delete lineOfSight;
+        destroy(lineOfSight);
     }
 
     lineOfSight = ZoneLos::Load((uint16)GetID(), fmt::sprintf("losmeshes/%s.obj", getName()));
@@ -715,8 +744,12 @@ void CZone::UpdateWeather()
         Weather = weatherType.normal;
     }
 
-    // Fog in the morning between the hours of 2 and 7 if there is not a specific elemental weather to override it
-    if ((CurrentVanaDate >= StartFogVanaDate) && (CurrentVanaDate < EndFogVanaDate) && (Weather < WEATHER_HOT_SPELL) && (GetType() > ZONE_TYPE::CITY))
+    // This check is incorrect, fog is not simply a time of day, though it may consistently happen in SOME zones
+    // (Al'Taieu likely has it every morning, while Atohwa Chasm can have it at random any time of day)
+    if ((CurrentVanaDate >= StartFogVanaDate) &&
+        (CurrentVanaDate < EndFogVanaDate) &&
+        (Weather < WEATHER_HOT_SPELL) &&
+        !(GetTypeMask() & ZONE_TYPE::CITY))
     {
         Weather = WEATHER_FOG;
         // Force the weather to change by 7 am
@@ -1062,14 +1095,14 @@ void CZone::CharZoneIn(CCharEntity* PChar)
     PChar->ReloadPartyInc();
 
     // Zone-wide treasure pool takes precendence over all others
-    if (m_TreasurePool != nullptr && m_TreasurePool->GetPoolType() == TREASUREPOOL_ZONE)
+    if (m_TreasurePool && m_TreasurePool->GetPoolType() == TREASUREPOOL_ZONE)
     {
         PChar->PTreasurePool = m_TreasurePool;
         PChar->PTreasurePool->AddMember(PChar);
     }
     else
     {
-        if (PChar->PParty != nullptr)
+        if (PChar->PParty)
         {
             PChar->PParty->ReloadTreasurePool(PChar);
         }
@@ -1080,7 +1113,7 @@ void CZone::CharZoneIn(CCharEntity* PChar)
         }
     }
 
-    if (m_zoneType != ZONE_TYPE::DUNGEON_INSTANCED)
+    if (!(m_zoneType & ZONE_TYPE::INSTANCED))
     {
         charutils::ClearTempItems(PChar);
         PChar->PInstance = nullptr;
@@ -1308,8 +1341,6 @@ void CZone::CheckTriggerAreas()
     }
 }
 
-//==========================================================
-
 void CZone::SetZoneDirection(uint8 direction)
 {
     m_ZoneDirection = direction;
@@ -1347,22 +1378,3 @@ uint16 CZone::GetZoneAnimLength()
     return m_ZoneAnimLength;
 }
 
-//===========================================================
-
-/*
-id              CBaseEntity
-name            CBaseEntity
-pos_rot         CBaseEntity
-pos_x           CBaseEntity
-pos_y           CBaseEntity
-pos_z           CBaseEntity
-speed           CBaseEntity
-speedsub        CBaseEntity
-animation       CBaseEntity
-animationsub    CBaseEntity
-namevis         npc+mob
-status          CBaseEntity
-unknown
-look            CBaseEntity
-name_prefix
-*/

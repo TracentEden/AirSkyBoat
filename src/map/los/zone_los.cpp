@@ -26,6 +26,7 @@
 #include <fast_obj.h>
 #endif
 
+#include "common/tracy.h"
 #include "common/zlib.h"
 #include "entities/baseentity.h"
 
@@ -43,7 +44,7 @@ ZoneLos::ZoneLos(Triangle* elements, int elementCount)
 {
 }
 
-ZoneLos* ZoneLos::Load(uint16 zoneId, std::string pathToObj)
+ZoneLos* ZoneLos::Load(uint16 zoneId, std::string const& pathToObj)
 {
     TracyZoneScoped;
     // Check if file exists before loading the OBJ model.

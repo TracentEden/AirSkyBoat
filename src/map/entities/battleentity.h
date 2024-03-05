@@ -415,6 +415,7 @@ DECLARE_FORMAT_AS_UNDERLYING(SUBEFFECT);
 
 enum TARGETTYPE
 {
+    TARGET_NONE                    = 0x00,
     TARGET_SELF                    = 0x01,
     TARGET_PLAYER_PARTY            = 0x02,
     TARGET_ENEMY                   = 0x04,
@@ -456,25 +457,26 @@ enum SKILLCHAIN_ELEMENT
 #define MAX_SKILLCHAIN_COUNT (5)
 DECLARE_FORMAT_AS_UNDERLYING(SKILLCHAIN_ELEMENT);
 
-enum IMMUNITY : uint16
+enum IMMUNITY : uint32
 {
-    IMMUNITY_NONE        = 0x00,
-    IMMUNITY_SLEEP       = 0x01,
-    IMMUNITY_GRAVITY     = 0x02,
-    IMMUNITY_BIND        = 0x04,
-    IMMUNITY_STUN        = 0x08,
-    IMMUNITY_SILENCE     = 0x10,   // 16
-    IMMUNITY_PARALYZE    = 0x20,   // 32
-    IMMUNITY_BLIND       = 0x40,   // 64
-    IMMUNITY_SLOW        = 0x80,   // 128
-    IMMUNITY_POISON      = 0x100,  // 256
-    IMMUNITY_ELEGY       = 0x200,  // 512
-    IMMUNITY_REQUIEM     = 0x400,  // 1024
-    IMMUNITY_LIGHT_SLEEP = 0x800,  // 2048
-    IMMUNITY_DARK_SLEEP  = 0x1000, // 4096
-    IMMUNITY_ASPIR       = 0x2000, // 8192
-    IMMUNITY_TERROR      = 0x4000, // 16384
-    IMMUNITY_DISPEL      = 0x8000, // 32768
+    IMMUNITY_NONE        = 0x00000000,
+    IMMUNITY_SLEEP       = 0x00000001,
+    IMMUNITY_GRAVITY     = 0x00000002,
+    IMMUNITY_BIND        = 0x00000004,
+    IMMUNITY_STUN        = 0x00000008,
+    IMMUNITY_SILENCE     = 0x00000010, // 16
+    IMMUNITY_PARALYZE    = 0x00000020, // 32
+    IMMUNITY_BLIND       = 0x00000040, // 64
+    IMMUNITY_SLOW        = 0x00000080, // 128
+    IMMUNITY_POISON      = 0x00000100, // 256
+    IMMUNITY_ELEGY       = 0x00000200, // 512
+    IMMUNITY_REQUIEM     = 0x00000400, // 1024
+    IMMUNITY_LIGHT_SLEEP = 0x00000800, // 2048
+    IMMUNITY_DARK_SLEEP  = 0x00001000, // 4096
+    IMMUNITY_ASPIR       = 0x00002000, // 8192
+    IMMUNITY_TERROR      = 0x00004000, // 16384
+    IMMUNITY_DISPEL      = 0x00008000, // 32768
+    IMMUNITY_PETRIFY     = 0x00010000, // 65536
 };
 DECLARE_FORMAT_AS_UNDERLYING(IMMUNITY);
 
@@ -534,6 +536,7 @@ class CSpell;
 class CItemEquipment;
 class CAbilityState;
 class CAttackState;
+class CMobSkillState;
 class CWeaponSkillState;
 class CMagicState;
 class CDespawnState;
@@ -556,7 +559,7 @@ public:
     uint16 MND();
     uint16 CHR();
     uint16 DEF();
-    uint16 ATT(uint16 slot = SLOT_MAIN, bool ignoreWeaponMods = false);
+    uint16 ATT(SLOTTYPE slot);
     uint16 ACC(uint8 attackNumber, int8 offsetAccuracy);
     uint16 EVA();
     uint16 RATT(uint8 skill, float distance, uint16 bonusSkill = 0);
@@ -574,6 +577,7 @@ public:
     bool isAlive();
     bool isInAssault();
     bool isInDynamis();
+    bool isInMogHouse();
     bool hasImmunity(uint32 imID);
     bool isAsleep();
     bool isMounted();
@@ -599,16 +603,16 @@ public:
     int32 GetMaxMP() const;
     void  UpdateHealth(); // recalculation of the maximum amount of hp and mp, as well as adjusting their current values
 
-    int16  GetWeaponDelay(bool tp);       // returns delay of combined weapons
-    float  GetMeleeRange() const;         // returns the distance considered to be within melee range of the entity
-    int16  GetRangedWeaponDelay(bool tp); // returns delay of ranged weapon + ammo where applicable
-    int16  GetAmmoDelay();                // returns delay of ammo (for cooldown between shots)
-    uint16 GetMainWeaponDmg();            // returns total main hand DMG
-    uint16 GetSubWeaponDmg();             // returns total sub weapon DMG
-    uint16 GetRangedWeaponDmg();          // returns total ranged weapon DMG
-    uint16 GetMainWeaponRank();           // returns total main hand DMG Rank
-    uint16 GetSubWeaponRank();            // returns total sub weapon DMG Rank
-    uint16 GetRangedWeaponRank();         // returns total ranged weapon DMG Rank
+    int16  GetWeaponDelay(bool tp);              // returns delay of combined weapons
+    float  GetMeleeRange() const;                // returns the distance considered to be within melee range of the entity
+    int16  GetRangedWeaponDelay(bool forTPCalc); // returns delay of ranged weapon + ammo where applicable
+    int16  GetAmmoDelay();                       // returns delay of ammo (for cooldown between shots)
+    uint16 GetMainWeaponDmg();                   // returns total main hand DMG
+    uint16 GetSubWeaponDmg();                    // returns total sub weapon DMG
+    uint16 GetRangedWeaponDmg();                 // returns total ranged weapon DMG
+    uint16 GetMainWeaponRank();                  // returns total main hand DMG Rank
+    uint16 GetSubWeaponRank();                   // returns total sub weapon DMG Rank
+    uint16 GetRangedWeaponRank();                // returns total ranged weapon DMG Rank
 
     uint16 GetSkill(uint16 SkillID); // the current value of the skill (not the maximum, but limited by the level)
 
@@ -621,6 +625,7 @@ public:
                              DAMAGE_TYPE damageType = DAMAGE_TYPE::NONE);
 
     int16 getMod(Mod modID);
+    int16 getMaxGearMod(Mod modID);
 
     bool CanRest();        // checks if able to heal
     bool Rest(float rate); // heal an amount of hp / mp
@@ -691,6 +696,7 @@ public:
 
     virtual void addTrait(CTrait*);
     virtual void delTrait(CTrait*);
+    virtual bool hasTrait(uint16);
 
     virtual bool ValidTarget(CBattleEntity* PInitiator, uint16 targetFlags);
     virtual bool CanUseSpell(CSpell*);
@@ -721,6 +727,7 @@ public:
     virtual void OnCastInterrupted(CMagicState&, action_t&, MSGBASIC_ID msg, bool blockedCast);
     /* Weaponskill */
     virtual void OnWeaponSkillFinished(CWeaponSkillState& state, action_t& action);
+    virtual void OnMobSkillFinished(CMobSkillState& state, action_t& action);
     virtual void OnChangeTarget(CBattleEntity* PTarget);
 
     // Used to set an action to an "interrupted" state
@@ -751,7 +758,7 @@ public:
     health_t health{}; // hp,mp,tp
     stats_t  stats{};
     skills_t WorkingSkills{};
-    uint16   m_Immunity;     // Mob immunity
+    uint32   m_Immunity;     // Mob immunity
     uint16   m_magicEvasion; // store this so it can be removed easily
     bool     m_unkillable;   // entity is not able to die (probably until some action removes this flag)
 
@@ -780,10 +787,6 @@ public:
     std::unique_ptr<CStatusEffectContainer> StatusEffectContainer;
     std::unique_ptr<CRecastContainer>       PRecastContainer;
     std::unique_ptr<CNotorietyContainer>    PNotorietyContainer;
-
-    int16              CalculateMSFromSources(); // Used to calculate movement speed when adding or removing items with movement speed modifiers
-    std::vector<int16> m_MSItemValues;           // Tracking movement speed items to prevent stacking values
-    std::vector<int16> m_MSNonItemValues;        // Tracking movement speed from non-item sources
 
 private:
     JOBTYPE    m_mjob;

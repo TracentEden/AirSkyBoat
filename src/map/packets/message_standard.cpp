@@ -25,7 +25,7 @@
 
 #include "message_standard.h"
 
-#include "../entities/charentity.h"
+#include "entities/charentity.h"
 
 CMessageStandardPacket::CMessageStandardPacket(MsgStd MessageID)
 {
@@ -80,6 +80,14 @@ CMessageStandardPacket::CMessageStandardPacket(CCharEntity* PChar, uint32 param0
             this->setSize(0x60);
 
             ref<uint8>(0x0C) = 0x10;
+
+            snprintf((char*)data + (0x0D), 24, "string2 %s", PChar->getName().c_str());
+        }
+        else if (MessageID == MsgStd::MonstrosityCheckIn || MessageID == MsgStd::MonstrosityCheckOut)
+        {
+            this->setSize(0x20);
+
+            ref<uint16>(0x0A) = static_cast<uint16>(MessageID);
 
             snprintf((char*)data + (0x0D), 24, "string2 %s", PChar->getName().c_str());
         }

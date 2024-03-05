@@ -33,6 +33,7 @@
 #include <fstream>
 #include <iostream>
 #include <set>
+#include <vector>
 
 constexpr int8  CNavMesh::ERROR_NEARESTPOLY;
 constexpr float smallPolyPickExt[3]  = { 0.5f, 1.0f, 0.5f };
@@ -116,7 +117,13 @@ CNavMesh::CNavMesh(uint16 zoneID)
     m_hit.maxPath = 20;
 }
 
-CNavMesh::~CNavMesh() = default;
+CNavMesh::~CNavMesh()
+{
+    if (m_navMesh)
+    {
+        dtFreeNavMesh(m_navMesh);
+    }
+}
 
 bool CNavMesh::load(std::string const& filename)
 {
@@ -141,7 +148,7 @@ bool CNavMesh::load(std::string const& filename)
         return false;
     }
 
-    m_navMesh.reset(dtAllocNavMesh());
+    m_navMesh = dtAllocNavMesh();
     if (!m_navMesh)
     {
         return false;
@@ -549,13 +556,7 @@ bool CNavMesh::onSameFloor(const position_t& start, float* spos, const position_
         int       polyCount = -1;
         dtStatus  status    = m_navMeshQuery.queryPolygons(epos, skinnyPolyPickExt, &filter, polys, &polyCount, 16);
 
-        if (polyCount <= 0)
-        {
-            // Couldn't find path.
-            return false;
-        }
-
-        if (dtStatusFailed(status))
+        if (dtStatusFailed(status) || polyCount <= 0)
         {
             ShowError("CNavMesh::Bad vertical polygon query (%f, %f, %f) (%u)", epos[0], epos[1], epos[2], m_zoneID);
             outputError(status);
@@ -563,7 +564,7 @@ bool CNavMesh::onSameFloor(const position_t& start, float* spos, const position_
         }
 
         // Collect the heights of queried polygons
-        float           height;
+        float           height             = 0;
         std::set<uint8> heights;
         for (int i = 0; i < polyCount; i++)
         {

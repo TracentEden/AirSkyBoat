@@ -68,6 +68,7 @@ public:
     int32  getHP() const;
     uint8  getHPP() const;
     uint16 getTotalTargets() const;
+    uint32 getPrimaryTargetID() const;
     uint16 getMsgForAction() const;
     float  getRadius() const;
     int16  getParam() const;
@@ -75,7 +76,6 @@ public:
     uint8  getPrimarySkillchain() const;
     uint8  getSecondarySkillchain() const;
     uint8  getTertiarySkillchain() const;
-    uint16 getBloodPactAbilityID() const;
 
     bool isDamageMsg() const;
 
@@ -92,37 +92,37 @@ public:
     void setHP(int32 hp);
     void setHPP(uint8 hpp);
     void setTotalTargets(uint16 targets);
+    void setPrimaryTargetID(uint32 targid);
     void setParam(int16 value);
     void setKnockback(uint8 knockback);
     void setPrimarySkillchain(uint8 skillchain);
     void setSecondarySkillchain(uint8 skillchain);
     void setTertiarySkillchain(uint8 skillchain);
-    void setBloodPactAbilityID(uint16 bloodPactAbilityID);
 
     const std::string& getName();
     void               setName(const std::string& name);
 
-    uint8 m_Aoe; // не используется
+    uint8 m_Aoe;
 
 private:
     uint16 m_ID;
     uint16 m_TotalTargets;
+    uint32 m_primaryTargetID; // primary target ID
     int16  m_Param;
-    uint16 m_AnimID;            // animation id
-    float  m_Distance;          // не используется
-    uint8  m_Flag;              // не используется
-    uint16 m_ValidTarget;       // same as
-    uint16 m_AnimationTime;     // how long the tp animation lasts for in ms
-    uint16 m_ActivationTime;    // how long the mob prepares the tp move for
-    uint16 m_Message;           // message param, scripters can edit this depending on self/resist/etc.
-    int16  m_TP;                // the tp at the time of finish readying (for scripts)
+    uint16 m_AnimID;
+    float  m_Distance;
+    uint8  m_Flag;
+    uint16 m_ValidTarget;
+    uint16 m_AnimationTime;  // how long the tp animation lasts for in ms
+    uint16 m_ActivationTime; // how long the mob prepares the tp move for
+    uint16 m_Message;        // message param, scripters can edit this depending on self/resist/etc.
+    int16  m_TP;             // the tp at the time of finish readying (for scripts)
     int32  m_HP;                // HP at the time of using mob skill (for scripts)
-    uint8  m_HPP;               // HPP at the time of using mob skill (for scripts)
-    uint8  m_knockback;         // knockback value (0-7)
-    uint8  m_primarySkillchain; // weaponskill ID of skillchain properties
+    uint8  m_HPP;            // HPP at the time of using mob skill (for scripts)
+    uint8  m_knockback;      // knockback value (0-7)
+    uint8  m_primarySkillchain;
     uint8  m_secondarySkillchain;
     uint8  m_tertiarySkillchain;
-    uint16 m_bloodPactAbilityID;
 
     std::string m_name;
 };

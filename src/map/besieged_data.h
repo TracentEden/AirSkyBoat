@@ -219,11 +219,11 @@ public:
         // For now, we always commit all stronghold data, without marking certain strongholds as dirty.
         // There are only 4 rows, and likely will never be more.
         const char* query = "UPDATE besieged_strongholds SET orders = %d, stronghold_level = %d, forces = %f, \
-                             prisoners = %d, owns_astral_candescence = %d, consecutive_defeats = %d WHERE stronghold_id = %d;";
+                             prisoners = %d, owns_astral_candescence = %d, consecutive_defeats = %d WHERE stronghold_id = %d";
 
         for (auto strongholdInfo : strongholdInfos)
         {
-            int32 ret = sql->Query(query, strongholdInfo.orders, strongholdInfo.strongholdLevel, strongholdInfo.forces,
+            int32 ret = _sql->Query(query, strongholdInfo.orders, strongholdInfo.strongholdLevel, strongholdInfo.forces,
                                    strongholdInfo.prisoners, strongholdInfo.ownsAstralCandescence, strongholdInfo.consecutiveDefeats,
                                    strongholdInfo.strongholdId);
 
@@ -265,13 +265,13 @@ private:
         const char* Query = "SELECT stronghold_id, orders, stronghold_level, forces, prisoners, owns_astral_candescence, consecutive_defeats, \
                     (SELECT COUNT(*) FROM besieged_mirrors WHERE destroyed = 0 AND besieged_mirrors.stronghold_id = besieged_strongholds.stronghold_id) AS mirrors \
                     FROM besieged_strongholds;";
-        int32       ret   = sql->Query(Query);
+        int32       ret   = _sql->Query(Query);
 
-        if (ret != SQL_ERROR && sql->NumRows() != 0)
+        if (ret != SQL_ERROR && _sql->NumRows() != 0)
         {
-            while (sql->NextRow() == SQL_SUCCESS)
+            while (_sql->NextRow() == SQL_SUCCESS)
             {
-                uint8 strongholdId = sql->GetUIntData(0);
+                uint8 strongholdId = _sql->GetUIntData(0);
                 if (strongholdId > 3)
                 {
                     ShowError("Invalid stronghold id %d", strongholdId);
@@ -279,14 +279,14 @@ private:
                 }
 
                 stronghold_info_t strongholdInfo;
-                strongholdInfo.strongholdId          = sql->GetUIntData<BESIEGED_STRONGHOLD>(0);
-                strongholdInfo.orders                = sql->GetUIntData<BEASTMEN_BESIEGED_ORDERS>(1);
-                strongholdInfo.strongholdLevel       = sql->GetUIntData<STRONGHOLD_LEVEL>(2);
-                strongholdInfo.forces                = sql->GetFloatData(3);
-                strongholdInfo.prisoners             = sql->GetUIntData(4);
-                strongholdInfo.ownsAstralCandescence = sql->GetUIntData(5);
-                strongholdInfo.consecutiveDefeats    = sql->GetUIntData(6);
-                strongholdInfo.mirrors               = sql->GetUIntData(7);
+                strongholdInfo.strongholdId          = _sql->GetUIntData<BESIEGED_STRONGHOLD>(0);
+                strongholdInfo.orders                = _sql->GetUIntData<BEASTMEN_BESIEGED_ORDERS>(1);
+                strongholdInfo.strongholdLevel       = _sql->GetUIntData<STRONGHOLD_LEVEL>(2);
+                strongholdInfo.forces                = _sql->GetFloatData(3);
+                strongholdInfo.prisoners             = _sql->GetUIntData(4);
+                strongholdInfo.ownsAstralCandescence = _sql->GetUIntData(5);
+                strongholdInfo.consecutiveDefeats    = _sql->GetUIntData(6);
+                strongholdInfo.mirrors               = _sql->GetUIntData(7);
 
                 strongholdInfos[sql->GetUIntData(0)] = strongholdInfo;
             }

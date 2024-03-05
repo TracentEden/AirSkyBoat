@@ -53,24 +53,24 @@ along with this program.  If not, see http://www.gnu.org/licenses/
 #include <chrono>
 
 CBattlefield::CBattlefield(uint16 id, CZone* PZone, uint8 area, CCharEntity* PInitiator, bool isInteraction)
-: m_Record(BattlefieldRecord_t())
+: m_isMission(false)
+, m_ID(id)
+, m_Zone(PZone)
+, m_Area(area)
+, m_Record(BattlefieldRecord_t())
+, m_Rules(0)
 , m_StartTime(server_clock::now())
 , m_LastPromptTime(0s)
+, m_MaxParticipants(8)
+, m_LevelCap(0)
 , m_isInteraction(isInteraction)
 {
-    m_ID               = id;
-    m_Zone             = PZone;
-    m_Area             = area;
     m_Initiator.id     = PInitiator->id;
     m_Initiator.name   = PInitiator->name;
     m_Record.name      = "Meme";
     m_Record.time      = 24h;
     m_Record.partySize = 69;
     m_Tick             = m_StartTime;
-    m_isMission        = false;
-    m_Rules            = 0;
-    m_MaxParticipants  = 8;
-    m_LevelCap         = 0;
     m_RegisteredPlayers.emplace(PInitiator->id);
 }
 
@@ -644,7 +644,7 @@ bool CBattlefield::RemoveEntity(CBaseEntity* PEntity, uint8 leavecode)
                     if (std::find(m_AllyList.begin(), m_AllyList.end(), PMobEntity) != m_AllyList.end())
                     {
                         // We should not put an isAlive check here because some ally can be dead at cleanup
-                        // but not despawned (for example Prise in Dawn fight)
+                        // but not despawned (for example Prishe in Dawn fight)
                         if (PMobEntity->PAI->IsSpawned())
                         {
                             PEntity->status = STATUS_TYPE::DISAPPEAR;
@@ -822,11 +822,11 @@ bool CBattlefield::Cleanup(time_point time, bool force)
     if (m_Attacked && m_Status == BATTLEFIELD_STATUS_WON)
     {
         const char* query        = "SELECT fastestTime FROM bcnm_info WHERE bcnmId = %u AND zoneId = %u";
-        auto        ret          = sql->Query(query, this->GetID(), this->GetZoneID());
+        auto        ret          = _sql->Query(query, this->GetID(), this->GetZoneID());
         bool        updateRecord = true;
-        if (ret != SQL_ERROR && sql->NextRow() == SQL_SUCCESS)
+        if (ret != SQL_ERROR && _sql->NextRow() == SQL_SUCCESS)
         {
-            updateRecord = sql->GetUIntData(0) > std::chrono::duration_cast<std::chrono::seconds>(m_Record.time).count();
+            updateRecord = _sql->GetUIntData(0) > std::chrono::duration_cast<std::chrono::seconds>(m_Record.time).count();
         }
 
         if (updateRecord)
@@ -834,7 +834,7 @@ bool CBattlefield::Cleanup(time_point time, bool force)
             query          = "UPDATE bcnm_info SET fastestName = '%s', fastestTime = %u, fastestPartySize = %u WHERE bcnmId = %u AND zoneid = %u";
             auto timeThing = std::chrono::duration_cast<std::chrono::seconds>(m_Record.time).count();
 
-            sql->Query(query, m_Record.name.c_str(), timeThing, m_Record.partySize, this->GetID(), GetZoneID());
+            _sql->Query(query, m_Record.name.c_str(), timeThing, m_Record.partySize, this->GetID(), GetZoneID());
         }
     }
 
@@ -848,18 +848,18 @@ bool CBattlefield::LoadMobs()
                             FROM bcnm_battlefield \
                             WHERE bcnmId = %u AND battlefieldNumber = %u";
 
-    auto ret = sql->Query(fmtQuery, this->GetID(), this->GetArea());
+    auto ret = _sql->Query(fmtQuery, this->GetID(), this->GetArea());
 
-    if (ret == SQL_ERROR || sql->NumRows() == 0)
+    if (ret == SQL_ERROR || _sql->NumRows() == 0)
     {
         ShowError("Battlefield::LoadMobs() : Cannot find any monster IDs for battlefield %i area %i ", this->GetID(), this->GetArea());
     }
     else
     {
-        while (sql->NextRow() == SQL_SUCCESS)
+        while (_sql->NextRow() == SQL_SUCCESS)
         {
-            auto  mobid     = sql->GetUIntData(0);
-            auto  condition = sql->GetUIntData(1);
+            auto  mobid     = _sql->GetUIntData(0);
+            auto  condition = _sql->GetUIntData(1);
             auto* PMob      = static_cast<CMobEntity*>(zoneutils::GetEntity(mobid, TYPE_MOB | TYPE_PET));
 
             if (PMob)
@@ -880,19 +880,19 @@ bool CBattlefield::SpawnLoot(CBaseEntity* PEntity)
 {
     if (!PEntity)
     {
-        const auto* fmtQuery = "SELECT npcId FROM bcnm_treasure_chests WHERE bcnmId = %u AND battlefieldNumber = %u;";
-        auto        ret      = sql->Query(fmtQuery, this->GetID(), this->GetArea());
+        const auto* fmtQuery = "SELECT npcId FROM bcnm_treasure_chests WHERE bcnmId = %u AND battlefieldNumber = %u";
+        auto        ret      = _sql->Query(fmtQuery, this->GetID(), this->GetArea());
 
-        if (ret == SQL_ERROR || sql->NumRows() == 0)
+        if (ret == SQL_ERROR || _sql->NumRows() == 0)
         {
             ShowError("Battlefield::SpawnLoot() : Cannot find treasure chest for battlefield %i area %i ", this->GetID(), this->GetArea());
             return false;
         }
         else
         {
-            if (sql->NextRow() == SQL_SUCCESS)
+            if (_sql->NextRow() == SQL_SUCCESS)
             {
-                auto npcId = sql->GetUIntData(0);
+                auto npcId = _sql->GetUIntData(0);
                 PEntity    = zoneutils::GetEntity(npcId);
             }
         }

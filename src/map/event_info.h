@@ -49,7 +49,6 @@ enum EVENT_TYPE : uint8
     NORMAL,
     CUTSCENE,
     OPTIONAL_CUTSCENE,
-    MENU,
 };
 
 struct EventInfo : EventPrep

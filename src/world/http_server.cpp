@@ -148,26 +148,26 @@ void HTTPServer::LockingUpdate()
 
         // Total active sessions
         {
-            auto ret = sql->Query("SELECT COUNT(*) FROM accounts_sessions;");
-            if (ret != SQL_ERROR && sql->NumRows() && sql->NextRow() == SQL_SUCCESS)
+            auto ret = _sql->Query("SELECT COUNT(*) FROM accounts_sessions;");
+            if (ret != SQL_ERROR && _sql->NumRows() && _sql->NextRow() == SQL_SUCCESS)
             {
-                data.activeSessionCount = sql->GetUIntData(0);
+                data.activeSessionCount = _sql->GetUIntData(0);
             }
         }
 
         // Chars per zone
         {
-            auto ret = sql->Query("SELECT chars.pos_zone, COUNT(*) AS `count` "
+            auto ret = _sql->Query("SELECT chars.pos_zone, COUNT(*) AS `count` "
                                   "FROM chars "
                                   "LEFT JOIN accounts_sessions "
                                   "ON chars.charid = accounts_sessions.charid "
                                   "GROUP BY pos_zone;");
-            if (ret != SQL_ERROR && sql->NumRows())
+            if (ret != SQL_ERROR && _sql->NumRows())
             {
-                while (sql->NextRow() == SQL_SUCCESS)
+                while (_sql->NextRow() == SQL_SUCCESS)
                 {
-                    auto zoneId = sql->GetUIntData(0);
-                    auto count  = sql->GetUIntData(1);
+                    auto zoneId = _sql->GetUIntData(0);
+                    auto count  = _sql->GetUIntData(1);
 
                     data.zonePlayerCounts[zoneId] = count;
                 }

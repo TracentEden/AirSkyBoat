@@ -22,6 +22,7 @@
 #include "zone_in.h"
 
 #include "common/vana_time.h"
+
 #include "entities/charentity.h"
 #include "map/zone.h"
 #include "utils/zoneutils.h"
@@ -118,7 +119,7 @@ CZoneInPacket::CZoneInPacket(CCharEntity* PChar, const EventInfo* currentEvent)
     this->setType(0x0A);
     this->setSize(0x104);
 
-    // It is necessary to work Manaklipper
+    // It is necessary to work Manaclipper
     // The last 8 bytes are similar for a while
     // unsigned char packet [] = {
     // 0x0D, 0x3A, 0x0C, 0x00, 0x11, 0x00, 0x19, 0x00, 0x02, 0xE4, 0x93, 0x10, 0x91, 0xE5, 0x93, 0x10}; // 0x2a = 0x10

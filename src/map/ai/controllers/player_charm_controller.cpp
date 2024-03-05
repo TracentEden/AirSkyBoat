@@ -37,9 +37,9 @@ CPlayerCharmController::~CPlayerCharmController()
 {
     POwner->allegiance = ALLEGIANCE_TYPE::PLAYER;
 
-    // If the player is zoning (teleport from party)
-    // or dc's while charmed, PAI will be null
-    if (POwner->PAI != nullptr)
+    // If the player is zoning (teleport by party)
+    // or disconnected while charmed then PAI may be null
+    if (POwner->PAI)
     {
         if (POwner->PAI->IsEngaged())
         {
@@ -109,13 +109,16 @@ void CPlayerCharmController::DoRoamTick(time_point tick)
 
     if (currentDistance > RoamDistance)
     {
-        if (currentDistance < 35.0f && POwner->PAI->PathFind->PathAround(POwner->PMaster->loc.p, 2.0f, PATHFLAG_RUN | PATHFLAG_WALLHACK))
+        if (POwner->PAI->PathFind)
         {
-            POwner->PAI->PathFind->FollowPath(m_Tick);
-        }
-        else if (POwner->GetSpeed() > 0)
-        {
-            POwner->PAI->PathFind->WarpTo(POwner->PMaster->loc.p, RoamDistance);
+            if (currentDistance < 35.0f && POwner->PAI->PathFind->PathAround(POwner->PMaster->loc.p, 2.0f, PATHFLAG_RUN | PATHFLAG_WALLHACK))
+            {
+                POwner->PAI->PathFind->FollowPath(m_Tick);
+            }
+            else if (POwner->GetSpeed() > 0)
+            {
+                POwner->PAI->PathFind->WarpTo(POwner->PMaster->loc.p, RoamDistance);
+            }
         }
     }
 }

@@ -57,17 +57,17 @@ class AHPaginationModule : public CPPModule
                     PChar->m_AHHistoryTimestamp = curTick;
                     PChar->pushPacket(new CAuctionHousePacket(action));
 
-                    const char* Query = "SELECT itemid, price, stack FROM auction_house WHERE seller = %u and sale=0 ORDER BY id ASC LIMIT %u OFFSET %u;";
-                    int32 ret = sql->Query(Query, PChar->id, ITEMS_PER_PAGE, currentAHPage * ITEMS_PER_PAGE);
+                    const char* Query = "SELECT itemid, price, stack FROM auction_house WHERE seller = %u and sale=0 ORDER BY id ASC LIMIT %u OFFSET %u";
+                    int32 ret = _sql->Query(Query, PChar->id, ITEMS_PER_PAGE, currentAHPage * ITEMS_PER_PAGE);
 
-                    if (ret != SQL_ERROR && sql->NumRows() == 0)
+                    if (ret != SQL_ERROR && _sql->NumRows() == 0)
                     {
                         PChar->pushPacket(new CChatMessagePacket(PChar, MESSAGE_SYSTEM_3, fmt::format("No results for page: {} of {}.",
                             currentAHPage + 1, TOTAL_PAGES).c_str(), ""));
 
                         // Reset to Page 1
-                        const char* Query = "SELECT itemid, price, stack FROM auction_house WHERE seller = %u and sale=0 ORDER BY id ASC LIMIT %u OFFSET %u;";
-                        ret = sql->Query(Query, PChar->id, ITEMS_PER_PAGE, 0);
+                        const char* Query = "SELECT itemid, price, stack FROM auction_house WHERE seller = %u and sale=0 ORDER BY id ASC LIMIT %u OFFSET %u";
+                        ret = _sql->Query(Query, PChar->id, ITEMS_PER_PAGE, 0);
 
                         // Show Page 1 this time
                         currentAHPage = 0;
@@ -77,16 +77,16 @@ class AHPaginationModule : public CPPModule
                     }
 
                     PChar->pushPacket(new CChatMessagePacket(PChar, MESSAGE_SYSTEM_3, fmt::format("Current page: {} of {}. Showing {} items.",
-                        currentAHPage + 1, TOTAL_PAGES, sql->NumRows()).c_str(), ""));
+                        currentAHPage + 1, TOTAL_PAGES, _sql->NumRows()).c_str(), ""));
 
-                    if (ret != SQL_ERROR && sql->NumRows() != 0)
+                    if (ret != SQL_ERROR && _sql->NumRows() != 0)
                     {
-                        while (sql->NextRow() == SQL_SUCCESS)
+                        while (_sql->NextRow() == SQL_SUCCESS)
                         {
                             AuctionHistory_t ah;
-                            ah.itemid = (uint16)sql->GetIntData(0);
-                            ah.price  = sql->GetUIntData(1);
-                            ah.stack  = (uint8)sql->GetIntData(2);
+                            ah.itemid = (uint16)_sql->GetIntData(0);
+                            ah.price  = _sql->GetUIntData(1);
+                            ah.stack  = (uint8)_sql->GetIntData(2);
                             ah.status = 0;
                             PChar->m_ah_history.push_back(ah);
                         }

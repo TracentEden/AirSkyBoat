@@ -20,9 +20,9 @@ along with this program.  If not, see http://www.gnu.org/licenses/
 */
 
 #include "party_effects.h"
-#include "../entities/battleentity.h"
-#include "../party.h"
-#include "../status_effect_container.h"
+#include "entities/battleentity.h"
+#include "party.h"
+#include "status_effect_container.h"
 
 CPartyEffectsPacket::CPartyEffectsPacket()
 {
@@ -32,16 +32,15 @@ CPartyEffectsPacket::CPartyEffectsPacket()
 
 void CPartyEffectsPacket::AddMemberEffects(CBattleEntity* PMember)
 {
-    if (members < 5)
+    if (members == 5)
     {
-        ref<uint32>(members * 0x30 + 0x04) = PMember->id;
-        ref<uint16>(members * 0x30 + 0x08) = PMember->targid;
-        ref<uint64>(members * 0x30 + 0x0C) = PMember->StatusEffectContainer->m_Flags;
-        memcpy(data + (members * 0x30 + 0x14), PMember->StatusEffectContainer->m_StatusIcons, 32);
+        ShowWarning("Member count exceeds packet maximum.");
+        return;
     }
-    else
-    {
-        ShowError("Too many party members detected: Party effects");
-    }
+
+    ref<uint32>(members * 0x30 + 0x04) = PMember->id;
+    ref<uint16>(members * 0x30 + 0x08) = PMember->targid;
+    ref<uint64>(members * 0x30 + 0x0C) = PMember->StatusEffectContainer->m_Flags;
+    memcpy(data + (members * 0x30 + 0x14), PMember->StatusEffectContainer->m_StatusIcons, 32);
     ++members;
 }

@@ -25,9 +25,9 @@
 #include "common/cbasetypes.h"
 
 /************************************************************************
- *                                                                        *
- *  Все методы, необходимые для работы синтеза                            *
- *                                                                        *
+ *                                                                       *
+ *  Methods required for the synthesis to work                           *
+ *                                                                       *
  ************************************************************************/
 
 class CCharEntity;
@@ -56,6 +56,9 @@ namespace synthutils
     };
 
     int32 startSynth(CCharEntity* PChar);
+    // the extra param indicates if the finishing of the synth was forced (via zoning)
+    // this can help prevent inadvertently jailing players who have synths forced done early on airships
+    // https://github.com/AirSkyBoat/AirSkyBoat/pull/2600
     int32 sendSynthDone(CCharEntity* PChar, bool forced);
     int32 doSynthFail(CCharEntity* PChar);
 }; // namespace synthutils

@@ -43,6 +43,17 @@ void CLuaAction::ID(uint32 actionTargetID, uint32 newActionTargetID)
     }
 }
 
+// Get the first (primary) target's long ID, if available.
+uint32 CLuaAction::getPrimaryTargetID()
+{
+    if (!m_PLuaAction->actionLists.empty())
+    {
+        return m_PLuaAction->actionLists[0].ActionTargetID;
+    }
+
+    return 0;
+}
+
 void CLuaAction::setRecast(uint16 recast)
 {
     m_PLuaAction->recast = recast;
@@ -93,6 +104,19 @@ void CLuaAction::messageID(uint32 actionTargetID, uint16 messageID)
             return;
         }
     }
+}
+
+std::optional<uint16> CLuaAction::getMsg(uint32 actionTargetID)
+{
+    for (auto&& actionList : m_PLuaAction->actionLists)
+    {
+        if (actionList.ActionTargetID == actionTargetID)
+        {
+            return actionList.actionTargets[0].messageID;
+        }
+    }
+
+    return std::nullopt;
 }
 
 std::optional<uint16> CLuaAction::getAnimation(uint32 actionTargetID)
@@ -225,12 +249,14 @@ void CLuaAction::Register()
 {
     SOL_USERTYPE("CAction", CLuaAction);
     SOL_REGISTER("ID", CLuaAction::ID);
+    SOL_REGISTER("getPrimaryTargetID", CLuaAction::getPrimaryTargetID);
     SOL_REGISTER("getRecast", CLuaAction::getRecast);
     SOL_REGISTER("setRecast", CLuaAction::setRecast);
     SOL_REGISTER("actionID", CLuaAction::actionID);
     SOL_REGISTER("getParam", CLuaAction::getParam);
     SOL_REGISTER("param", CLuaAction::param);
     SOL_REGISTER("messageID", CLuaAction::messageID);
+    SOL_REGISTER("getMsg", CLuaAction::getMsg);
     SOL_REGISTER("getAnimation", CLuaAction::getAnimation);
     SOL_REGISTER("setAnimation", CLuaAction::setAnimation);
     SOL_REGISTER("getCategory", CLuaAction::getCategory);

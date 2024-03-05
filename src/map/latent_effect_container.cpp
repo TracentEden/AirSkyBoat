@@ -71,6 +71,26 @@ void CLatentEffectContainer::DelLatentEffects(uint8 reqLvl, uint8 slot)
                              m_LatentEffectList.end());
 }
 
+/************************************************************************
+*                                                                       *
+* Returns true if no latents for slot are inactive                      *
+*                                                                       *
+ ************************************************************************/
+
+bool CLatentEffectContainer::HasAllLatentsActive(uint8 slot)
+{
+    auto allActive = true;
+    for (auto iter = m_LatentEffectList.begin(); iter != m_LatentEffectList.end(); ++iter)
+    {
+        CLatentEffect& latent = *iter;
+        if (!latent.IsActivated() && latent.GetSlot() == slot)
+        {
+            allActive = false;
+        }
+    }
+    return allActive;
+}
+
 void CLatentEffectContainer::AddLatentEffect(LATENT conditionID, uint16 conditionValue, Mod modID, int16 modValue)
 {
     m_LatentEffectList.emplace_back(m_POwner, conditionID, conditionValue, MAX_SLOTTYPE, modID, modValue);
@@ -576,6 +596,7 @@ void CLatentEffectContainer::CheckLatentsZone()
             case LATENT::IN_DYNAMIS:
             case LATENT::WEATHER_ELEMENT:
             case LATENT::NATION_CONTROL:
+            case LATENT::NATION_CITIZEN:
             case LATENT::ZONE_HOME_NATION:
                 return ProcessLatentEffect(latentEffect);
                 break;
@@ -761,7 +782,7 @@ bool CLatentEffectContainer::ProcessLatentEffect(CLatentEffect& latentEffect)
             {
                 for (auto* member : m_POwner->PParty->members)
                 {
-                    if (member->getZone() == playerZoneID)
+                    if (member->getZone() == m_POwner->getZone())
                     {
                         ++inZone;
                     }
@@ -820,11 +841,22 @@ bool CLatentEffectContainer::ProcessLatentEffect(CLatentEffect& latentEffect)
             }
             break;
         case LATENT::ZONE:
-            expression = latentEffect.GetConditionsValue() == playerZoneID;
+            expression = latentEffect.GetConditionsValue() == m_POwner->getZone();
             break;
         case LATENT::SYNTH_TRAINEE:
-            // todo: figure this out
+        {
+            expression = (uint16)m_POwner->RealSkills.skill[latentEffect.GetConditionsValue()] / 10 < 40 &&
+                         !m_POwner->StatusEffectContainer->HasStatusEffect(EFFECT_FISHING_IMAGERY) &&
+                         !m_POwner->StatusEffectContainer->HasStatusEffect(EFFECT_WOODWORKING_IMAGERY) &&
+                         !m_POwner->StatusEffectContainer->HasStatusEffect(EFFECT_SMITHING_IMAGERY) &&
+                         !m_POwner->StatusEffectContainer->HasStatusEffect(EFFECT_GOLDSMITHING_IMAGERY) &&
+                         !m_POwner->StatusEffectContainer->HasStatusEffect(EFFECT_CLOTHCRAFT_IMAGERY) &&
+                         !m_POwner->StatusEffectContainer->HasStatusEffect(EFFECT_LEATHERCRAFT_IMAGERY) &&
+                         !m_POwner->StatusEffectContainer->HasStatusEffect(EFFECT_BONECRAFT_IMAGERY) &&
+                         !m_POwner->StatusEffectContainer->HasStatusEffect(EFFECT_ALCHEMY_IMAGERY) &&
+                         !m_POwner->StatusEffectContainer->HasStatusEffect(EFFECT_COOKING_IMAGERY);
             break;
+        }
         case LATENT::SONG_ROLL_ACTIVE:
             expression = m_POwner->StatusEffectContainer->HasStatusEffectByFlag(EFFECTFLAG_ROLL | EFFECTFLAG_SONG);
             break;
@@ -1058,6 +1090,11 @@ bool CLatentEffectContainer::ProcessLatentEffect(CLatentEffect& latentEffect)
             }
             break;
         }
+        case LATENT::NATION_CITIZEN:
+        {
+            expression = m_POwner->profile.nation == latentEffect.GetConditionsValue();
+            break;
+        }
         case LATENT::ZONE_HOME_NATION:
         {
             auto  nationRegion = static_cast<REGION_TYPE>(latentEffect.GetConditionsValue());
@@ -1119,9 +1156,6 @@ bool CLatentEffectContainer::ProcessLatentEffect(CLatentEffect& latentEffect)
             break;
         case LATENT::EQUIPPED_IN_SLOT:
             expression = latentEffect.GetSlot() == latentEffect.GetConditionsValue();
-            break;
-        case LATENT::CITIZEN_OF_NATION:
-            expression = m_POwner->profile.nation == latentEffect.GetConditionsValue();
             break;
         default:
             latentFound = false;

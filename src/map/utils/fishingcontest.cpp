@@ -248,15 +248,15 @@ namespace fishingcontest
                             "WHERE t2.contestid IS NULL "
                             "ORDER BY t1.contestid ASC "
                             "LIMIT 1;";
-        int32       ret   = sql->Query(Query);
-        if (ret != SQL_ERROR && sql->NumRows() == 0)
+        int32       ret   = _sql->Query(Query);
+        if (ret != SQL_ERROR && _sql->NumRows() == 0)
         {
             // Empty database - Use 1
             return 1;
         }
-        else if (ret != SQL_ERROR && sql->NextRow() == SQL_SUCCESS)
+        else if (ret != SQL_ERROR && _sql->NextRow() == SQL_SUCCESS)
         {
-            return (uint16)sql->GetUIntData(0);
+            return (uint16)_sql->GetUIntData(0);
         }
         else
         {
@@ -377,7 +377,7 @@ namespace fishingcontest
                             "%u, "  // Fish ID
                             "%u);"; // Start Time
 
-        int32 ret = sql->Query(Query, FishingContest.contestId,
+        int32 ret = _sql->Query(Query, FishingContest.contestId,
                                FishingContest.status,
                                FishingContest.criteria,
                                FishingContest.measure,
@@ -423,7 +423,7 @@ namespace fishingcontest
             }
             queryString += ";";
 
-            int32 ret = sql->Query(Query, queryString);
+            int32 ret = _sql->Query(Query, queryString);
 
             if (ret == SQL_ERROR)
             {
@@ -446,15 +446,15 @@ namespace fishingcontest
                             "       SELECT MAX(contestid) "
                             "       FROM fishing_contest "
                             "       WHERE `status` < 6);";
-        int32       ret   = sql->Query(Query);
+        int32       ret   = _sql->Query(Query);
 
         if (ret != SQL_ERROR)
         {
-            sql->TransactionCommit();
+            _sql->TransactionCommit();
         }
         else
         {
-            sql->TransactionRollback();
+            _sql->TransactionRollback();
             ShowError("fishingcontest::CleanDatabaseEntries() : Unable to process transaction.");
         }
     }
@@ -512,7 +512,7 @@ namespace fishingcontest
                             "%u, "   // Submit Time
                             "%u);";  // Contest Rank
 
-        int32 ret = sql->Query(Query,
+        int32 ret = _sql->Query(Query,
                                FishingContest.contestId,
                                entry->name,
                                entry->mjob,
@@ -542,8 +542,8 @@ namespace fishingcontest
             const char* Query = "DELETE FROM `fishing_contest_entries` \
                                  WHERE `contestid` = %u \
                                  AND `name` = '%s';";
-            int32       ret   = sql->Query(Query, FishingContest.contestId, PChar->getName());
-            sql->TransactionCommit();
+            int32       ret   = _sql->Query(Query, FishingContest.contestId, PChar->getName());
+            _sql->TransactionCommit();
 
             if (ret == SQL_ERROR)
             {
@@ -580,11 +580,11 @@ namespace fishingcontest
         {
             Query = "SELECT MAX(contestid) "
                     "WHERE status < 6;";
-            ret   = sql->Query(Query);
+            ret   = _sql->Query(Query);
 
-            if (ret != SQL_ERROR && sql->NextRow() == SQL_SUCCESS)
+            if (ret != SQL_ERROR && _sql->NextRow() == SQL_SUCCESS)
             {
-                contestId = sql->GetUIntData(0);
+                contestId = _sql->GetUIntData(0);
             }
             else
             {
@@ -603,12 +603,12 @@ namespace fishingcontest
                 "AND e.name = '%s';";
 
         // Should return at most 1 entry.  If the r.time value is null, then the reward has not been granted
-        ret = sql->Query(Query, contestId, PChar->getName());
+        ret = _sql->Query(Query, contestId, PChar->getName());
         if (ret != SQL_ERROR)
         {
-            if (sql->NumRows() > 0 && sql->NextRow() == SQL_SUCCESS)
+            if (_sql->NumRows() > 0 && _sql->NextRow() == SQL_SUCCESS)
             {
-                if (sql->GetUIntData(0))
+                if (_sql->GetUIntData(0))
                 {
                     return false; // Time value is present, so the reward was given out already.
                 }
@@ -630,14 +630,14 @@ namespace fishingcontest
 
         const char* Query = "REPLACE INTO `fishing_contest_rewards` (contestid, name, time) VALUES (%u, '%s', %u);";
 
-        int32 ret = sql->Query(Query, contestId, PChar->getName(), (uint32)time(NULL));
+        int32 ret = _sql->Query(Query, contestId, PChar->getName(), (uint32)time(NULL));
         if (ret != SQL_ERROR)
         {
-            sql->TransactionCommit();
+            _sql->TransactionCommit();
         }
         else
         {
-            sql->TransactionRollback();
+            _sql->TransactionRollback();
             ShowDebug("Unable to set award status on contest %u for player %s.", contestId, PChar->getName());
         }
     }
@@ -681,8 +681,8 @@ namespace fishingcontest
         }
 
         // Clear any table data involving this contest
-        const char* Query = "DELETE FROM `fishing_contest` WHERE contestId = %u;";
-        int32       ret   = sql->Query(Query, contestId);
+        const char* Query = "DELETE FROM `fishing_contest` WHERE contestId = %u";
+        int32       ret   = _sql->Query(Query, contestId);
 
         if (ret == SQL_ERROR)
         {
@@ -691,7 +691,7 @@ namespace fishingcontest
         }
 
         Query = "DELETE FROM `fishing_contest_entries` WHERE contestId = % u;";
-        ret   = sql->Query(Query, contestId);
+        ret   = _sql->Query(Query, contestId);
 
         if (ret == SQL_ERROR)
         {
@@ -744,21 +744,21 @@ namespace fishingcontest
                             "    FROM `fishing_contest` "
                             "    WHERE `status` < 6);";
 
-        int32 ret = sql->Query(Query);
+        int32 ret = _sql->Query(Query);
 
-        if (ret != SQL_ERROR && sql->NumRows() != 0)
+        if (ret != SQL_ERROR && _sql->NumRows() != 0)
         {
-            while (sql->NextRow() == SQL_SUCCESS)
+            while (_sql->NextRow() == SQL_SUCCESS)
             {
-                FishingContest.contestId = (uint8)sql->GetUIntData(0);
-                FishingContest.status    = (uint8)sql->GetUIntData(1);
-                FishingContest.criteria  = (uint8)sql->GetUIntData(2);
-                FishingContest.measure   = (uint8)sql->GetUIntData(3);
-                FishingContest.fishId    = sql->GetUIntData(4);
-                FishingContest.startTime = sql->GetUIntData(5);
+                FishingContest.contestId = (uint8)_sql->GetUIntData(0);
+                FishingContest.status    = (uint8)_sql->GetUIntData(1);
+                FishingContest.criteria  = (uint8)_sql->GetUIntData(2);
+                FishingContest.measure   = (uint8)_sql->GetUIntData(3);
+                FishingContest.fishId    = _sql->GetUIntData(4);
+                FishingContest.startTime = _sql->GetUIntData(5);
             }
         }
-        else if (ret != SQL_ERROR && sql->NumRows() == 0)
+        else if (ret != SQL_ERROR && _sql->NumRows() == 0)
         {
             // No contests found in the database, so we need to create one
             InitNewContest();
@@ -795,28 +795,28 @@ namespace fishingcontest
                             "WHERE contestid = %u "
                             "ORDER BY contestrank;";
 
-        int32 ret = sql->Query(Query, contestId);
+        int32 ret = _sql->Query(Query, contestId);
 
-        if (ret != SQL_ERROR && sql->NumRows() != 0)
+        if (ret != SQL_ERROR && _sql->NumRows() != 0)
         {
             // Clear the current entry data
             FishingContestEntries.clear();
 
-            while (sql->NextRow() == SQL_SUCCESS)
+            while (_sql->NextRow() == SQL_SUCCESS)
             {
                 fish_ranking_entry* listing = new fish_ranking_entry();
 
-                strcpy(listing->name, sql->GetStringData(0).c_str()); // Remember to truncate this to 16 chars max before sending packet
-                listing->mjob        = (uint8)sql->GetUIntData(1);
-                listing->sjob        = (uint8)sql->GetUIntData(2);
-                listing->mlvl        = (uint8)sql->GetUIntData(3);
-                listing->slvl        = (uint8)sql->GetUIntData(4);
-                listing->race        = (uint8)sql->GetUIntData(5);
-                listing->allegiance  = (uint8)sql->GetUIntData(6);
-                listing->fishrank    = (uint8)sql->GetUIntData(7);
-                listing->score       = sql->GetUIntData(8);
-                listing->submittime  = sql->GetUIntData(9);
-                listing->contestrank = (uint8)sql->GetUIntData(10);
+                strcpy(listing->name, _sql->GetStringData(0).c_str()); // Remember to truncate this to 16 chars max before sending packet
+                listing->mjob        = (uint8)_sql->GetUIntData(1);
+                listing->sjob        = (uint8)_sql->GetUIntData(2);
+                listing->mlvl        = (uint8)_sql->GetUIntData(3);
+                listing->slvl        = (uint8)_sql->GetUIntData(4);
+                listing->race        = (uint8)_sql->GetUIntData(5);
+                listing->allegiance  = (uint8)_sql->GetUIntData(6);
+                listing->fishrank    = (uint8)_sql->GetUIntData(7);
+                listing->score       = _sql->GetUIntData(8);
+                listing->submittime  = _sql->GetUIntData(9);
+                listing->contestrank = (uint8)_sql->GetUIntData(10);
 
                 FishingContestEntries.emplace_back(listing);
             }

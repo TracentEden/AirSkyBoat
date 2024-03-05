@@ -30,6 +30,8 @@ along with this program.  If not, see http://www.gnu.org/licenses/
 #include "mob_modifier.h"
 #include "zone.h"
 
+#include <cfloat>
+
 namespace
 {
     bool arePositionsClose(const position_t& a, const position_t& b)
@@ -40,8 +42,15 @@ namespace
 
 CPathFind::CPathFind(CBaseEntity* PTarget)
 : m_POwner(PTarget)
+, m_distanceFromPoint(0.0f)
 , m_pathFlags(0)
 , m_patrolFlags(0)
+, m_roamFlags(0)
+, m_onPoint(false)
+, m_currentPoint(0)
+, m_currentTurn(0)
+, m_distanceMoved(0.0f)
+, m_maxDistance(0.0f)
 , m_carefulPathing(false)
 {
     m_originalPoint.x        = 0.f;
@@ -520,7 +529,7 @@ bool CPathFind::FindRandomPath(const position_t& start, float maxRadius, uint8 m
         return false;
     }
 
-    auto m_turnLength = xirand::GetRandomNumber((int)maxTurns) + 1;
+    auto m_turnLength = static_cast<uint8_t>(xirand::GetRandomNumber<uint32>(maxTurns) + 1);
 
     position_t startPosition = start;
 

@@ -25,6 +25,7 @@
 CMobSkill::CMobSkill(uint16 id)
 : m_ID(id)
 , m_TotalTargets(1)
+, m_primaryTargetID(0)
 , m_Param(0)
 , m_AnimID(0)
 , m_Aoe(0)
@@ -99,6 +100,11 @@ void CMobSkill::setMsg(uint16 msg)
 void CMobSkill::setTotalTargets(uint16 targets)
 {
     m_TotalTargets = targets;
+}
+
+void CMobSkill::setPrimaryTargetID(uint32 targid)
+{
+    m_primaryTargetID = targid;
 }
 
 void CMobSkill::setAnimationID(uint16 animID)
@@ -274,6 +280,11 @@ uint16 CMobSkill::getTotalTargets() const
     return m_TotalTargets;
 }
 
+uint32 CMobSkill::getPrimaryTargetID() const
+{
+    return m_primaryTargetID;
+}
+
 uint16 CMobSkill::getMsg() const
 {
     return m_Message;
@@ -421,14 +432,4 @@ void CMobSkill::setSecondarySkillchain(uint8 skillchain)
 void CMobSkill::setTertiarySkillchain(uint8 skillchain)
 {
     m_tertiarySkillchain = skillchain;
-}
-
-uint16 CMobSkill::getBloodPactAbilityID() const
-{
-    return m_bloodPactAbilityID;
-}
-
-void CMobSkill::setBloodPactAbilityID(uint16 bloodPactAbilityID)
-{
-    m_bloodPactAbilityID = bloodPactAbilityID;
 }

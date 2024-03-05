@@ -87,7 +87,7 @@ public:
     void TickRegen(time_point tick);
 
     void LoadStatusEffects();                    // We load the character effects
-    void SaveStatusEffects(bool logout = false, bool skipRemove = false); // сохраняем эффекты персонажа
+    void SaveStatusEffects(bool logout = false, bool skipRemove = false);
 
     uint8 GetEffectsCount(EFFECT ID); // We get the number of effects with the specified ID
     uint8 GetLowestFreeSlot();        // returns the lowest free slot for songs/rolls
@@ -115,7 +115,6 @@ public:
     bool IsAsleep();
     bool HasPreventActionEffect(bool ignoreCharm = false); // checks if owner has an effect that prevents actions, like stun, petrify, sleep etc
 
-    uint16 GetLevelRestrictionEffect();                     // gets level restriction power
     uint16 GetConfrontationEffect();                        // gets confrontation number (bcnm, confrontation, campaign, reive mark)
     void   CopyConfrontationEffect(CBattleEntity* PEntity); // copies confrontation status (pet summoning, etc)
 

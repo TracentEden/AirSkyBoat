@@ -80,29 +80,29 @@ namespace synthutils
             AND Ingredient8 = %u \
         LIMIT 1";
 
-        int32 ret = sql->Query(fmtQuery, PChar->CraftContainer->getItemID(0), PChar->CraftContainer->getItemID(0),
+        int32 ret = _sql->Query(fmtQuery, PChar->CraftContainer->getItemID(0), PChar->CraftContainer->getItemID(0),
                                PChar->CraftContainer->getItemID(1), PChar->CraftContainer->getItemID(2), PChar->CraftContainer->getItemID(3),
                                PChar->CraftContainer->getItemID(4), PChar->CraftContainer->getItemID(5), PChar->CraftContainer->getItemID(6),
                                PChar->CraftContainer->getItemID(7), PChar->CraftContainer->getItemID(8));
 
-        if (ret != SQL_ERROR && sql->NumRows() != 0 && sql->NextRow() == SQL_SUCCESS)
+        if (ret != SQL_ERROR && _sql->NumRows() != 0 && _sql->NextRow() == SQL_SUCCESS)
         {
-            uint16 KeyItemID = (uint16)sql->GetUIntData(1); // Check if recipe needs KI
+            uint16 KeyItemID = (uint16)_sql->GetUIntData(1); // Check if recipe needs KI
 
             if ((KeyItemID == 0) || (charutils::hasKeyItem(PChar, KeyItemID))) // If recipe doesn't need KI OR Player has the required KI
             {
                 // in the ninth cell write the id of the recipe
-                PChar->CraftContainer->setItem(9, sql->GetUIntData(0), 0xFF, 0);
-                PChar->CraftContainer->setItem(10 + 1, (uint16)sql->GetUIntData(10), (uint8)sql->GetUIntData(14), 0); // RESULT_SUCCESS
-                PChar->CraftContainer->setItem(10 + 2, (uint16)sql->GetUIntData(11), (uint8)sql->GetUIntData(15), 0); // RESULT_HQ
-                PChar->CraftContainer->setItem(10 + 3, (uint16)sql->GetUIntData(12), (uint8)sql->GetUIntData(16), 0); // RESULT_HQ2
-                PChar->CraftContainer->setItem(10 + 4, (uint16)sql->GetUIntData(13), (uint8)sql->GetUIntData(17), 0); // RESULT_HQ3
-                PChar->CraftContainer->setCraftType((uint8)sql->GetUIntData(18));                                     // Store if it's a desynth
+                PChar->CraftContainer->setItem(9, _sql->GetUIntData(0), 0xFF, 0);
+                PChar->CraftContainer->setItem(10 + 1, (uint16)_sql->GetUIntData(10), (uint8)_sql->GetUIntData(14), 0); // RESULT_SUCCESS
+                PChar->CraftContainer->setItem(10 + 2, (uint16)_sql->GetUIntData(11), (uint8)_sql->GetUIntData(15), 0); // RESULT_HQ
+                PChar->CraftContainer->setItem(10 + 3, (uint16)_sql->GetUIntData(12), (uint8)_sql->GetUIntData(16), 0); // RESULT_HQ2
+                PChar->CraftContainer->setItem(10 + 4, (uint16)_sql->GetUIntData(13), (uint8)_sql->GetUIntData(17), 0); // RESULT_HQ3
+                PChar->CraftContainer->setCraftType((uint8)_sql->GetUIntData(18));                                     // Store synth type (regular, desynth or "no material loss")
 
                 uint16 skillValue   = 0;
                 uint16 currentSkill = 0;
 
-                const char* contentTag = (const char*)sql->GetData(19);
+                const char* contentTag = (const char*)_sql->GetData(19);
 
                 if (!luautils::IsContentEnabled(contentTag))
                 {
@@ -112,7 +112,7 @@ namespace synthutils
 
                 for (uint8 skillID = SKILL_WOODWORKING; skillID <= SKILL_COOKING; ++skillID) // range for all 8 synth skills
                 {
-                    skillValue   = (uint16)sql->GetUIntData((skillID - 49 + 2));
+                    skillValue   = (uint16)_sql->GetUIntData((skillID - 49 + 2));
                     currentSkill = PChar->RealSkills.skill[skillID];
 
                     // skill write in the quantity field of cells 9-16
@@ -125,7 +125,7 @@ namespace synthutils
                     }
                 }
 
-                PChar->m_charCrafting.lastSynthReq = (uint16)sql->GetUIntData(0);
+                PChar->m_charCrafting.lastSynthReq = (uint16)_sql->GetUIntData(0);
                 return true;
             }
         }
@@ -232,11 +232,14 @@ namespace synthutils
 
     uint8 calcSynthResult(CCharEntity* PChar)
     {
+        //------------------------------
+        // Section 1: Variable definitions.
+        //------------------------------
         uint8 synthResult = SYNTHESIS_SUCCESS; // We assume that we succeed.
         int8   hqtier          = 3;                 // Set base to T3
         bool   canHQ           = true;              // We assume by default that we can HQ
         uint8 skillID         = 0; // Current crafting skill being checked.
-	double success         = 0;
+	    double success         = 0;
         double chance          = 0;
         uint8 recipeSkill     = 0; // Recipe current skill level, based on current skill ID being checked.
         double synthDiff       = 0.;
@@ -325,6 +328,7 @@ namespace synthutils
                     // Use the slotID of the crystal cell, because it was removed at the beginning of the synthesis.
                     PChar->CraftContainer->setInvSlotID(0, skillID);
                     synthResult = SYNTHESIS_FAIL;
+
                     break;
                 }
             }
@@ -450,12 +454,13 @@ namespace synthutils
      * Do Skill Up                                                       *
      *                                                                   *
      ********************************************************************/
-
     int32 doSynthSkillUp(CCharEntity* PChar)
     {
         for (uint8 skillID = SKILL_WOODWORKING; skillID <= SKILL_COOKING; ++skillID) // Check for all skills involved in a recipe, to check for skill up
         {
+            //------------------------------
             // Section 1: Checks
+            //------------------------------
 
             // We don't Skill Up if the recipe doesn't involve the currently checked skill.
             if (PChar->CraftContainer->getQuantity(skillID - 40) == 0)
@@ -486,8 +491,10 @@ namespace synthutils
                 continue; // Break current loop iteration.
             }
 
+            //------------------------------
             // Section 2: Skill up equations and penalties
-            double skillUpChance         = 0;
+            //------------------------------
+            double skillUpChance = 0;
             double craftChanceMultiplier = settings::get<double>("map.CRAFT_CHANCE_MULTIPLIER"); // For servers who want increased crafting rates
 
             // There is no proof or data that supports there being a difference in skilups for the gap difference
@@ -925,7 +932,9 @@ namespace synthutils
      *  Send the result of the synthesis to the character                    *
      *                                                                       *
      ************************************************************************/
-
+    // the extra param indicates if the finishing of the synth was forced (via zoning)
+    // this can help prevent inadvertently jailing players who have synths forced done early on airships
+    // https://github.com/AirSkyBoat/AirSkyBoat/pull/2600
     int32 doSynthResult(CCharEntity* PChar, bool forced = false)
     {
         uint8 m_synthResult = PChar->CraftContainer->getQuantity(0);
@@ -997,11 +1006,11 @@ namespace synthutils
                     PItem->setSignature(EncodeStringSignature(PChar->name.c_str(), encodedSignature));
 
                     char signature_esc[31]; // max charname: 15 chars * 2 + 1
-                    sql->EscapeStringLen(signature_esc, PChar->name.c_str(), strlen(PChar->name.c_str()));
+                    _sql->EscapeStringLen(signature_esc, PChar->name.c_str(), strlen(PChar->name.c_str()));
 
                     char fmtQuery[] = "UPDATE char_inventory SET signature = '%s' WHERE charid = %u AND location = 0 AND slot = %u;\0";
 
-                    sql->Query(fmtQuery, signature_esc, PChar->id, invSlotID);
+                    _sql->Query(fmtQuery, signature_esc, PChar->id, invSlotID);
                 }
                 PChar->pushPacket(new CInventoryItemPacket(PItem, LOC_INVENTORY, invSlotID));
             }
@@ -1047,7 +1056,9 @@ namespace synthutils
      *  We complete the synthesis                                            *
      *                                                                       *
      ************************************************************************/
-
+    // the extra param indicates if the finishing of the synth was forced (via zoning)
+    // this can help prevent inadvertently jailing players who have synths forced done early on airships
+    // https://github.com/AirSkyBoat/AirSkyBoat/pull/2600
     int32 sendSynthDone(CCharEntity* PChar, bool forced = false)
     {
         doSynthResult(PChar, forced);

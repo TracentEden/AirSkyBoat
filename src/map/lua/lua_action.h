@@ -42,12 +42,14 @@ public:
     friend std::ostream& operator<<(std::ostream& out, const CLuaAction& action);
 
     void   ID(uint32 actionTargetID, uint32 newActionTargetID);
+    uint32 getPrimaryTargetID();
     void   setRecast(uint16 recast);
     uint16 getRecast();
     void   actionID(uint16 actionid);
     uint16 getParam(uint32 actionTargetID);
     void   param(uint32 actionTargetID, int32 param);
     void   messageID(uint32 actionTargetID, uint16 messageID);
+    auto   getMsg(uint32 actionTargetID) -> std::optional<uint16>;
     auto   getAnimation(uint32 actionTargetID) -> std::optional<uint16>;
     void   setAnimation(uint32 actionTargetID, uint16 animation);
     auto   getCategory() -> uint8;

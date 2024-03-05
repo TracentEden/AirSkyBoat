@@ -21,10 +21,10 @@
 
 #include "moduleutils.h"
 
-#include "../command_handler.h"
-#include "../lua/luautils.h"
+#include "command_handler.h"
 #include "common/cbasetypes.h"
 #include "common/utils.h"
+#include "lua/luautils.h"
 
 #include <filesystem>
 #include <fstream>
@@ -192,17 +192,18 @@ namespace moduleutils
                     continue;
                 }
 
+                // Check the file is a valid module
+                sol::table table = res;
+
                 // Check the file is a valid command
-                if (lua["cmdprops"].valid() && lua["onTrigger"].valid())
+                if (table["cmdprops"].valid() && table["onTrigger"].valid())
                 {
                     auto commandName = path.filename().replace_extension("").generic_string();
-                    DebugModules(fmt::format("Registering module command: !{}", commandName));
-                    CCommandHandler::registerCommand(commandName, relPath);
+                    ShowInfo(fmt::format("Registering module command: !{}", commandName));
+                    lua[sol::create_if_nil]["xi"]["commands"][commandName] = table;
                     continue;
                 }
 
-                // Check the file is a valid module
-                sol::table table = res;
                 if (table["overrides"].valid())
                 {
                     auto moduleName = table.get_or("name", std::string());
@@ -224,10 +225,10 @@ namespace moduleutils
                             auto zoneName    = parts[2];
                             auto currentPort = map_port == 0 ? settings::get<uint16>("network.MAP_PORT") : map_port;
 
-                            auto ret = sql->Query(fmt::format("SELECT `name`, zoneport FROM zone_settings WHERE `name` = '{}' AND zoneport = {};",
-                                                              zoneName, currentPort)
-                                                      .c_str());
-                            if (ret != SQL_ERROR && sql->NumRows() == 0)
+                            auto ret = _sql->Query(fmt::format("SELECT `name`, zoneport FROM zone_settings WHERE `name` = '{}' AND zoneport = {}",
+                                                               zoneName, currentPort)
+                                                       .c_str());
+                            if (ret != SQL_ERROR && _sql->NumRows() == 0)
                             {
                                 DebugModules(fmt::format("{} does not appear to exist on this process.", zoneName));
                                 continue;

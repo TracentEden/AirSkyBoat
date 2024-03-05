@@ -45,8 +45,7 @@ enum ZONEID : uint16
 {
     // Note: "residential zones" aren't really zones of their own.
     // It's more of a sub zone - the dats for messages and entities will all be from the zone you entered from.
-    ZONE_RESIDENTIAL_AREA = 0, // Old Tech Demonstration zone from pre-release (aka "the monorail place")
-                               // The Above should NOT be labeled "RESIDENTIAL_AREA"
+    ZONE_MONORAIL_PRE_RELEASE           = 0, // Old Tech Demonstration zone from pre-release (aka "the monorail place")
     ZONE_PHANAUET_CHANNEL               = 1,
     ZONE_CARPENTERS_LANDING             = 2,
     ZONE_MANACLIPPER                    = 3,
@@ -422,15 +421,18 @@ enum class CONTINENT_TYPE : uint8
 };
 DECLARE_FORMAT_AS_UNDERLYING(CONTINENT_TYPE);
 
-enum class ZONE_TYPE : uint8
+enum ZONE_TYPE : uint16
 {
-    NONE              = 0,
-    CITY              = 1,
-    OUTDOORS          = 2,
-    DUNGEON           = 3,
-    BATTLEFIELD       = 4,
-    DYNAMIS           = 5,
-    DUNGEON_INSTANCED = 6,
+    UNKNOWN   = 0x0000,
+    CITY      = 0x0001,
+    OUTDOORS  = 0x0002,
+    DUNGEON   = 0x0004,
+    SIGNET    = 0x0008,
+    SANCTION  = 0x0010, // 16
+    SIGIL     = 0x0020, // 32
+    IONIS     = 0x0040, // 64
+    DYNAMIS   = 0x0080, // 128
+    INSTANCED = 0x0100, // 256
 };
 DECLARE_FORMAT_AS_UNDERLYING(ZONE_TYPE);
 
@@ -646,8 +648,10 @@ int32 zone_update_weather(uint32 tick, CTaskMgr::CTask* PTask);
 class CZone
 {
 public:
+    DISALLOW_COPY_AND_MOVE(CZone);
+
     ZONEID             GetID();
-    ZONE_TYPE          GetType();
+    ZONE_TYPE          GetTypeMask();
     REGION_TYPE        GetRegionID();
     CONTINENT_TYPE     GetContinentID();
     uint8              getLevelRestriction();
@@ -728,15 +732,15 @@ public:
     std::map<uint8, spawnGroup_t> m_SpawnGroups; // Map of spawn groups
 
     virtual void ZoneServer(time_point tick);
-    void         CheckTriggerAreas();
+    virtual void CheckTriggerAreas();
 
-    virtual void ForEachChar(std::function<void(CCharEntity*)> func);
-    virtual void ForEachCharInstance(CBaseEntity* PEntity, std::function<void(CCharEntity*)> func);
-    virtual void ForEachMob(std::function<void(CMobEntity*)> func);
-    virtual void ForEachMobInstance(CBaseEntity* PEntity, std::function<void(CMobEntity*)> func);
-    virtual void ForEachTrust(std::function<void(CTrustEntity*)> func);
-    virtual void ForEachTrustInstance(CBaseEntity* PEntity, std::function<void(CTrustEntity*)> func);
-    virtual void ForEachNpc(std::function<void(CNpcEntity*)> func);
+    virtual void ForEachChar(std::function<void(CCharEntity*)> const& func);
+    virtual void ForEachCharInstance(CBaseEntity* PEntity, std::function<void(CCharEntity*)> const& func);
+    virtual void ForEachMob(std::function<void(CMobEntity*)> const& func);
+    virtual void ForEachMobInstance(CBaseEntity* PEntity, std::function<void(CMobEntity*)> const& func);
+    virtual void ForEachTrust(std::function<void(CTrustEntity*)> const& func);
+    virtual void ForEachTrustInstance(CBaseEntity* PEntity, std::function<void(CTrustEntity*)> const& func);
+    virtual void ForEachNpc(std::function<void(CNpcEntity*)> const& func);
 
     bool HasReducedVerticalAggro();
 
@@ -762,8 +766,8 @@ public:
     uint8  GetZoneAnimation();
     uint32 GetZoneAnimStartTime();
     uint16 GetZoneAnimLength();
-    void   LoadNavMesh();
-    void   LoadZoneLos();
+    void LoadNavMesh();
+    void LoadZoneLos();
 
 private:
     ZONEID         m_zoneID;
@@ -788,7 +792,6 @@ private:
 
     std::unordered_map<std::string, uint32> m_LocalVars;
 
-    triggerAreaList_t m_triggerAreaList;
     zoneLineList_t m_zoneLineList;
 
     void LoadZoneSettings();
@@ -811,6 +814,9 @@ private:
 protected:
     CTaskMgr::CTask* ZoneTimer; // The pointer to the created timer is Zoneserver.necessary for the possibility of stopping it
     CTaskMgr::CTask* ZoneTimerTriggerAreas;
+
+    triggerAreaList_t m_triggerAreaList;
+
     void createZoneTimers();
     void CharZoneIn(CCharEntity* PChar);
     void CharZoneOut(CCharEntity* PChar);

@@ -89,7 +89,7 @@ bool CAttack::IsCritical() const
  *  Sets the critical flag.                                             *
  *                                                                      *
  ************************************************************************/
-void CAttack::SetCritical(bool value, uint16 slot, bool isGuarded)
+void CAttack::SetCritical(bool value, bool isGuarded)
 {
     m_isCritical = value;
 
@@ -99,16 +99,42 @@ void CAttack::SetCritical(bool value, uint16 slot, bool isGuarded)
     }
     else
     {
-        float attBonus = 1.f;
+        float attBonus = 1.0f;
         if (m_attackType == PHYSICAL_ATTACK_TYPE::KICK)
         {
             if (CStatusEffect* footworkEffect = m_attacker->StatusEffectContainer->GetStatusEffect(EFFECT_FOOTWORK))
             {
-                attBonus = 1.0 + footworkEffect->GetSubPower() / 256.f; // Mod is out of 256
+                attBonus += (footworkEffect->GetSubPower() / 256.f); // Mod is out of 256
             }
         }
 
-        m_damageRatio = battleutils::GetDamageRatio(m_attacker, m_victim, m_isCritical, attBonus, slot, 0, isGuarded);
+        SKILLTYPE skilltype = SKILLTYPE::SKILL_NONE;
+
+        if (m_attacker->objtype == TYPE_PC)
+        {
+            SLOTTYPE slot = SLOT_MAIN;
+
+            if (m_attackDirection == PHYSICAL_ATTACK_DIRECTION::RIGHTATTACK)
+            {
+                slot = SLOT_SUB;
+            }
+
+            if (m_attacker->objtype == TYPE_PC)
+            {
+                if (auto* weapon = dynamic_cast<CItemWeapon*>(m_attacker->m_Weapons[slot]))
+                {
+                    skilltype = static_cast<SKILLTYPE>(weapon->getSkillType());
+                }
+                else
+                {
+                    skilltype = SKILLTYPE::SKILL_HAND_TO_HAND;
+                }
+            }
+        }
+
+        // need to pass the weapon slot because damage ratio depends on ATT which varies by slot
+        SLOTTYPE weaponSlot = static_cast<SLOTTYPE>(GetWeaponSlot());
+        m_damageRatio       = battleutils::GetDamageRatio(m_attacker, m_victim, m_isCritical, attBonus, skilltype, weaponSlot, 0, isGuarded);
     }
 }
 
@@ -460,7 +486,6 @@ void CAttack::ProcessDamage(bool isCritical, bool isGuarded, bool isKick)
     }
 
     SLOTTYPE slot = (SLOTTYPE)GetWeaponSlot();
-
     if (m_attackRound->IsH2H())
     {
         m_baseDamage       = 0;
@@ -578,6 +603,12 @@ void CAttack::ProcessDamage(bool isCritical, bool isGuarded, bool isKick)
     if (m_isFirstSwing && m_attacker->StatusEffectContainer->HasStatusEffect(EFFECT_RESTRAINT))
     {
         CStatusEffect* effect = m_attacker->StatusEffectContainer->GetStatusEffect(EFFECT_RESTRAINT);
+
+        if (effect == nullptr)
+        {
+            ShowError("Restraint effect was null.");
+            return;
+        }
 
         if (effect->GetPower() < 30)
         {

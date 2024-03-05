@@ -51,7 +51,6 @@ along with this program.  If not, see http://www.gnu.org/licenses/
 
 class CItemWeapon;
 class CTrustEntity;
-class CFellowEntity;
 
 struct jobs_t
 {
@@ -90,7 +89,6 @@ struct profile_t
     uint8      rank[3]; // RANK in three kingdoms
     uint16     rankpoints;
     location_t home_point;
-    location_t jail_cell;  // Jail Cell Coordinates For Character
     uint8      campaign_allegiance;
     uint8      unity_leader;
     uint16     raf[15]; // Recruit a Friend
@@ -197,14 +195,6 @@ struct PetInfo_t
     int16    petHP;
     int16    petMP;
     float    petTP;
-};
-
-struct FellowInfo_t
-{
-    bool  respawnFellow; // used for spawning fellow on zone
-    uint8 fellowID;      // id
-    int16 fellowHP;      // fellow hp
-    int16 fellowMP;      // fellow mp
 };
 
 struct AuctionHistory_t
@@ -381,8 +371,8 @@ public:
     nameflags_t nameflags;
     nameflags_t menuConfigFlags;     // These flags are used for MenuConfig packets. Some nameflags values are duplicated.
     uint64      chatFilterFlags;     // Chat filter flags, raw object bytes from incoming packet
-    uint32      lastOnline{ 0 };     // UTC Unix Timestamp of the last time char zoned or logged out
-    bool        isNewPlayer() const; // Checks if new player bit is unset.
+    uint32 lastOnline{ 0 };     // UTC Unix Timestamp of the last time char zoned or logged out
+    bool   isNewPlayer() const; // Checks if new player bit is unset.
 
     profile_t       profile;
     capacityChain_t capacityChain;
@@ -401,7 +391,7 @@ public:
     uint8             m_TitleList[143]{};       // List of obtained titles
     uint8             m_Abilities[64]{};        // List of current abilities
     uint8             m_LearnedAbilities[49]{}; // Learnable abilities (corsair rolls)
-    std::bitset<50>   m_LearnedWeaponskills;  // LearnableWeaponskills
+    std::bitset<64>   m_LearnedWeaponskills;    // Learnable Weaponskills
     uint8             m_TraitList[18]{};        // List of active job traits in the form of a bit mask
     uint8             m_PetCommands[64]{};
     uint8             m_WeaponSkills[32]{};
@@ -417,10 +407,6 @@ public:
     void setPetZoningInfo();              // Set pet zoning info (when zoning and logging out)
     void resetPetZoningInfo();            // Reset pet zoning info (when changing job ect)
     bool shouldPetPersistThroughZoning(); // If true, zoning should not cause a currently active pet to despawn
-    
-FellowInfo_t      fellowZoningInfo;                // used to repawn fellows on zone
-    void              setFellowZoningInfo();           // set fellow zoning info (when zoning and logging out)
-    void              resetFellowZoningInfo();         // reset fellow zoning info (when changing job ect)
 
     uint8  m_SetBlueSpells[20]{}; // The 0x200 offsetted blue magic spell IDs which the user has set. (1 byte per spell)
     uint32 m_FieldChocobo{};
@@ -429,7 +415,6 @@ FellowInfo_t      fellowZoningInfo;                // used to repawn fellows on 
 
     UnlockedAttachments_t m_unlockedAttachments{}; // Unlocked Automaton Attachments (1 bit per attachment)
     CAutomatonEntity*     PAutomaton;              // Automaton statistics
-    CFellowEntity*        m_PFellow;             // Player's Fellow
 
     std::vector<CTrustEntity*> PTrusts; // Active trusts
 
@@ -542,7 +527,6 @@ FellowInfo_t      fellowZoningInfo;                // used to repawn fellows on 
     uint8      m_hasAutoTarget;   // ability to use AutoTarget function
     position_t m_StartActionPos;  // action start position (item use, shooting start, tractor position)
     position_t m_ActionOffsetPos; // action offset position from the action packet(currently only used for repositioning of luopans)
-    uint8      m_raiseLevel;      // Used to dictate whether we need to level up on raise in battlefield and to determine excess XP.
 
     location_t m_previousLocation;
 
@@ -611,7 +595,6 @@ FellowInfo_t      fellowZoningInfo;                // used to repawn fellows on 
     bool ReloadParty() const;
     void ClearTrusts();
     void RemoveTrust(CTrustEntity*);
-    void RemoveFellow();
 
     void RequestPersist(CHAR_PERSIST toPersist);
     bool PersistData();
@@ -623,9 +606,9 @@ FellowInfo_t      fellowZoningInfo;                // used to repawn fellows on 
     virtual void addTrait(CTrait*) override;
     virtual void delTrait(CTrait*) override;
 
-    bool         IsMobOwner(CBattleEntity* PTarget);
     virtual bool ValidTarget(CBattleEntity* PInitiator, uint16 targetFlags) override;
     virtual bool CanUseSpell(CSpell*) override;
+    bool         IsMobOwner(CBattleEntity* PTarget);
 
     virtual void Die() override;
     void         Die(duration _duration);
@@ -639,6 +622,7 @@ FellowInfo_t      fellowZoningInfo;                // used to repawn fellows on 
     int32 GetTimeRemainingUntilDeathHomepoint() const;
 
     int32 GetTimeCreated();
+    uint8 getHighestJobLevel();
 
     bool isInEvent();
     bool isNpcLocked();

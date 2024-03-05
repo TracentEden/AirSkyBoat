@@ -67,16 +67,16 @@ static uint8 upgrade[10][45] = {
 
 
 static uint8 cap[100] = {
-    0, 0, 0, 0, 0, 0, 0, 0, 0, 0,           // 0-9   0
-    1, 1, 1, 1, 1, 1, 1, 1, 1, 1,           // 10-19 1
-    2, 2, 2, 2, 2, 2, 2, 2, 2, 2,           // 20-29 2
-    3, 3, 3, 3, 3, 3, 3, 3, 3, 3,           // 30-39 3
-    4, 4, 4, 4, 4, 4, 4, 4, 4, 4,           // 40-49 4
-    5, 5, 5, 5, 5,                          // 50-54 5
-    6, 6, 6, 6, 6,                          // 55-59 6
-    7, 7, 7, 7, 7,                          // 60-64 7
-    8, 8, 8, 8, 8,                          // 65-69 8
-    9, 9, 9, 9, 9,                          // 70-74 9
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0,           // 00-09  0
+    1, 1, 1, 1, 1, 1, 1, 1, 1, 1,           // 10-19  1
+    2, 2, 2, 2, 2, 2, 2, 2, 2, 2,           // 20-29  2
+    3, 3, 3, 3, 3, 3, 3, 3, 3, 3,           // 30-39  3
+    4, 4, 4, 4, 4, 4, 4, 4, 4, 4,           // 40-49  4
+    5, 5, 5, 5, 5,                          // 50-54  5
+    6, 6, 6, 6, 6,                          // 55-59  6
+    7, 7, 7, 7, 7,                          // 60-64  7
+    8, 8, 8, 8, 8,                          // 65-69  8
+    9, 9, 9, 9, 9,                          // 70-74  9
     10, 10, 10, 10, 10,                     // 75-79 10
     15, 15, 15, 15, 15, 15, 15, 15, 15, 15, // 80-89 15
     15, 15, 15, 15, 15, 15, 15, 15, 15, 15, // 90-99 15
@@ -205,14 +205,14 @@ void CMeritPoints::LoadMeritPoints(uint32 charid)
         merits[i].next  = upgrade[merits[i].upgradeid][merits[i].count];
     }
 
-    if (sql->Query("SELECT meritid, upgrades FROM char_merit WHERE charid = %u", charid) != SQL_ERROR)
+    if (_sql->Query("SELECT meritid, upgrades FROM char_merit WHERE charid = %u", charid) != SQL_ERROR)
     {
-        for (uint64 j = 0; j < sql->NumRows(); j++)
+        for (uint64 j = 0; j < _sql->NumRows(); j++)
         {
-            if (sql->NextRow() == SQL_SUCCESS)
+            if (_sql->NextRow() == SQL_SUCCESS)
             {
-                uint32 meritID  = sql->GetUIntData(0);
-                uint32 upgrades = sql->GetUIntData(1);
+                uint32 meritID  = _sql->GetUIntData(0);
+                uint32 upgrades = _sql->GetUIntData(1);
                 for (auto& merit : merits)
                 {
                     if (merit.id == meritID)
@@ -232,12 +232,12 @@ void CMeritPoints::SaveMeritPoints(uint32 charid)
     {
         if (merit.count > 0)
         {
-            sql->Query("INSERT INTO char_merit (charid, meritid, upgrades) VALUES(%u, %u, %u) ON DUPLICATE KEY UPDATE upgrades = %u", charid,
-                       merit.id, merit.count, merit.count);
+            _sql->Query("INSERT INTO char_merit (charid, meritid, upgrades) VALUES(%u, %u, %u) ON DUPLICATE KEY UPDATE upgrades = %u", charid,
+                        merit.id, merit.count, merit.count);
         }
         else
         {
-            sql->Query("DELETE FROM char_merit WHERE charid = %u AND meritid = %u", charid, merit.id);
+            _sql->Query("DELETE FROM char_merit WHERE charid = %u AND meritid = %u", charid, merit.id);
         }
     }
 }
@@ -252,8 +252,27 @@ uint8 CMeritPoints::GetMeritPoints() const
     return m_MeritPoints;
 }
 
+uint16 CMeritPoints::GetMeritCountInSameCategory(MERIT_TYPE merit)
+{
+    if (!this->IsMeritExist(merit))
+    {
+        return 0;
+    }
 
-// true - если merit был добавлен
+    Merit_t* PMerit = Categories[GetMeritCategory(merit)];
+
+    uint16 total = 0;
+
+    for (int i = 0; i < meritCatInfo[GetMeritCategory(merit)].MeritsInCat; ++i)
+    {
+        total += PMerit->count;
+        PMerit++;
+    }
+
+    return total;
+}
+
+// true - If merit was added
 
 bool CMeritPoints::AddLimitPoints(uint16 points)
 {
@@ -351,22 +370,9 @@ Merit_t* CMeritPoints::GetMeritPointer(MERIT_TYPE merit)
 
 void CMeritPoints::RaiseMerit(MERIT_TYPE merit)
 {
-    Merit_t* PMerit     = GetMeritPointer(merit);
-    auto     maxUpgrade = meritCatInfo[GetMeritCategory(merit)].MaxPoints;
+    Merit_t* PMerit = GetMeritPointer(merit);
 
-    // Make sure we don't exceed the maximum for the category
-    // Check all other merits in this player's category to make sure the category maximum is not exceeded
-    uint8 totalMeritsInCat = 0;
-
-    for (auto& playerMerits : merits)
-    {
-        if (playerMerits.catid == PMerit->catid)
-        {
-            totalMeritsInCat += playerMerits.count;
-        }
-    }
-
-    if (m_MeritPoints >= PMerit->next && totalMeritsInCat < maxUpgrade)
+    if (m_MeritPoints >= PMerit->next && PMerit->count < PMerit->upgrade && GetMeritCountInSameCategory(merit) < meritCatInfo[GetMeritCategory(merit)].MaxPoints)
     {
         m_MeritPoints -= PMerit->next;
 
@@ -438,11 +444,11 @@ namespace meritNameSpace
 
     void LoadMeritsList()
     {
-        int32 ret = sql->Query("SELECT m.meritid, m.value, m.jobs, m.upgrade, m.upgradeid, m.catagoryid, sl.spellid FROM merits m LEFT JOIN \
+        int32 ret = _sql->Query("SELECT m.meritid, m.value, m.jobs, m.upgrade, m.upgradeid, m.catagoryid, sl.spellid FROM merits m LEFT JOIN \
             spell_list sl ON m.name = sl.name ORDER BY m.meritid ASC LIMIT %u",
                                MERITS_COUNT);
 
-        if (ret != SQL_ERROR && sql->NumRows() != MERITS_COUNT)
+        if (ret != SQL_ERROR && _sql->NumRows() != MERITS_COUNT)
         {
             // issue with unknown catagories causing massive confusion
 
@@ -451,18 +457,18 @@ namespace meritNameSpace
             int8   previousCatIndex = 0; // will be set on every loop, used for detecting a category change
             int8   catMeritIndex    = 0; // counts number of merits in a category
 
-            while (sql->NextRow() == SQL_SUCCESS)
+            while (_sql->NextRow() == SQL_SUCCESS)
             {
                 Merit_t Merit = {}; // creat a new merit template.
 
-                Merit.id        = sql->GetUIntData(0); // set data from db.
-                Merit.value     = sql->GetUIntData(1);
-                Merit.jobs      = sql->GetUIntData(2);
-                Merit.upgrade   = sql->GetUIntData(3);
-                Merit.upgradeid = sql->GetUIntData(4);
-                Merit.catid     = sql->GetUIntData(5);
-                Merit.next      = upgrade[Merit.upgradeid][0];
-                Merit.spellid   = sql->GetUIntData(6);
+                Merit.id         = _sql->GetUIntData(0); // set data from db.
+                Merit.value      = _sql->GetUIntData(1);
+                Merit.jobs       = _sql->GetUIntData(2);
+                Merit.upgrade    = _sql->GetUIntData(3);
+                Merit.upgradeid  = _sql->GetUIntData(4);
+                Merit.catid      = _sql->GetUIntData(5);
+                Merit.next       = upgrade[Merit.upgradeid][0];
+                Merit.spellid    = _sql->GetUIntData(6);
 
                 GMeritsTemplate[index] = Merit; // add the merit to the array
 

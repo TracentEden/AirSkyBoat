@@ -283,8 +283,7 @@ public:
     void   ResetLocalVars();
     uint32 GetLocalVar(std::string var);
     void   SetLocalVar(std::string var, uint32 val);
-
-    std::map<std::string, uint32> GetAllLocalVars();
+    auto   GetLocalVars() -> std::map<std::string, uint32>&;
 
     // pre-tick update
     virtual void Tick(time_point) = 0;
@@ -313,8 +312,8 @@ public:
     uint8           speed;        // speed of movement
     uint8           speedsub;     // Additional movement speed parameter
     uint8           namevis;
-    ALLEGIANCE_TYPE allegiance; // what types of targets the entity can fight
-    uint8           updatemask; // what to update next server tick to players nearby
+    ALLEGIANCE_TYPE allegiance;     // what types of targets the entity can fight
+    uint8           updatemask;     // what to update next server tick to players nearby
 
     bool m_ignoreWallhack = false; // Flag to ignore wallhack if set to true.
 

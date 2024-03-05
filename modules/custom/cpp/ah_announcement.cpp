@@ -75,22 +75,22 @@ class AHAnnouncementModule : public CPPModule
                         {
                             auto sellerId = 0;
 
-                            auto ret = sql->Query(
+                            auto ret = _sql->Query(
                                 "SELECT seller FROM auction_house WHERE itemid = %u AND buyer_name IS NULL "
                                 "AND stack = %u AND price <= %u ORDER BY price LIMIT 1",
                                 itemid, quantity == 0, price);
 
-                            if (ret != SQL_ERROR && sql->NumRows() != 0 && sql->NextRow() == SQL_SUCCESS)
+                            if (ret != SQL_ERROR && _sql->NumRows() != 0 && _sql->NextRow() == SQL_SUCCESS)
                             {
-                                sellerId = sql->GetUIntData(0);
+                                sellerId = _sql->GetUIntData(0);
                             }
 
-                            ret = sql->Query(
+                            ret = _sql->Query(
                                 "UPDATE auction_house SET buyer_name = '%s', sale = %u, sell_date = %u WHERE itemid = %u AND buyer_name IS NULL "
                                 "AND stack = %u AND price <= %u ORDER BY price LIMIT 1",
                                 PChar->getName(), price, (uint32)time(nullptr), itemid, quantity == 0, price);
 
-                            if (ret != SQL_ERROR && sql->AffectedRows() != 0)
+                            if (ret != SQL_ERROR && _sql->AffectedRows() != 0)
                             {
                                 uint8 SlotID = charutils::AddItem(PChar, LOC_INVENTORY, itemid, (quantity == 0 ? PItem->getStackSize() : 1));
 

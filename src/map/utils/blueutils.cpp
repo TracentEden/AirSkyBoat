@@ -21,26 +21,26 @@
 
 #include "common/utils.h"
 
-#include "../packets/char_job_extra.h"
-#include "../packets/char_spells.h"
+#include "packets/char_job_extra.h"
+#include "packets/char_spells.h"
 
 #include <cmath>
 
-#include "../packets/char_health.h"
-#include "../packets/char_stats.h"
-#include "../packets/message_basic.h"
+#include "packets/char_health.h"
+#include "packets/char_stats.h"
+#include "packets/message_basic.h"
 
-#include "../blue_spell.h"
-#include "../blue_trait.h"
-#include "../grades.h"
-#include "../job_points.h"
-#include "../merit.h"
-#include "../modifier.h"
-#include "../party.h"
-#include "../spell.h"
 #include "battleutils.h"
+#include "blue_spell.h"
+#include "blue_trait.h"
 #include "blueutils.h"
 #include "charutils.h"
+#include "grades.h"
+#include "job_points.h"
+#include "merit.h"
+#include "modifier.h"
+#include "party.h"
+#include "spell.h"
 
 namespace blueutils
 {
@@ -324,12 +324,12 @@ namespace blueutils
         {
             const char* Query = "UPDATE chars SET "
                                 "set_blue_spells = '%s' "
-                                "WHERE charid = %u;";
+                                "WHERE charid = %u";
 
             char spells[sizeof(PChar->m_SetBlueSpells) * 2 + 1];
-            sql->EscapeStringLen(spells, (const char*)PChar->m_SetBlueSpells, sizeof(PChar->m_SetBlueSpells));
+            _sql->EscapeStringLen(spells, (const char*)PChar->m_SetBlueSpells, sizeof(PChar->m_SetBlueSpells));
 
-            sql->Query(Query, spells, PChar->id);
+            _sql->Query(Query, spells, PChar->id);
         }
     }
 
@@ -338,15 +338,15 @@ namespace blueutils
         if (PChar->GetMJob() == JOB_BLU || PChar->GetSJob() == JOB_BLU)
         {
             const char* Query = "SELECT set_blue_spells FROM "
-                                "chars WHERE charid = %u;";
+                                "chars WHERE charid = %u";
 
-            int32 ret = sql->Query(Query, PChar->id);
+            int32 ret = _sql->Query(Query, PChar->id);
 
-            if (ret != SQL_ERROR && sql->NumRows() != 0 && sql->NextRow() == SQL_SUCCESS)
+            if (ret != SQL_ERROR && _sql->NumRows() != 0 && _sql->NextRow() == SQL_SUCCESS)
             {
                 size_t length      = 0;
                 char*  blue_spells = nullptr;
-                sql->GetData(0, &blue_spells, &length);
+                _sql->GetData(0, &blue_spells, &length);
                 memcpy(PChar->m_SetBlueSpells, blue_spells, (length > sizeof(PChar->m_SetBlueSpells) ? sizeof(PChar->m_SetBlueSpells) : length));
             }
             for (unsigned char& m_SetBlueSpell : PChar->m_SetBlueSpells)

@@ -80,7 +80,6 @@ public:
     uint16 getAugment(uint8 slot);
     uint16 getTrialNumber();
     uint8  getSuperiorLevel();
-    uint8  getRace();
 
     bool IsShield() const;
 
@@ -95,7 +94,6 @@ public:
     void setAugment(uint8 slot, uint16 type, uint8 value);
     void setTrialNumber(uint16);
     void setSuperiorLevel(uint8 level);
-    void setRace(uint8 race);
 
     void LoadAugment(uint8 slot, uint16 augment);
     bool PushAugment(uint16 type, uint8 value);
@@ -131,7 +129,6 @@ private:
     uint16 m_equipSlotID;
     uint16 m_removeSlotID;
     uint8  m_superiorLevel;
-    uint8  m_race;
 
     void SetAugmentMod(uint16 type, uint8 value);
 };

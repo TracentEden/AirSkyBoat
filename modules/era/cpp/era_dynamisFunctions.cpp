@@ -187,9 +187,9 @@ class DynaFuncModule : public CPPModule
             {
                 auto query = "SELECT MAX(instanceid) FROM dynamis_participants WHERE charid = %u";
 
-                if (sql->Query(query, PChar->id) != SQL_ERROR && sql->NumRows() > 0 && sql->NextRow() != SQL_ERROR)
+                if (_sql->Query(query, PChar->id) != SQL_ERROR && _sql->NumRows() > 0 && _sql->NextRow() != SQL_ERROR)
                 {
-                    return sql->GetUIntData(0);
+                    return _sql->GetUIntData(0);
                 }
             }
 
@@ -202,9 +202,9 @@ class DynaFuncModule : public CPPModule
             uint32 instID = 0;
             auto   query  = "SELECT MAX(instanceid) FROM dynamis_instances";
 
-            if (sql->Query(query) == SQL_SUCCESS && sql->NumRows() > 0 && sql->NextRow() != SQL_ERROR)
+            if (_sql->Query(query) == SQL_SUCCESS && _sql->NumRows() > 0 && _sql->NextRow() != SQL_ERROR)
             {
-                instID = sql->GetUIntData(0) + 1;
+                instID = _sql->GetUIntData(0) + 1;
             }
             else
             {
@@ -212,7 +212,7 @@ class DynaFuncModule : public CPPModule
             }
 
             query = "INSERT INTO dynamis_instances VALUES (%u, %u, %u)";
-            if (sql->Query(query, instID, zoneid, charid) == SQL_ERROR)
+            if (_sql->Query(query, instID, zoneid, charid) == SQL_ERROR)
             {
                 instID = -1;
             }
@@ -224,7 +224,7 @@ class DynaFuncModule : public CPPModule
         lua["AddDynamisParticipant"] = [this](uint32 instanceId, uint32 playerId)
         {
             const char* query = "INSERT INTO dynamis_participants VALUES (%u, %u)";
-            return sql->Query(query, instanceId, playerId) != SQL_ERROR;
+            return _sql->Query(query, instanceId, playerId) != SQL_ERROR;
         };
 
         // Reset All Dynamis Participants
@@ -233,9 +233,9 @@ class DynaFuncModule : public CPPModule
             std::vector<std::string> participants;
 
             auto query = "SELECT charid FROM dynamis_participants WHERE instanceid = %u";
-            if (sql->Query(query, instanceId) != SQL_ERROR && sql->NumRows() > 0 && sql->NextRow() != SQL_ERROR)
+            if (_sql->Query(query, instanceId) != SQL_ERROR && _sql->NumRows() > 0 && _sql->NextRow() != SQL_ERROR)
             {
-                participants.push_back(fmt::format("{}", sql->GetUIntData(0)));
+                participants.push_back(fmt::format("{}", _sql->GetUIntData(0)));
             }
 
             // Reset all Participants
@@ -248,14 +248,14 @@ class DynaFuncModule : public CPPModule
                 query = "UPDATE char_vars SET value = %u "
                         "WHERE charid IN (%s) AND varname = '%s'";
 
-                sql->Query(query, 73, charids, "DynaReservationStart");
+                _sql->Query(query, 73, charids, "DynaReservationStart");
             }
         };
 
         lua["SaveDynamisSnapshot"] = [this](uint32 instanceId, sol::table indicies)
         {
             auto query = "DELETE FROM dynamis_instance_state WHERE instanceid = %u";
-            if (sql->Query(query, instanceId) == SQL_ERROR)
+            if (_sql->Query(query, instanceId) == SQL_ERROR)
             {
                 ShowDebug(fmt::format("Era Dynamis: ERROR! Failed to clear dynamis_instance_state for instanceID: {}", instanceId));
             }
@@ -268,7 +268,7 @@ class DynaFuncModule : public CPPModule
                 }
 
                 query = "INSERT INTO dynamis_instance_state VALUES (%u, %u)";
-                if (sql->Query(query, instanceId, kvp.second.as<uint32>()) == SQL_ERROR)
+                if (_sql->Query(query, instanceId, kvp.second.as<uint32>()) == SQL_ERROR)
                 {
                     ShowDebug(fmt::format("Era Dynamis: ERROR! Failed to save dynamis state for instanceID: {} mobIndex: {}", instanceId, kvp.second.as<uint32>()));
                 }
@@ -279,11 +279,11 @@ class DynaFuncModule : public CPPModule
         {
             sol::table mobIndicies;
             auto       query = "SELECT mobindex FROM dynamis_instance_state WHERE instanceid = %u";
-            if (sql->Query(query, instanceId) != SQL_ERROR && sql->NumRows() > 0)
+            if (_sql->Query(query, instanceId) != SQL_ERROR && _sql->NumRows() > 0)
             {
-                while (sql->NextRow() != SQL_ERROR)
+                while (_sql->NextRow() != SQL_ERROR)
                 {
-                    mobIndicies.add(sql->GetUIntData(0));
+                    mobIndicies.add(_sql->GetUIntData(0));
                 }
             }
             return mobIndicies;

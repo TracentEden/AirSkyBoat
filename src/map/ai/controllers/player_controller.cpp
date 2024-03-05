@@ -49,7 +49,7 @@ void CPlayerController::Tick(time_point /*tick*/)
 bool CPlayerController::Cast(uint16 targid, SpellID spellid)
 {
     auto* PChar = static_cast<CCharEntity*>(POwner);
-    if (!PChar->PRecastContainer->HasRecast(RECAST_MAGIC, static_cast<uint16>(spellid), 0) && !jailutils::InPrison(PChar))
+    if (!PChar->PRecastContainer->HasRecast(RECAST_MAGIC, static_cast<uint16>(spellid), 0))
     {
         if (auto target = PChar->GetEntity(targid); target && target->PAI->IsUntargetable())
         {
@@ -66,12 +66,12 @@ bool CPlayerController::Cast(uint16 targid, SpellID spellid)
 
 bool CPlayerController::Engage(uint16 targid)
 {
-    //#TODO: pet engage/disengage
+    // TODO: pet engage/disengage
     std::unique_ptr<CBasicPacket> errMsg;
     auto*                         PChar   = static_cast<CCharEntity*>(POwner);
     auto*                         PTarget = PChar->IsValidTarget(targid, TARGET_ENEMY, errMsg);
 
-    if (PTarget && !jailutils::InPrison(PChar))
+    if (PTarget)
     {
         if (distance(PChar->loc.p, PTarget->loc.p) < 30)
         {
@@ -124,7 +124,7 @@ bool CPlayerController::Ability(uint16 targid, uint16 abilityid)
 {
     auto* PChar = static_cast<CCharEntity*>(POwner);
     // verify the ability can be used before changing state
-    if (PChar->PAI->CanChangeState() && CanUseAbility(targid, abilityid) && !jailutils::InPrison(PChar))
+    if (PChar->PAI->CanChangeState() && CanUseAbility(targid, abilityid))
     {
         CAbility* PAbility = ability::GetAbility(abilityid);
         if (!PAbility)
@@ -134,7 +134,18 @@ bool CPlayerController::Ability(uint16 targid, uint16 abilityid)
         }
         if (PChar->PRecastContainer->HasRecast(RECAST_ABILITY, PAbility->getRecastId(), PAbility->getRecastTime()))
         {
-            PChar->pushPacket(new CMessageBasicPacket(PChar, PChar, 0, 0, MSGBASIC_WAIT_LONGER));
+            Recast_t* recast = PChar->PRecastContainer->GetRecast(RECAST_ABILITY, PAbility->getRecastId());
+            // Set recast time in seconds to the normal recast time minus any charge time with the difference of the current time minus when the recast was set.
+            // Abilities without a charge will have zero chargeTime
+            uint32 recastSeconds = recast->RecastTime - ((uint32)time(nullptr) - recast->TimeStamp);
+            // Abilities with a single charge (low-level scholoar stratagems) behave like abilities without a charge
+            if (recast->maxCharges > 1)
+            {
+                recastSeconds -= (recast->maxCharges - 1) * recast->chargeTime;
+            }
+
+            PChar->pushPacket(new CMessageBasicPacket(PChar, PChar, 0, 0, MSGBASIC_UNABLE_TO_USE_JA2));
+            PChar->pushPacket(new CMessageBasicPacket(PChar, PChar, recastSeconds, 0, MSGBASIC_TIME_LEFT));
             return false;
         }
         if (auto target = PChar->GetEntity(targid); target && target->PAI->IsUntargetable())
@@ -153,7 +164,7 @@ bool CPlayerController::Ability(uint16 targid, uint16 abilityid)
 bool CPlayerController::RangedAttack(uint16 targid)
 {
     auto* PChar = static_cast<CCharEntity*>(POwner);
-    if (PChar->PAI->CanChangeState() && !jailutils::InPrison(PChar))
+    if (PChar->PAI->CanChangeState())
     {
         if (auto target = PChar->GetEntity(targid); target && target->PAI->IsUntargetable())
         {
@@ -171,7 +182,7 @@ bool CPlayerController::RangedAttack(uint16 targid)
 bool CPlayerController::UseItem(uint16 targid, uint8 loc, uint8 slotid)
 {
     auto* PChar = static_cast<CCharEntity*>(POwner);
-    if (PChar->PAI->CanChangeState() && !jailutils::InPrison(PChar))
+    if (PChar->PAI->CanChangeState())
     {
         if (auto target = PChar->GetEntity(targid); target && target->PAI->IsUntargetable())
         {
@@ -185,9 +196,9 @@ bool CPlayerController::UseItem(uint16 targid, uint8 loc, uint8 slotid)
 bool CPlayerController::WeaponSkill(uint16 targid, uint16 wsid)
 {
     auto* PChar = static_cast<CCharEntity*>(POwner);
-    if (PChar->PAI->CanChangeState() && !jailutils::InPrison(PChar))
+    if (PChar->PAI->CanChangeState())
     {
-        //#TODO: put all this in weaponskill_state
+        // TODO: put all this in weaponskill_state
         CWeaponSkill* PWeaponSkill = battleutils::GetWeaponSkill(wsid);
 
         if (PWeaponSkill == nullptr)
@@ -275,16 +286,6 @@ void CPlayerController::setLastErrMsgTime(time_point _LastErrMsgTime)
     m_errMsgTime = _LastErrMsgTime;
 }
 
-time_point CPlayerController::getLastRangedAttackTime()
-{
-    return m_lastRangedAttackTime;
-}
-
-void CPlayerController::setLastRangedAttackTime(time_point _lastRangedAttackTime)
-{
-    m_lastRangedAttackTime = _lastRangedAttackTime;
-}
-
 time_point CPlayerController::getLastErrMsgTime()
 {
     return m_errMsgTime;
@@ -300,7 +301,7 @@ bool CPlayerController::CanUseAbility(uint16 targid, uint16 abilityid)
     auto PChar    = static_cast<CCharEntity*>(POwner);
     auto PAbility = ability::GetAbility(abilityid);
 
-    if (PChar->PRecastContainer->HasRecast(RECAST_ABILITY, PAbility->getRecastId(), PAbility->getRecastTime()) && !jailutils::InPrison(PChar))
+    if (PChar->PRecastContainer->HasRecast(RECAST_ABILITY, PAbility->getRecastId(), PAbility->getRecastTime()))
     {
         PChar->pushPacket(new CMessageBasicPacket(PChar, PChar, 0, 0, MSGBASIC_WAIT_LONGER));
         return false;
@@ -315,7 +316,7 @@ bool CPlayerController::CanUseAbility(uint16 targid, uint16 abilityid)
     std::unique_ptr<CBasicPacket> errMsg;
 
     auto PTarget = PChar->IsValidTarget(targid, PAbility->getValidTarget(), errMsg);
-    if (PTarget && !jailutils::InPrison(PChar))
+    if (PTarget)
     {
         if (PChar != PTarget && distance(PChar->loc.p, PTarget->loc.p) > PAbility->getRange())
         {

@@ -127,11 +127,11 @@ int32 lobbydata_parse(int32 fd)
                 CharList[7] = 0x46;
                 CharList[8] = 0x20;
 
-                const char* pfmtQuery = "SELECT content_ids FROM accounts WHERE id = %u;";
-                int32       ret       = sql->Query(pfmtQuery, sd->accid);
-                if (ret != SQL_ERROR && sql->NumRows() != 0 && sql->NextRow() == SQL_SUCCESS)
+                const char* pfmtQuery = "SELECT content_ids FROM accounts WHERE id = %u";
+                int32       ret       = _sql->Query(pfmtQuery, sd->accid);
+                if (ret != SQL_ERROR && _sql->NumRows() != 0 && _sql->NextRow() == SQL_SUCCESS)
                 {
-                    CharList[28] = sql->GetUIntData(0);
+                    CharList[28] = _sql->GetUIntData(0);
                 }
                 else
                 {
@@ -149,9 +149,9 @@ int32 lobbydata_parse(int32 fd)
                             INNER JOIN char_look  USING(charid) \
                             INNER JOIN char_jobs  USING(charid) \
                             WHERE accid = %i \
-                        LIMIT %u;";
+                        LIMIT %u";
 
-                ret = sql->Query(pfmtQuery, sd->accid, CharList[28]);
+                ret = _sql->Query(pfmtQuery, sd->accid, CharList[28]);
                 if (ret == SQL_ERROR)
                 {
                     do_close_lobbydata(sd, fd);
@@ -177,20 +177,20 @@ int32 lobbydata_parse(int32 fd)
                 int i = 0;
                 // Read information about a specific character.
                 // Extract all the necessary information about the character from the database.
-                while (sql->NextRow() != SQL_NO_DATA)
+                while (_sql->NextRow() != SQL_NO_DATA)
                 {
                     char strCharName[16] = {}; // 15 characters + null terminator
                     std::memset(strCharName, 0, sizeof(strCharName));
 
-                    std::string dbCharName = sql->GetStringData(1);
+                    std::string dbCharName = _sql->GetStringData(1);
                     std::memcpy(strCharName, dbCharName.c_str(), dbCharName.length());
 
-                    auto gmlevel = sql->GetIntData(36);
+                    auto gmlevel = _sql->GetIntData(36);
                     if (maintMode == 0 || gmlevel > 0)
                     {
                         uint8 worldId = 0; // Use when multiple worlds are supported.
 
-                        uint32 charId    = sql->GetUIntData(0);
+                        uint32 charId    = _sql->GetUIntData(0);
                         uint32 contentId = charId; // Reusing the character ID as the content ID (which is also the name of character folder within the USER directory) at the moment
 
                         // The character ID is made up of two parts totalling 24 bits:
@@ -215,23 +215,23 @@ int32 lobbydata_parse(int32 fd)
 
                         std::memcpy(CharList + charListOffset + 12, &strCharName, 16);
 
-                        uint16 zone = (uint16)sql->GetUIntData(2);
+                        uint16 zone = (uint16)_sql->GetUIntData(2);
 
-                        uint8 MainJob    = (uint8)sql->GetUIntData(4);
-                        uint8 lvlMainJob = (uint8)sql->GetUIntData(13 + MainJob);
+                        uint8 MainJob    = (uint8)_sql->GetUIntData(4);
+                        uint8 lvlMainJob = (uint8)_sql->GetUIntData(13 + MainJob);
 
                         ref<uint8>(CharList, charListOffset + 46) = MainJob;
                         ref<uint8>(CharList, charListOffset + 73) = lvlMainJob;
 
-                        ref<uint8>(CharList, charListOffset + 44)  = (uint8)sql->GetUIntData(5);   // race
-                        ref<uint8>(CharList, charListOffset + 56)  = (uint8)sql->GetUIntData(6);   // face
-                        ref<uint16>(CharList, charListOffset + 58) = (uint16)sql->GetUIntData(7);  // head
-                        ref<uint16>(CharList, charListOffset + 60) = (uint16)sql->GetUIntData(8);  // body
-                        ref<uint16>(CharList, charListOffset + 62) = (uint16)sql->GetUIntData(9);  // hands
-                        ref<uint16>(CharList, charListOffset + 64) = (uint16)sql->GetUIntData(10); // legs
-                        ref<uint16>(CharList, charListOffset + 66) = (uint16)sql->GetUIntData(11); // feet
-                        ref<uint16>(CharList, charListOffset + 68) = (uint16)sql->GetUIntData(12); // main
-                        ref<uint16>(CharList, charListOffset + 70) = (uint16)sql->GetUIntData(13); // sub
+                        ref<uint8>(CharList, charListOffset + 44)  = (uint8)_sql->GetUIntData(5);   // race
+                        ref<uint8>(CharList, charListOffset + 56)  = (uint8)_sql->GetUIntData(6);   // face
+                        ref<uint16>(CharList, charListOffset + 58) = (uint16)_sql->GetUIntData(7);  // head
+                        ref<uint16>(CharList, charListOffset + 60) = (uint16)_sql->GetUIntData(8);  // body
+                        ref<uint16>(CharList, charListOffset + 62) = (uint16)_sql->GetUIntData(9);  // hands
+                        ref<uint16>(CharList, charListOffset + 64) = (uint16)_sql->GetUIntData(10); // legs
+                        ref<uint16>(CharList, charListOffset + 66) = (uint16)_sql->GetUIntData(11); // feet
+                        ref<uint16>(CharList, charListOffset + 68) = (uint16)_sql->GetUIntData(12); // main
+                        ref<uint16>(CharList, charListOffset + 70) = (uint16)_sql->GetUIntData(13); // sub
 
                         ref<uint8>(CharList, charListOffset + 72)  = (uint8)zone;
                         ref<uint16>(CharList, charListOffset + 78) = zone;
@@ -316,7 +316,7 @@ int32 lobbydata_parse(int32 fd)
 
                 const char* fmtQuery = "SELECT zoneip, zoneport, zoneid, pos_prevzone, gmlevel, accid, charname \
                                         FROM zone_settings, chars \
-                                        WHERE IF(pos_zone = 0, zoneid = pos_prevzone, zoneid = pos_zone) AND charid = %u AND accid = %u;";
+                                        WHERE IF(pos_zone = 0, zoneid = pos_prevzone, zoneid = pos_zone) AND charid = %u AND accid = %u";
 
                 uint32 ZoneIP   = sd->servip;
                 uint16 ZonePort = 54230;
@@ -324,13 +324,13 @@ int32 lobbydata_parse(int32 fd)
                 uint16 PrevZone = 0;
                 uint16 gmlevel  = 0;
 
-                if (sql->Query(fmtQuery, charid, sd->accid) != SQL_ERROR && sql->NumRows() != 0)
+                if (_sql->Query(fmtQuery, charid, sd->accid) != SQL_ERROR && _sql->NumRows() != 0)
                 {
-                    sql->NextRow();
+                    _sql->NextRow();
 
-                    ZoneID   = (uint16)sql->GetUIntData(2);
-                    PrevZone = (uint16)sql->GetUIntData(3);
-                    gmlevel  = (uint16)sql->GetUIntData(4);
+                    ZoneID   = (uint16)_sql->GetUIntData(2);
+                    PrevZone = (uint16)_sql->GetUIntData(3);
+                    gmlevel  = (uint16)_sql->GetUIntData(4);
 
                     // new char only (first login from char create)
                     if (sd->justCreatedNewChar)
@@ -338,15 +338,15 @@ int32 lobbydata_parse(int32 fd)
                         key3[16] += 6;
                     }
 
-                    inet_pton(AF_INET, (const char*)sql->GetData(0), &ZoneIP);
-                    ZonePort                           = (uint16)sql->GetUIntData(1);
+                    inet_pton(AF_INET, (const char*)_sql->GetData(0), &ZoneIP);
+                    ZonePort                           = (uint16)_sql->GetUIntData(1);
                     ref<uint32>(ReservePacket, (0x38)) = ZoneIP;
                     ref<uint16>(ReservePacket, (0x3C)) = ZonePort;
 
                     char strCharName[16] = {}; // 15 characters + null terminator
                     std::memset(strCharName, 0, sizeof(strCharName));
 
-                    std::string dbCharName = sql->GetStringData(6);
+                    std::string dbCharName = _sql->GetStringData(6);
                     std::memcpy(strCharName, dbCharName.c_str(), dbCharName.length());
 
                     ref<uint32>(ReservePacket, 28) = charid;
@@ -361,24 +361,24 @@ int32 lobbydata_parse(int32 fd)
 
                     fmtQuery = "SELECT COUNT(client_addr) \
                                 FROM accounts_sessions \
-                                WHERE client_addr = %u;";
+                                WHERE client_addr = %u";
 
-                    if (sql->Query(fmtQuery, sd->client_addr) != SQL_ERROR && sql->NumRows() != 0)
+                    if (_sql->Query(fmtQuery, sd->client_addr) != SQL_ERROR && _sql->NumRows() != 0)
                     {
-                        sql->NextRow();
-                        sessionCount = (uint16)sql->GetIntData(0);
+                        _sql->NextRow();
+                        sessionCount = (uint16)_sql->GetIntData(0);
                     }
 
                     fmtQuery = "SELECT UNIX_TIMESTAMP(exception) \
                                 FROM ip_exceptions \
-                                WHERE accid = %u;";
+                                WHERE accid = %u";
 
                     uint64 exceptionTime = 0;
 
-                    if (sql->Query(fmtQuery, sd->accid) != SQL_ERROR && sql->NumRows() != 0)
+                    if (_sql->Query(fmtQuery, sd->accid) != SQL_ERROR && _sql->NumRows() != 0)
                     {
-                        sql->NextRow();
-                        exceptionTime = sql->GetUInt64Data(0);
+                        _sql->NextRow();
+                        exceptionTime = _sql->GetUInt64Data(0);
                     }
 
                     uint64 timeStamp    = std::chrono::duration_cast<std::chrono::seconds>(server_clock::now().time_since_epoch()).count();
@@ -397,7 +397,7 @@ int32 lobbydata_parse(int32 fd)
                     {
                         if (PrevZone == 0)
                         {
-                            sql->Query("UPDATE chars SET pos_prevzone = %d WHERE charid = %u;", ZoneID, charid);
+                            _sql->Query("UPDATE chars SET pos_prevzone = %d WHERE charid = %u", ZoneID, charid);
                         }
 
                         ref<uint32>(ReservePacket, (0x40)) = sd->servip; // search-server ip
@@ -406,7 +406,7 @@ int32 lobbydata_parse(int32 fd)
                         std::memcpy(MainReservePacket, ReservePacket, ref<uint8>(ReservePacket, 0));
 
                         // If the session was not processed by the game server, then it must be deleted.
-                        sql->Query("DELETE FROM accounts_sessions WHERE accid = %u and client_port = 0", sd->accid);
+                        _sql->Query("DELETE FROM accounts_sessions WHERE accid = %u and client_port = 0", sd->accid);
 
                         char session_key[sizeof(key3) * 2 + 1];
                         bin2hex(session_key, key3, sizeof(key3));
@@ -414,7 +414,7 @@ int32 lobbydata_parse(int32 fd)
                         fmtQuery = "INSERT INTO accounts_sessions(accid,charid,session_key,server_addr,server_port,client_addr, version_mismatch) "
                                    "VALUES(%u,%u,x'%s',%u,%u,%u,%u)";
 
-                        if (sql->Query(fmtQuery, sd->accid, charid, session_key, ZoneIP, ZonePort, sd->client_addr,
+                        if (_sql->Query(fmtQuery, sd->accid, charid, session_key, ZoneIP, ZonePort, sd->client_addr,
                                        (uint8)sessions[sd->login_lobbyview_fd]->ver_mismatch) == SQL_ERROR)
                         {
                             // Send error message to the client.
@@ -426,7 +426,7 @@ int32 lobbydata_parse(int32 fd)
                         }
 
                         fmtQuery = "UPDATE char_stats SET zoning = 2 WHERE charid = %u";
-                        sql->Query(fmtQuery, charid);
+                        _sql->Query(fmtQuery, charid);
                     }
                     else
                     {
@@ -478,7 +478,7 @@ int32 lobbydata_parse(int32 fd)
                     fmtQuery = "INSERT INTO account_ip_record(login_time,accid,charid,client_ip)\
                             VALUES ('%s', %u, %u, '%s');";
 
-                    if (sql->Query(fmtQuery, timeAndDate, sd->accid, charid, ip2str(sd->client_addr)) == SQL_ERROR)
+                    if (_sql->Query(fmtQuery, timeAndDate, sd->accid, charid, ip2str(sd->client_addr)) == SQL_ERROR)
                     {
                         ShowError("lobbyview_parse: Could not write info to account_ip_record.");
                     }
@@ -616,13 +616,13 @@ int32 lobbyview_parse(int32 fd)
                 }
                 else
                 {
-                    const char* pfmtQuery = "SELECT expansions,features FROM accounts WHERE id = %u;";
-                    int32       ret       = sql->Query(pfmtQuery, sd->accid);
-                    if (ret != SQL_ERROR && sql->NumRows() != 0 && sql->NextRow() == SQL_SUCCESS)
+                    const char* pfmtQuery = "SELECT expansions,features FROM accounts WHERE id = %u";
+                    int32       ret       = _sql->Query(pfmtQuery, sd->accid);
+                    if (ret != SQL_ERROR && _sql->NumRows() != 0 && _sql->NextRow() == SQL_SUCCESS)
                     {
                         LOBBY_026_RESERVEPACKET(ReservePacket);
-                        ref<uint16>(ReservePacket, 32) = sql->GetUIntData(0); // Expansion Bitmask
-                        ref<uint16>(ReservePacket, 36) = sql->GetUIntData(1); // Feature Bitmask
+                        ref<uint16>(ReservePacket, 32) = _sql->GetUIntData(0); // Expansion Bitmask
+                        ref<uint16>(ReservePacket, 36) = _sql->GetUIntData(1); // Feature Bitmask
                         std::memcpy(MainReservePacket, ReservePacket, sendsize);
                     }
                     else
@@ -683,7 +683,7 @@ int32 lobbyview_parse(int32 fd)
                 // value from the `chars` table. The mysql server will handle the rest.
 
                 const char* pfmtQuery = "DELETE FROM chars WHERE charid = %i AND accid = %i";
-                sql->Query(pfmtQuery, CharID, sd->accid);
+                _sql->Query(pfmtQuery, CharID, sd->accid);
 
                 break;
             }
@@ -787,7 +787,7 @@ int32 lobbyview_parse(int32 fd)
 
                     // Sanitize name
                     char escapedCharName[16 * 2 + 1];
-                    sql->EscapeString(escapedCharName, CharName);
+                    _sql->EscapeString(escapedCharName, CharName);
 
                     std::optional<std::string> invalidNameReason = std::nullopt;
 
@@ -811,11 +811,11 @@ int32 lobbyview_parse(int32 fd)
                     }
 
                     // Check if the name is already in use by another character
-                    if (sql->Query("SELECT charname FROM chars WHERE charname LIKE '%s'", escapedCharName) == SQL_ERROR)
+                    if (_sql->Query("SELECT charname FROM chars WHERE charname LIKE '%s'", escapedCharName) == SQL_ERROR)
                     {
                         invalidNameReason = "Internal entity name query failed.";
                     }
-                    else if (sql->NumRows() != 0)
+                    else if (_sql->NumRows() != 0)
                     {
                         invalidNameReason = "Name already in use.";
                     }
@@ -832,11 +832,11 @@ int32 lobbyview_parse(int32 fd)
                             ") "
                             "SELECT * FROM results WHERE REPLACE(REPLACE(UPPER(`name`), '-', ''), '_', '') LIKE REPLACE(REPLACE(UPPER('%s'), '-', ''), '_', '');";
 
-                        if (sql->Query(query, nameStr) == SQL_ERROR)
+                        if (_sql->Query(query, nameStr) == SQL_ERROR)
                         {
                             invalidNameReason = "Internal entity name query failed";
                         }
-                        else if (sql->NumRows() != 0)
+                        else if (_sql->NumRows() != 0)
                         {
                             invalidNameReason = "Name already in use.";
                         }
@@ -945,18 +945,18 @@ int32 lobby_createchar(login_session_data_t* loginsd, int8* buf)
 
     const char* fmtQuery = "SELECT max(charid) FROM chars";
 
-    if (sql->Query(fmtQuery) == SQL_ERROR)
+    if (_sql->Query(fmtQuery) == SQL_ERROR)
     {
         return -1;
     }
 
     uint32 CharID = 0;
 
-    if (sql->NumRows() != 0)
+    if (_sql->NumRows() != 0)
     {
-        sql->NextRow();
+        _sql->NextRow();
 
-        CharID = sql->GetUIntData(0) + 1;
+        CharID = _sql->GetUIntData(0) + 1;
     }
 
     if (lobby_createchar_save(loginsd->accid, CharID, &createchar) == -1)
@@ -972,7 +972,7 @@ int32 lobby_createchar_save(uint32 accid, uint32 charid, char_mini* createchar)
 {
     const char* Query = "INSERT INTO chars(charid,accid,charname,pos_zone,nation) VALUES(%u,%u,'%s',%u,%u);";
 
-    if (sql->Query(Query, charid, accid, createchar->m_name, createchar->m_zone, createchar->m_nation) == SQL_ERROR)
+    if (_sql->Query(Query, charid, accid, createchar->m_name, createchar->m_zone, createchar->m_nation) == SQL_ERROR)
     {
         ShowDebug(fmt::format("lobby_ccsave: char<{}>, accid: {}, charid: {}", createchar->m_name, accid, charid));
         return -1;
@@ -980,7 +980,7 @@ int32 lobby_createchar_save(uint32 accid, uint32 charid, char_mini* createchar)
 
     Query = "INSERT INTO char_look(charid,face,race,size) VALUES(%u,%u,%u,%u);";
 
-    if (sql->Query(Query, charid, createchar->m_look.face, createchar->m_look.race, createchar->m_look.size) == SQL_ERROR)
+    if (_sql->Query(Query, charid, createchar->m_look.face, createchar->m_look.race, createchar->m_look.size) == SQL_ERROR)
     {
         ShowDebug(fmt::format("lobby_cLook: char<{}>, charid: {}", createchar->m_name, charid));
         return -1;
@@ -988,7 +988,7 @@ int32 lobby_createchar_save(uint32 accid, uint32 charid, char_mini* createchar)
 
     Query = "INSERT INTO char_stats(charid,mjob) VALUES(%u,%u);";
 
-    if (sql->Query(Query, charid, createchar->m_mjob) == SQL_ERROR)
+    if (_sql->Query(Query, charid, createchar->m_mjob) == SQL_ERROR)
     {
         ShowDebug(fmt::format("lobby_cStats: charid: {}", charid));
         return -1;
@@ -998,55 +998,55 @@ int32 lobby_createchar_save(uint32 accid, uint32 charid, char_mini* createchar)
 
     Query = "INSERT INTO char_exp(charid) VALUES(%u) \
             ON DUPLICATE KEY UPDATE charid = charid;";
-    if (sql->Query(Query, charid, createchar->m_mjob) == SQL_ERROR)
+    if (_sql->Query(Query, charid, createchar->m_mjob) == SQL_ERROR)
     {
         return -1;
     }
 
     Query = "INSERT INTO char_jobs(charid) VALUES(%u) \
             ON DUPLICATE KEY UPDATE charid = charid;";
-    if (sql->Query(Query, charid, createchar->m_mjob) == SQL_ERROR)
+    if (_sql->Query(Query, charid, createchar->m_mjob) == SQL_ERROR)
     {
         return -1;
     }
 
     Query = "INSERT INTO char_points(charid) VALUES(%u) \
             ON DUPLICATE KEY UPDATE charid = charid;";
-    if (sql->Query(Query, charid, createchar->m_mjob) == SQL_ERROR)
+    if (_sql->Query(Query, charid, createchar->m_mjob) == SQL_ERROR)
     {
         return -1;
     }
 
     Query = "INSERT INTO char_unlocks(charid) VALUES(%u) \
             ON DUPLICATE KEY UPDATE charid = charid;";
-    if (sql->Query(Query, charid, createchar->m_mjob) == SQL_ERROR)
+    if (_sql->Query(Query, charid, createchar->m_mjob) == SQL_ERROR)
     {
         return -1;
     }
 
     Query = "INSERT INTO char_profile(charid) VALUES(%u) \
             ON DUPLICATE KEY UPDATE charid = charid;";
-    if (sql->Query(Query, charid, createchar->m_mjob) == SQL_ERROR)
+    if (_sql->Query(Query, charid, createchar->m_mjob) == SQL_ERROR)
     {
         return -1;
     }
 
     Query = "INSERT INTO char_storage(charid) VALUES(%u) \
             ON DUPLICATE KEY UPDATE charid = charid;";
-    if (sql->Query(Query, charid, createchar->m_mjob) == SQL_ERROR)
+    if (_sql->Query(Query, charid, createchar->m_mjob) == SQL_ERROR)
     {
         return -1;
     }
 
     // hot fix
     Query = "DELETE FROM char_inventory WHERE charid = %u";
-    if (sql->Query(Query, charid) == SQL_ERROR)
+    if (_sql->Query(Query, charid) == SQL_ERROR)
     {
         return -1;
     }
 
     Query = "INSERT INTO char_inventory(charid) VALUES(%u);";
-    if (sql->Query(Query, charid, createchar->m_mjob) == SQL_ERROR)
+    if (_sql->Query(Query, charid, createchar->m_mjob) == SQL_ERROR)
     {
         return -1;
     }
@@ -1054,7 +1054,7 @@ int32 lobby_createchar_save(uint32 accid, uint32 charid, char_mini* createchar)
     if (settings::get<bool>("main.NEW_CHARACTER_CUTSCENE"))
     {
         Query = "INSERT INTO char_vars(charid, varname, value) VALUES(%u, '%s', %u);";
-        if (sql->Query(Query, charid, "HQuest[newCharacterCS]notSeen", 1) == SQL_ERROR)
+        if (_sql->Query(Query, charid, "HQuest[newCharacterCS]notSeen", 1) == SQL_ERROR)
         {
             return -1;
         }

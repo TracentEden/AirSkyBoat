@@ -179,20 +179,20 @@ bool ConquestSystem::updateInfluencePoints(int points, unsigned int nation, REGI
         return false;
     }
 
-    std::string Query = "SELECT sandoria_influence, bastok_influence, windurst_influence, beastmen_influence FROM conquest_system WHERE region_id = %d;";
+    std::string Query = "SELECT sandoria_influence, bastok_influence, windurst_influence, beastmen_influence FROM conquest_system WHERE region_id = %d";
 
-    int ret = sql->Query(Query.c_str(), static_cast<uint8>(region));
+    int ret = _sql->Query(Query.c_str(), static_cast<uint8>(region));
 
-    if (ret == SQL_ERROR || sql->NextRow() != SQL_SUCCESS)
+    if (ret == SQL_ERROR || _sql->NextRow() != SQL_SUCCESS)
     {
         return false;
     }
 
     int influences[4] = {
-        sql->GetIntData(0),
-        sql->GetIntData(1),
-        sql->GetIntData(2),
-        sql->GetIntData(3),
+        _sql->GetIntData(0),
+        _sql->GetIntData(1),
+        _sql->GetIntData(2),
+        _sql->GetIntData(3),
     };
 
     if (influences[nation] == 5000)
@@ -215,8 +215,8 @@ bool ConquestSystem::updateInfluencePoints(int points, unsigned int nation, REGI
 
     influences[nation] += lost;
 
-    ret = sql->Query("UPDATE conquest_system SET sandoria_influence = %d, bastok_influence = %d, "
-                     "windurst_influence = %d, beastmen_influence = %d WHERE region_id = %u;",
+    ret = _sql->Query("UPDATE conquest_system SET sandoria_influence = %d, bastok_influence = %d, "
+                     "windurst_influence = %d, beastmen_influence = %d WHERE region_id = %u",
                      influences[0], influences[1], influences[2], influences[3], static_cast<uint8>(region));
 
     return ret != SQL_ERROR;
@@ -238,7 +238,7 @@ void ConquestSystem::updateWeekConquest()
                             IF(windurst_influence > bastok_influence AND windurst_influence > sandoria_influence AND \
                             windurst_influence > beastmen_influence, 2, 3)));";
 
-    int ret = sql->Query(Query);
+    int ret = _sql->Query(Query);
     if (ret == SQL_ERROR)
     {
         ShowError("handleWeeklyUpdate() failed");
@@ -262,18 +262,18 @@ auto ConquestSystem::getRegionalInfluences() -> std::vector<influence_t> const
 {
     const char* Query = "SELECT sandoria_influence, bastok_influence, windurst_influence, beastmen_influence FROM conquest_system;";
 
-    int32 ret = sql->Query(Query);
+    int32 ret = _sql->Query(Query);
 
     std::vector<influence_t> influences;
-    if (ret != SQL_ERROR && sql->NumRows() != 0)
+    if (ret != SQL_ERROR && _sql->NumRows() != 0)
     {
-        while (sql->NextRow() == SQL_SUCCESS)
+        while (_sql->NextRow() == SQL_SUCCESS)
         {
             influence_t influence{};
-            influence.sandoria_influence = sql->GetIntData(0);
-            influence.bastok_influence   = sql->GetIntData(1);
-            influence.windurst_influence = sql->GetIntData(2);
-            influence.beastmen_influence = sql->GetIntData(3);
+            influence.sandoria_influence = _sql->GetIntData(0);
+            influence.bastok_influence   = _sql->GetIntData(1);
+            influence.windurst_influence = _sql->GetIntData(2);
+            influence.beastmen_influence = _sql->GetIntData(3);
             influences.push_back(influence);
         }
     }
@@ -285,16 +285,16 @@ auto ConquestSystem::getRegionControls() -> std::vector<region_control_t> const
 {
     const char* Query = "SELECT region_control, region_control_prev FROM conquest_system;";
 
-    int32 ret = sql->Query(Query);
+    int32 ret = _sql->Query(Query);
 
     std::vector<region_control_t> controllers;
-    if (ret != SQL_ERROR && sql->NumRows() != 0)
+    if (ret != SQL_ERROR && _sql->NumRows() != 0)
     {
-        while (sql->NextRow() == SQL_SUCCESS)
+        while (_sql->NextRow() == SQL_SUCCESS)
         {
             region_control_t regionControl{};
-            regionControl.current = sql->GetIntData(0);
-            regionControl.prev    = sql->GetIntData(1);
+            regionControl.current = _sql->GetIntData(0);
+            regionControl.prev    = _sql->GetIntData(1);
             controllers.push_back(regionControl);
         }
     }

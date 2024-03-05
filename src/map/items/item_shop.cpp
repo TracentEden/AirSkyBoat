@@ -89,13 +89,13 @@ uint16 CItemShop::getSellPrice()
 {
     int itemID = getID();
     int32 baseSellPrice = 0;
-    int32 ret = (sql->Query("SELECT BaseSell FROM item_basic WHERE itemId = %u", itemID));
+    int32 ret = (_sql->Query("SELECT BaseSell FROM item_basic WHERE itemId = %u", itemID));
 
     if (ret != SQL_ERROR)
     {
-        if (sql->NextRow() == SQL_SUCCESS)
+        if (_sql->NextRow() == SQL_SUCCESS)
         {
-            baseSellPrice = (int32)sql->GetUIntData(0);
+            baseSellPrice = (int32)_sql->GetUIntData(0);
         }
     }
 

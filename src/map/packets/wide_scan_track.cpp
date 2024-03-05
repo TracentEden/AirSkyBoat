@@ -23,8 +23,8 @@
 
 #include <cstring>
 
-#include "../entities/baseentity.h"
-#include "../entities/battleentity.h"
+#include "entities/baseentity.h"
+#include "entities/battleentity.h"
 #include "wide_scan_track.h"
 
 CWideScanTrackPacket::CWideScanTrackPacket(CBaseEntity* PEntity)

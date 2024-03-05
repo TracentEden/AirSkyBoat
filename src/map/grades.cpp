@@ -120,6 +120,8 @@ std::array<std::array<float, 4>, 8> MPScale = { {
 
 std::array<std::array<float, 4>, 8> StatScale = { {
     // base<60    <75     >75
+    // https://github.com/AirSkyBoat/AirSkyBoat/pull/466
+    // incorrect era ranks
     { 0, 0, 0, 0 },              // 0
     { 5, 0.50f, 0.10f, 0.35f },  // A
     { 4, 0.45f, 0.225f, 0.35f }, // B

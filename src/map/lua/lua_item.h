@@ -52,22 +52,21 @@ public:
     uint8  getSlotID();     // get the slot id
     uint16 getTrialNumber();
     auto   getMatchingTrials() -> sol::table; // returns a table of trial #'s which match this item precisely
-    uint8  getWornUses();                     // check if the item has been used
-    uint32 getBasePrice();                    // get the base sell price
+    uint8  getWornUses();  // check if the item has been used
+    uint32 getBasePrice(); // get the base sell price
 
-    bool isType(uint8 type);       // check the item type
-    bool isSubType(uint8 subtype); // check the item's sub type
+    bool isType(uint8 type);        // check the item type
+    bool isSubType(uint8 subtype);  // check the item's sub type
 
     auto   getName() -> std::string; // get the item's name
     uint16 getILvl();                // get the item's ilvl
     uint16 getReqLvl();              // get the item's level
-    uint8  getRace();                // get the item's race requirement
 
     int16 getMod(uint16 modID);              // get the power of a mod
     void  addMod(uint16 modID, int16 power); // add mod to item (or add to a mod already applied on item)
     void  delMod(uint16 modID, int16 power); // remove power from mod
 
-    auto getAugment(uint8 slot) -> std::tuple<uint16, uint8>; // get the augment id and power in slot
+    auto getAugment(uint8 slot) -> sol::table; // get the augment id and power in slot
     // int32 setAugment(lua_State*);           // set the augment id and power in slot
 
     uint8  getSkillType();         // get skill type
@@ -91,6 +90,10 @@ public:
     auto getSoulPlateData() -> sol::table;
 
     auto getFishData() -> sol::table;
+    bool operator==(const CLuaItem& other) const
+    {
+        return this->m_PLuaItem == other.m_PLuaItem;
+    }
 
     static void Register();
 };

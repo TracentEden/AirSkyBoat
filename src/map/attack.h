@@ -77,53 +77,53 @@ class CAttack
 public:
     CAttack(CBattleEntity* attacker, CBattleEntity* defender, PHYSICAL_ATTACK_TYPE type, PHYSICAL_ATTACK_DIRECTION direction, CAttackRound* attackRound);
 
-    uint16                    GetAnimationID();                               // Returns the animation ID.
-    PHYSICAL_ATTACK_TYPE      GetAttackType();                                // Returns the attack type (Double, Triple, Zanshin ect).
-    PHYSICAL_ATTACK_DIRECTION GetAttackDirection();                           // Returns the attack direction.
-    uint8                     GetWeaponSlot();                                // Returns the attacking slot.
-    uint8                     GetHitRate();                                   // Returns the hitrate for this swing.
-    int32                     GetDamage() const;                              // Returns the damage for this attack.
-    void                      SetDamage(int32);                               // Sets the damage for this attack.
-    bool                      IsCritical() const;                             // Returns the isCritical flag.
+    uint16                    GetAnimationID();                     // Returns the animation ID.
+    PHYSICAL_ATTACK_TYPE      GetAttackType();                      // Returns the attack type (Double, Triple, Zanshin ect).
+    PHYSICAL_ATTACK_DIRECTION GetAttackDirection();                 // Returns the attack direction.
+    uint8                     GetWeaponSlot();                      // Returns the attacking slot.
+    uint8                     GetHitRate();                         // Returns the hitrate for this swing.
+    int32                     GetDamage() const;                    // Returns the damage for this attack.
+    void                      SetDamage(int32);                     // Sets the damage for this attack.
+    bool                      IsCritical() const;                   // Returns the isCritical flag.
     void                      SetCritical(bool, uint16 slot, bool isGuarded); // Sets the isCritical flag;
-    bool                      IsFirstSwing() const;                           // Returns the isFirstSwing flag.
-    void                      SetAsFirstSwing(bool isFirst = true);           // Sets this attack as the first swing.
-    float                     GetDamageRatio() const;                         // Gets the damage ratio.
+    bool                      IsFirstSwing() const;                 // Returns the isFirstSwing flag.
+    void                      SetAsFirstSwing(bool isFirst = true); // Sets this attack as the first swing.
+    float                     GetDamageRatio() const;               // Gets the damage ratio.
     bool                      IsGuarded(bool calculate = true);               // Sets the isGuarded flag. Also alters the damage ratio accordingly.
-    bool                      IsEvaded() const;                               // Gets the evaded flag.
-    void                      SetEvaded(bool value);                          // Sets the evaded flag.
-    bool                      IsBlocked() const;                              // Returns the blocked flag.
+    bool                      IsEvaded() const;                     // Gets the evaded flag.
+    void                      SetEvaded(bool value);                // Sets the evaded flag.
+    bool                      IsBlocked() const;                    // Returns the blocked flag.
     bool                      IsParried(bool calculate = true);
     bool                      IsAnticipated() const;
     bool                      CheckAnticipated();
     bool                      IsCountered() const;
     bool                      CheckCounter();
-    bool                      IsCovered() const;                                           // Returns the covered flag.
-    bool                      CheckCover();                                                // Sets the covered flag and returns it.
+    bool                      IsCovered() const; // Returns the covered flag.
+    bool                      CheckCover();      // Sets the covered flag and returns it.
     void                      ProcessDamage(bool isCritical, bool isGuarded, bool isKick); // Processes the damage for this swing.
 
     void SetAttackType(PHYSICAL_ATTACK_TYPE type); // Sets the attack type.
 
 private:
-    CBattleEntity*            m_attacker;                  // The attacker.
-    CBattleEntity*            m_victim;                    // The victim.
-    CAttackRound*             m_attackRound;               // Reference to the parent attack round.
-    PHYSICAL_ATTACK_TYPE      m_attackType;                // The attack type (Double, Triple, Zanshin ect).
-    PHYSICAL_ATTACK_DIRECTION m_attackDirection;           // The attack direction (Left, Right).
-    uint8                     m_hitRate{ 0 };              // This attack's hitrate.
-    bool                      m_isCritical{ false };       // Flag: Is this attack a critical attack?
+    CBattleEntity*            m_attacker;            // The attacker.
+    CBattleEntity*            m_victim;              // The victim.
+    CAttackRound*             m_attackRound;         // Reference to the parent attack round.
+    PHYSICAL_ATTACK_TYPE      m_attackType;          // The attack type (Double, Triple, Zanshin ect).
+    PHYSICAL_ATTACK_DIRECTION m_attackDirection;     // The attack direction (Left, Right).
+    uint8                     m_hitRate{ 0 };        // This attack's hitrate.
+    bool                      m_isCritical{ false }; // Flag: Is this attack a critical attack?
     std::optional<bool>       m_isGuarded{ std::nullopt }; // Flag: Is this attack guarded by the victim?
-    bool                      m_isBlocked{ false };        // Flag: Is this attack blocked by the victim?
-    bool                      m_isEvaded{ false };         // Flag: Is this attack evaded by the victim?
+    bool                      m_isBlocked{ false };  // Flag: Is this attack blocked by the victim?
+    bool                      m_isEvaded{ false };   // Flag: Is this attack evaded by the victim?
     bool                      m_isCountered{ false };
     bool                      m_isCovered{ false }; // Flag: Is someone covering the victim?
     bool                      m_anticipated{ false };
-    bool                      m_isFirstSwing{ false };     // Flag: Is this attack the first swing?
-    float                     m_damageRatio{ false };      // The damage ratio.
-    int32                     m_damage{ 0 };               // The damage for this attack.
-    int32                     m_trickAttackDamage{ 0 };    // The damage from trick attack.
-    int32                     m_naturalH2hDamage{ 0 };     // The damage from natural H2H.
-    int32                     m_baseDamage{ 0 };           // The base damage.
+    bool                      m_isFirstSwing{ false };        // Flag: Is this attack the first swing?
+    float                     m_damageRatio{ false };         // The damage ratio.
+    int32                     m_damage{ 0 };                  // The damage for this attack.
+    int32                     m_bonusBasePhysicalDamage{ 0 }; // The raw increase of base weapon damage from trick attack/consume mana.
+    int32                     m_naturalH2hDamage{ 0 };        // The damage from natural H2H.
+    int32                     m_baseDamage{ 0 };              // The base damage.
     std::optional<bool>       m_isParried{ std::nullopt }; // Is this attack parried by the victim?
 };
 

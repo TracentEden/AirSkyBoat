@@ -13,24 +13,24 @@
 #include "mobutils.h"
 #include "zoneutils.h"
 
-#include "../grades.h"
-#include "../map.h"
-#include "../mob_modifier.h"
-#include "../mob_spell_list.h"
+#include "grades.h"
+#include "map.h"
+#include "mob_modifier.h"
+#include "mob_spell_list.h"
 
-#include "../ai/ai_container.h"
-#include "../ai/controllers/trust_controller.h"
-#include "../ai/helpers/gambits_container.h"
-#include "../entities/mobentity.h"
-#include "../entities/trustentity.h"
-#include "../items/item_weapon.h"
-#include "../mobskill.h"
-#include "../packets/char_sync.h"
-#include "../packets/entity_update.h"
-#include "../packets/message_standard.h"
-#include "../status_effect_container.h"
-#include "../weapon_skill.h"
-#include "../zone_instance.h"
+#include "ai/ai_container.h"
+#include "ai/controllers/trust_controller.h"
+#include "ai/helpers/gambits_container.h"
+#include "entities/mobentity.h"
+#include "entities/trustentity.h"
+#include "items/item_weapon.h"
+#include "mobskill.h"
+#include "packets/char_sync.h"
+#include "packets/entity_update.h"
+#include "packets/message_standard.h"
+#include "status_effect_container.h"
+#include "weapon_skill.h"
+#include "zone_instance.h"
 
 struct TrustSpell_ID
 {
@@ -184,13 +184,13 @@ namespace trustutils
                  FROM spell_list, mob_pools \
                  WHERE spell_list.spellid >= 896 AND mob_pools.poolid = (spell_list.spellid+5000) ORDER BY spell_list.spellid";
 
-        if (sql->Query(Query) != SQL_ERROR && sql->NumRows() != 0)
+        if (_sql->Query(Query) != SQL_ERROR && _sql->NumRows() != 0)
         {
-            while (sql->NextRow() == SQL_SUCCESS)
+            while (_sql->NextRow() == SQL_SUCCESS)
             {
                 TrustSpell_ID* trustID = new TrustSpell_ID();
 
-                trustID->spellID = (uint32)sql->GetIntData(0);
+                trustID->spellID = (uint32)_sql->GetIntData(0);
 
                 g_PTrustIDList.emplace_back(trustID);
             }
@@ -254,87 +254,87 @@ namespace trustutils
                 AND mob_pools.familyid = mob_family_system.familyID \
                 ORDER BY spell_list.spellid";
 
-        auto ret = sql->Query(Query, TrustID);
+        auto ret = _sql->Query(Query, TrustID);
 
-        if (ret != SQL_ERROR && sql->NumRows() != 0)
+        if (ret != SQL_ERROR && _sql->NumRows() != 0)
         {
-            while (sql->NextRow() == SQL_SUCCESS)
+            while (_sql->NextRow() == SQL_SUCCESS)
             {
                 Trust_t* trust = new Trust_t();
 
                 trust->trustID = TrustID;
 
-                trust->pool = (uint32)sql->GetIntData(0);
-                trust->name.insert(0, (const char*)sql->GetData(1));
-                trust->packet_name.insert(0, (const char*)sql->GetData(2));
+                trust->pool = (uint32)_sql->GetIntData(0);
+                trust->name.insert(0, (const char*)_sql->GetData(1));
+                trust->packet_name.insert(0, (const char*)_sql->GetData(2));
 
                 uint16 sqlModelID[10];
-                memcpy(&sqlModelID, sql->GetData(3), 20);
+                memcpy(&sqlModelID, _sql->GetData(3), 20);
                 trust->look = look_t(sqlModelID);
 
-                trust->m_Family       = (uint16)sql->GetIntData(4);
-                trust->mJob           = (uint8)sql->GetIntData(5);
-                trust->sJob           = (uint8)sql->GetIntData(6);
-                trust->hasSpellScript = (bool)sql->GetIntData(7);
-                trust->spellList      = (uint16)sql->GetIntData(8);
+                trust->m_Family       = (uint16)_sql->GetIntData(4);
+                trust->mJob           = (uint8)_sql->GetIntData(5);
+                trust->sJob           = (uint8)_sql->GetIntData(6);
+                trust->hasSpellScript = (bool)_sql->GetIntData(7);
+                trust->spellList      = (uint16)_sql->GetIntData(8);
 
-                trust->cmbSkill   = (uint8)sql->GetIntData(9);
-                trust->cmbDelay   = (uint16)sql->GetIntData(10);
-                trust->cmbDmgMult = (uint16)sql->GetIntData(11);
+                trust->cmbSkill   = (uint8)_sql->GetIntData(9);
+                trust->cmbDelay   = (uint16)_sql->GetIntData(10);
+                trust->cmbDmgMult = (uint16)_sql->GetIntData(11);
 
-                trust->name_prefix    = (uint8)sql->GetUIntData(12);
-                trust->behaviour      = (uint16)sql->GetUIntData(13);
-                trust->m_MobSkillList = (uint16)sql->GetUIntData(14);
+                trust->name_prefix    = (uint8)_sql->GetUIntData(12);
+                trust->behaviour      = (uint16)_sql->GetUIntData(13);
+                trust->m_MobSkillList = (uint16)_sql->GetUIntData(14);
 
-                std::ignore = (uint16)sql->GetUIntData(15); // SpellID
+                std::ignore = (uint16)_sql->GetUIntData(15); // SpellID
 
-                trust->radius    = sql->GetUIntData(16);
-                trust->EcoSystem = (ECOSYSTEM)sql->GetIntData(17);
-                trust->HPscale   = sql->GetFloatData(18);
-                trust->MPscale   = sql->GetFloatData(19);
+                trust->radius    = _sql->GetUIntData(16);
+                trust->EcoSystem = (ECOSYSTEM)_sql->GetIntData(17);
+                trust->HPscale   = _sql->GetFloatData(18);
+                trust->MPscale   = _sql->GetFloatData(19);
 
                 // retail seems to have a static *155* for all Trusts in client memory
                 // TODO: trust->speed = 155;
-                trust->speed = (uint8)sql->GetIntData(20);
+                trust->speed = (uint8)_sql->GetIntData(20);
 
                 // similarly speedSub is always 50
                 trust->subSpeed = 50;
 
-                trust->strRank = (uint8)sql->GetIntData(21);
-                trust->dexRank = (uint8)sql->GetIntData(22);
-                trust->vitRank = (uint8)sql->GetIntData(23);
-                trust->agiRank = (uint8)sql->GetIntData(24);
-                trust->intRank = (uint8)sql->GetIntData(25);
-                trust->mndRank = (uint8)sql->GetIntData(26);
-                trust->chrRank = (uint8)sql->GetIntData(27);
-                trust->defRank = (uint8)sql->GetIntData(28);
-                trust->attRank = (uint8)sql->GetIntData(29);
-                trust->accRank = (uint8)sql->GetIntData(30);
-                trust->evaRank = (uint8)sql->GetIntData(31);
+                trust->strRank = (uint8)_sql->GetIntData(21);
+                trust->dexRank = (uint8)_sql->GetIntData(22);
+                trust->vitRank = (uint8)_sql->GetIntData(23);
+                trust->agiRank = (uint8)_sql->GetIntData(24);
+                trust->intRank = (uint8)_sql->GetIntData(25);
+                trust->mndRank = (uint8)_sql->GetIntData(26);
+                trust->chrRank = (uint8)_sql->GetIntData(27);
+                trust->defRank = (uint8)_sql->GetIntData(28);
+                trust->attRank = (uint8)_sql->GetIntData(29);
+                trust->accRank = (uint8)_sql->GetIntData(30);
+                trust->evaRank = (uint8)_sql->GetIntData(31);
 
                 // resistances
-                trust->slash_sdt  = (uint16)(sql->GetFloatData(32) * 1000);
-                trust->pierce_sdt = (uint16)(sql->GetFloatData(33) * 1000);
-                trust->hth_sdt    = (uint16)(sql->GetFloatData(34) * 1000);
-                trust->impact_sdt = (uint16)(sql->GetFloatData(35) * 1000);
+                trust->slash_sdt  = (uint16)(_sql->GetFloatData(32) * 1000);
+                trust->pierce_sdt = (uint16)(_sql->GetFloatData(33) * 1000);
+                trust->hth_sdt    = (uint16)(_sql->GetFloatData(34) * 1000);
+                trust->impact_sdt = (uint16)(_sql->GetFloatData(35) * 1000);
 
-                trust->fire_sdt    = (int16)sql->GetIntData(36); // Modifier 54, base 10000 stored as signed integer. Positives signify less damage.
-                trust->ice_sdt     = (int16)sql->GetIntData(37); // Modifier 55, base 10000 stored as signed integer. Positives signify less damage.
-                trust->wind_sdt    = (int16)sql->GetIntData(38); // Modifier 56, base 10000 stored as signed integer. Positives signify less damage.
-                trust->earth_sdt   = (int16)sql->GetIntData(39); // Modifier 57, base 10000 stored as signed integer. Positives signify less damage.
-                trust->thunder_sdt = (int16)sql->GetIntData(40); // Modifier 58, base 10000 stored as signed integer. Positives signify less damage.
-                trust->water_sdt   = (int16)sql->GetIntData(41); // Modifier 59, base 10000 stored as signed integer. Positives signify less damage.
-                trust->light_sdt   = (int16)sql->GetIntData(42); // Modifier 60, base 10000 stored as signed integer. Positives signify less damage.
-                trust->dark_sdt    = (int16)sql->GetIntData(43); // Modifier 61, base 10000 stored as signed integer. Positives signify less damage.
+                trust->fire_sdt    = (int16)_sql->GetIntData(36); // Modifier 54, base 10000 stored as signed integer. Positives signify less damage.
+                trust->ice_sdt     = (int16)_sql->GetIntData(37); // Modifier 55, base 10000 stored as signed integer. Positives signify less damage.
+                trust->wind_sdt    = (int16)_sql->GetIntData(38); // Modifier 56, base 10000 stored as signed integer. Positives signify less damage.
+                trust->earth_sdt   = (int16)_sql->GetIntData(39); // Modifier 57, base 10000 stored as signed integer. Positives signify less damage.
+                trust->thunder_sdt = (int16)_sql->GetIntData(40); // Modifier 58, base 10000 stored as signed integer. Positives signify less damage.
+                trust->water_sdt   = (int16)_sql->GetIntData(41); // Modifier 59, base 10000 stored as signed integer. Positives signify less damage.
+                trust->light_sdt   = (int16)_sql->GetIntData(42); // Modifier 60, base 10000 stored as signed integer. Positives signify less damage.
+                trust->dark_sdt    = (int16)_sql->GetIntData(43); // Modifier 61, base 10000 stored as signed integer. Positives signify less damage.
 
-                trust->fire_meva    = (int16)sql->GetIntData(44);
-                trust->ice_meva     = (int16)sql->GetIntData(45);
-                trust->wind_meva    = (int16)sql->GetIntData(46);
-                trust->earth_meva   = (int16)sql->GetIntData(47);
-                trust->thunder_meva = (int16)sql->GetIntData(48);
-                trust->water_meva   = (int16)sql->GetIntData(49);
-                trust->light_meva   = (int16)sql->GetIntData(50);
-                trust->dark_meva    = (int16)sql->GetIntData(51);
+                trust->fire_meva    = (int16)_sql->GetIntData(44);
+                trust->ice_meva     = (int16)_sql->GetIntData(45);
+                trust->wind_meva    = (int16)_sql->GetIntData(46);
+                trust->earth_meva   = (int16)_sql->GetIntData(47);
+                trust->thunder_meva = (int16)_sql->GetIntData(48);
+                trust->water_meva   = (int16)_sql->GetIntData(49);
+                trust->light_meva   = (int16)_sql->GetIntData(50);
+                trust->dark_meva    = (int16)_sql->GetIntData(51);
 
                 g_PTrustList.emplace_back(trust);
             }

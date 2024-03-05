@@ -24,31 +24,30 @@
 
 #include "battleentity.h"
 
-#include "../ai/ai_container.h"
-#include "../ai/states/attack_state.h"
-#include "../ai/states/death_state.h"
-#include "../ai/states/despawn_state.h"
-#include "../ai/states/inactive_state.h"
-#include "../ai/states/magic_state.h"
-#include "../ai/states/raise_state.h"
-#include "../ai/states/weaponskill_state.h"
-#include "../attack.h"
-#include "../attackround.h"
-#include "../enmity_container.h"
-#include "../items/item_weapon.h"
-#include "../job_points.h"
-#include "../lua/luautils.h"
-#include "../mob_modifier.h"
-#include "../notoriety_container.h"
-#include "../packets/action.h"
-#include "../recast_container.h"
-#include "../roe.h"
-#include "../status_effect_container.h"
-#include "../utils/battleutils.h"
-#include "../utils/mobutils.h"
-#include "../utils/petutils.h"
-#include "../utils/puppetutils.h"
-#include "../weapon_skill.h"
+#include "ai/ai_container.h"
+#include "ai/states/attack_state.h"
+#include "ai/states/death_state.h"
+#include "ai/states/despawn_state.h"
+#include "ai/states/inactive_state.h"
+#include "ai/states/magic_state.h"
+#include "ai/states/mobskill_state.h"
+#include "ai/states/raise_state.h"
+#include "ai/states/weaponskill_state.h"
+#include "attack.h"
+#include "attackround.h"
+#include "items/item_weapon.h"
+#include "job_points.h"
+#include "lua/luautils.h"
+#include "mob_modifier.h"
+#include "notoriety_container.h"
+#include "packets/action.h"
+#include "recast_container.h"
+#include "roe.h"
+#include "status_effect_container.h"
+#include "utils/battleutils.h"
+#include "utils/petutils.h"
+#include "utils/puppetutils.h"
+#include "weapon_skill.h"
 
 CBattleEntity::CBattleEntity()
 {
@@ -97,7 +96,10 @@ CBattleEntity::CBattleEntity()
     BattleHistory.lastHitTaken_atkType = ATTACK_TYPE::NONE;
 }
 
-CBattleEntity::~CBattleEntity() = default;
+CBattleEntity::~CBattleEntity()
+{
+    TracyZoneScoped;
+}
 
 bool CBattleEntity::isDead()
 {
@@ -111,9 +113,10 @@ bool CBattleEntity::isAlive()
 
 bool CBattleEntity::isInDynamis()
 {
-    if (loc.zone != nullptr)
+    auto* PZone = loc.zone == nullptr ? zoneutils::GetZone(loc.destination) : loc.zone;
+    if (PZone)
     {
-        return loc.zone->GetType() == ZONE_TYPE::DYNAMIS;
+        return PZone->GetTypeMask() & ZONE_TYPE::DYNAMIS;
     }
     return false;
 }
@@ -122,9 +125,19 @@ bool CBattleEntity::isInAssault()
 {
     if (loc.zone != nullptr)
     {
-        return loc.zone->GetType() == ZONE_TYPE::DUNGEON_INSTANCED &&
+        return loc.zone->GetTypeMask() & ZONE_TYPE::INSTANCED &&
                (loc.zone->GetRegionID() >= REGION_TYPE::WEST_AHT_URHGAN && loc.zone->GetRegionID() <= REGION_TYPE::ALZADAAL);
     }
+    return false;
+}
+
+bool CBattleEntity::isInMogHouse()
+{
+    if (this->objtype == TYPE_PC)
+    {
+        return static_cast<CCharEntity*>(this)->m_moghouseID;
+    }
+
     return false;
 }
 
@@ -250,35 +263,55 @@ int32 CBattleEntity::GetMaxMP() const
 
 uint8 CBattleEntity::GetSpeed()
 {
+    uint8 baseSpeed   = speed;
+    uint8 outputSpeed = 0;
+
+    // Mount speed. Independent from regular speed and unaffected by most things.
     // Note: retail treats mounted speed as double what it actually is! 40 is in fact retail accurate!
-    int16 startingSpeed = isMounted() ? 40 + settings::get<int8>("map.MOUNT_SPEED_MOD") : speed;
-    // Mod::MOVE (169)
-    // Mod::MOUNT_MOVE (972)
-    Mod mod = isMounted() ? Mod::MOUNT_MOVE : Mod::MOVE;
-
-    // Get the percentage of increase/decreate by mod
-    auto modAmount = static_cast<float>(getMod(mod)) / 100.0f;
-
-    // Cap unmounted movement speed increase to 25%
-    if (mod == Mod::MOVE && modAmount > 0) // Only clamp position/negatvie if we're increasing speed
+    if (isMounted())
     {
-        if (StatusEffectContainer->GetStatusEffect(EFFECT_FLEE))
-        {
-            modAmount = std::clamp(modAmount, 0.0f, 2.0f);
-        }
-        else
-        {
-            modAmount = std::clamp(modAmount, 0.0f, 1.25f);
-        }
+        baseSpeed   = 40 + settings::get<int8>("map.MOUNT_SPEED_MOD");
+        outputSpeed = baseSpeed * (100 + getMod(Mod::MOUNT_MOVE)) / 100;
+
+        return std::clamp<uint8>(outputSpeed, std::numeric_limits<uint8>::min(), std::numeric_limits<uint8>::max());
     }
 
-    // Add speed mod to base speed
-    auto modifiedSpeed = startingSpeed + static_cast<float>(startingSpeed) * modAmount;
+    // Flee, KIs, Gear penalties, Bolters Roll.
+    float additiveMods = static_cast<float>(getMod(Mod::MOVE_SPEED_STACKABLE)) / 100.0f;
 
-    // Make sure speed cannot go negative
-    auto outputSpeed = static_cast<uint8>(modifiedSpeed < 0 ? 0 : modifiedSpeed);
+    // Quickening and Mazurka. Only highest applies.
+    Mod modToUse = getMod(Mod::MOVE_SPEED_QUICKENING) > getMod(Mod::MOVE_SPEED_MAZURKA) ? Mod::MOVE_SPEED_QUICKENING : Mod::MOVE_SPEED_MAZURKA;
 
-    // Actually need this clamp?
+    float effectBonus = static_cast<float>(getMod(modToUse)) / 100.0f;
+
+    // Positive movement speed from gear. Only highest applies.
+    float gearBonus = 0.0f;
+
+    if (objtype == TYPE_PC)
+    {
+        gearBonus = static_cast<float>(getMaxGearMod(Mod::MOVE_SPEED_GEAR_BONUS)) / 100.0f;
+    }
+
+    // Gravity and Curse. They seem additive to each other and the sum seems to be multiplicative.
+    float weightPenalties = static_cast<float>(getMod(Mod::MOVE_SPEED_WEIGHT_PENALTY)) / 100.0f;
+
+    // We have all the modifiers needed. Calculate final speed.
+    float modifiedSpeed = static_cast<float>(baseSpeed) * std::clamp<float>(1.0f + additiveMods + effectBonus, 0.1f, 1.6f) * (1.0f + gearBonus) * std::clamp<float>(1.0f - weightPenalties, 0.1f, 1.0f);
+
+    outputSpeed = static_cast<uint8>(modifiedSpeed);
+
+    // Set cap.
+    outputSpeed = std::clamp<uint8>(outputSpeed, 0, 80 + settings::get<int8>("map.SPEED_MOD"));
+
+    // Speed cap can be bypassed. Ex. Feast of swords. GM speed.
+    // TODO: Find exceptions. Add them here.
+
+    // GM speed bypass.
+    if (getMod(Mod::MOVE_SPEED_OVERIDE) > 0)
+    {
+        outputSpeed = getMod(Mod::MOVE_SPEED_OVERIDE);
+    }
+
     return std::clamp<uint8>(outputSpeed, std::numeric_limits<uint8>::min(), std::numeric_limits<uint8>::max());
 }
 
@@ -350,6 +383,11 @@ int16 CBattleEntity::GetWeaponDelay(bool tp)
             int16 hasteAbility = std::clamp<int16>(getMod(Mod::HASTE_ABILITY), -2500, 2500); // 25% cap
             int16 hasteGear    = std::clamp<int16>(getMod(Mod::HASTE_GEAR), -2500, 2500);    // 25%
 
+            if (weapon->isTwoHanded())
+            {
+                hasteAbility = std::clamp<int16>(getMod(Mod::HASTE_ABILITY) + getMod(Mod::TWOHAND_HASTE_ABILITY), -2500, 2500); // 25% cap
+            }
+
             // Check if we are using a special attack list that should not be affected by attack speed debuffs
             // Example: Wyrm's flying auto attack speed should not be modified by debuffs.
             bool specialAttackList = false;
@@ -383,42 +421,43 @@ float CBattleEntity::GetMeleeRange() const
     return m_ModelRadius + 3.0f;
 }
 
-int16 CBattleEntity::GetRangedWeaponDelay(bool tp)
+int16 CBattleEntity::GetRangedWeaponDelay(bool forTPCalc)
 {
-    CItemWeapon* PRange = (CItemWeapon*)m_Weapons[SLOT_RANGED];
-    CItemWeapon* PAmmo  = (CItemWeapon*)m_Weapons[SLOT_AMMO];
+    CItemWeapon* PRange = dynamic_cast<CItemWeapon*>(m_Weapons[SLOT_RANGED]);
+    CItemWeapon* PAmmo  = dynamic_cast<CItemWeapon*>(m_Weapons[SLOT_AMMO]);
 
     // base delay
     int16 delay = 0;
 
-    if (PRange != nullptr && PRange->getDamage() != 0)
+    if (PRange && PRange->getDamage() != 0)
     {
-        delay = ((PRange->getDelay() * 60) / 1000);
+        delay = PRange->getBaseDelay();
+
+        if (PAmmo && forTPCalc)
+        {
+            delay += PAmmo->getBaseDelay();
+        }
+    }
+    else if (PAmmo && PAmmo->getDamage() != 0)
+    {
+        delay = PAmmo->getBaseDelay();
     }
 
-    delay = (((delay - getMod(Mod::RANGED_DELAY)) * 1000) / 120);
+    // multiple the base delays by 1000 so final delays are in ms
+    // divide by 120 to convert the delays to actual times
+    delay = (delay - getMod(Mod::RANGED_DELAY)) * 1000 / 120;
 
     // apply haste and delay reductions that don't affect tp
-    if (!tp)
+    if (!forTPCalc)
     {
-        delay = (int16)(delay * ((100.0f + getMod(Mod::RANGED_DELAYP)) / 100.0f));
+        delay = delay * ((100.0f + getMod(Mod::RANGED_DELAYP)) / 100.0f);
     }
-    else if (PAmmo)
-    {
-        delay += PAmmo->getDelay() / 2;
-    }
-
-    if (PAmmo != nullptr && PAmmo->isThrowing() && PAmmo->getDamage() != 0)
-    {
-        delay = PAmmo->getDelay() / 2;
-    }
-
     return delay;
 }
 
 int16 CBattleEntity::GetAmmoDelay()
 {
-    CItemWeapon* PAmmo = (CItemWeapon*)m_Weapons[SLOT_AMMO];
+    CItemWeapon* PAmmo = dynamic_cast<CItemWeapon*>(m_Weapons[SLOT_AMMO]);
 
     int delay = 0;
     if (PAmmo != nullptr && PAmmo->getDamage() != 0)
@@ -432,11 +471,6 @@ int16 CBattleEntity::GetAmmoDelay()
 uint16 CBattleEntity::GetMainWeaponDmg()
 {
     TracyZoneScoped;
-    if ((objtype == TYPE_PET && static_cast<CPetEntity*>(this)->getPetType() == PET_TYPE::JUG_PET) || objtype == TYPE_MOB)
-    {
-        return mobutils::GetWeaponDamage(static_cast<CMobEntity*>(this), SLOT_MAIN);
-    }
-
     if (auto* weapon = dynamic_cast<CItemWeapon*>(m_Weapons[SLOT_MAIN]))
     {
         if ((weapon->getReqLvl() > GetMLevel()) && objtype == TYPE_PC)
@@ -482,13 +516,6 @@ uint16 CBattleEntity::GetRangedWeaponDmg()
 {
     TracyZoneScoped;
     uint16 dmg = 0;
-
-    if (objtype == TYPE_MOB)
-    {
-        auto* PMob = static_cast<CMobEntity*>(this);
-        return (mobutils::GetWeaponDamage(PMob, SLOT_RANGED) + getMod(Mod::RANGED_DMG_RATING)) * battleutils::GetRangedDistanceCorrection(this, distance(this->loc.p, this->GetBattleTarget()->loc.p), false);
-    }
-
     if (auto* weapon = dynamic_cast<CItemWeapon*>(m_Weapons[SLOT_RANGED]))
     {
         if ((weapon->getReqLvl() > GetMLevel()) && objtype == TYPE_PC)
@@ -524,14 +551,14 @@ uint16 CBattleEntity::GetRangedWeaponDmg()
 
 uint16 CBattleEntity::GetMainWeaponRank()
 {
-    // https://www.bg-wiki.com/ffxi/Weapon_Rank
-    // https://ffxiclopedia.fandom.com/wiki/Category:Hand-to-Hand?oldid=342430
     uint16 wDamage = 0;
     if (auto* weapon = dynamic_cast<CItemWeapon*>(m_Weapons[SLOT_MAIN]))
     {
         wDamage = weapon->getDamage() + getMod(Mod::MAIN_DMG_RANK);
 
-        if (weapon->getSkillType() == SKILL_HAND_TO_HAND)
+        // apply the H2H formula adjustment only to players
+        // as mobs use H2H for dual wield and thus further research is needed
+        if (objtype == TYPE_PC && weapon->getSkillType() == SKILL_HAND_TO_HAND)
         {
             wDamage += 3;
         }
@@ -648,7 +675,7 @@ int32 CBattleEntity::addMP(int32 mp)
 }
 
 int32 CBattleEntity::takeDamage(int32 amount, CBattleEntity* attacker /* = nullptr*/, ATTACK_TYPE attackType /* = ATTACK_NONE*/,
-                                DAMAGE_TYPE damageType /* = DAMAGE_NONE*/)
+                                DAMAGE_TYPE damageType /* = DAMAGE_NONE*/, bool isSkillchainDamage /* = false */)
 {
     TracyZoneScoped;
 
@@ -669,13 +696,6 @@ int32 CBattleEntity::takeDamage(int32 amount, CBattleEntity* attacker /* = nullp
         if (amount > 0)
         {
             roeutils::event(ROE_EVENT::ROE_DMGTAKEN, static_cast<CCharEntity*>(this), RoeDatagram("dmg", amount));
-
-            auto PChar = static_cast<CCharEntity*>(this);
-
-            if (PChar && PChar->isInEvent() && PChar->currentEvent->type == EVENT_TYPE::MENU)
-            {
-                charutils::releaseEvent(PChar, false);
-            }
         }
     }
     else if (PLastAttacker && PLastAttacker->objtype == TYPE_PC)
@@ -685,8 +705,12 @@ int32 CBattleEntity::takeDamage(int32 amount, CBattleEntity* attacker /* = nullp
             roeutils::event(ROE_EVENT::ROE_DMGDEALT, static_cast<CCharEntity*>(attacker), RoeDatagram("dmg", amount));
         }
 
-        // Took dmg from non ws source, so remove ws kill var
-        this->SetLocalVar("weaponskillHit", 0);
+        // Took dmg from non ws source, so remove ws data var.  Skillchain damage
+        // occurs prior to listeners being fired, so retain this data for this case.
+        if (!isSkillchainDamage)
+        {
+            this->SetLocalVar("weaponskillHit", 0);
+        }
     }
 
     if (getMod(Mod::ABSORB_DMG_TO_MP) > 0)
@@ -703,6 +727,13 @@ int32 CBattleEntity::takeDamage(int32 amount, CBattleEntity* attacker /* = nullp
 
 uint16 CBattleEntity::STR()
 {
+    auto* weapon = dynamic_cast<CItemWeapon*>(m_Weapons[SLOT_MAIN]);
+
+    // Hasso gives STR only if main weapon is two handed
+    if (weapon && weapon->isTwoHanded())
+    {
+        return std::clamp(stats.STR + m_modStat[Mod::STR] + m_modStat[Mod::TWOHAND_STR], 0, 999);
+    }
     return std::clamp(stats.STR + m_modStat[Mod::STR], 0, 999);
 }
 
@@ -736,11 +767,12 @@ uint16 CBattleEntity::CHR()
     return std::clamp(stats.CHR + m_modStat[Mod::CHR], 0, 999);
 }
 
-uint16 CBattleEntity::ATT(uint16 slot, bool ignoreWeaponMods)
+uint16 CBattleEntity::ATT(SLOTTYPE slot)
 {
     TracyZoneScoped;
     // TODO: consider which weapon!
     int32 ATT    = 8 + m_modStat[Mod::ATT];
+    auto  ATTP   = m_modStat[Mod::ATTP];
     auto* weapon = dynamic_cast<CItemWeapon*>(m_Weapons[slot]);
     if (weapon && weapon->isTwoHanded())
     {
@@ -762,18 +794,10 @@ uint16 CBattleEntity::ATT(uint16 slot, bool ignoreWeaponMods)
         {
             ATT += GetSkill(weapon->getSkillType()) + weapon->getILvlSkill();
 
-            if (!ignoreWeaponMods)
-            {
-                if (weapon->getModifier(Mod::ATT_SLOT) > 0)
-                {
-                    ATT += weapon->getModifier(Mod::ATT_SLOT);
-                }
-            }
-
-            // Smite applies when using 2H or H2H weapons
+            // Smite applies (bonus ATTP) when using 2H or H2H weapons
             if (weapon->isTwoHanded() || weapon->isHandToHand())
             {
-                ATT += static_cast<int32>(ATT * this->getMod(Mod::SMITE) / 256.f); // Divide smite value by 256
+                ATTP += static_cast<int32>(this->getMod(Mod::SMITE) / 256.f * 100); // Divide Smite value by 256
             }
         }
     }
@@ -785,27 +809,27 @@ uint16 CBattleEntity::ATT(uint16 slot, bool ignoreWeaponMods)
     {
         ATT = (8 + m_modStat[Mod::ATT] + STR() / 2);
     }
-
-    return std::clamp(ATT + (ATT * m_modStat[Mod::ATTP] / 100) + std::min<int16>((ATT * m_modStat[Mod::FOOD_ATTP] / 100), m_modStat[Mod::FOOD_ATT_CAP]), 0, 65535);
+    // use max to prevent underflow
+    return std::max(1, ATT + (ATT * ATTP / 100) + std::min<int16>((ATT * m_modStat[Mod::FOOD_ATTP] / 100), m_modStat[Mod::FOOD_ATT_CAP]));
 }
 
 uint16 CBattleEntity::RATT(uint8 skill, float distance, uint16 bonusSkill)
 {
     auto* PWeakness = StatusEffectContainer->GetStatusEffect(EFFECT_WEAKNESS);
-
     if (PWeakness && PWeakness->GetPower() >= 2)
     {
         return 0;
     }
 
-    int32 ATT = 8 + GetSkill(skill == 48 ? 0 : skill) + bonusSkill + m_modStat[Mod::RATT] + battleutils::GetRangedAttackBonuses(this) + STR() / 2;
-
+    // make sure to not use fishing skill
+    uint16 baseSkill = skill == SKILL_FISHING ? 0 : GetSkill(skill);
+    int32  RATT      = 8 + baseSkill + bonusSkill + m_modStat[Mod::RATT] + battleutils::GetRangedAttackBonuses(this) + STR() /2 ;
     if ((this->objtype == TYPE_PC) || (this->objtype == TYPE_PET && this->PMaster->objtype == TYPE_PC && ((CPetEntity*)this)->getPetType() == PET_TYPE::AUTOMATON)) // PC or PC Automaton
     {
-        ATT = int32((float)ATT * battleutils::GetRangedDistanceCorrection(this, distance, true));
+        RATT = int32((float)RATT * battleutils::GetRangedDistanceCorrection(this, distance, true));
     }
-
-    return std::clamp(ATT + (ATT * m_modStat[Mod::RATTP] / 100) + std::min<int16>((ATT * m_modStat[Mod::FOOD_RATTP] / 100), m_modStat[Mod::FOOD_RATT_CAP]), 0, 65535);
+    // use max to prevent any underflow
+    return std::max(0, RATT + (RATT * m_modStat[Mod::RATTP] / 100) + std::min<int16>((RATT * m_modStat[Mod::FOOD_RATTP] / 100), m_modStat[Mod::FOOD_RATT_CAP]));
 }
 
 uint16 CBattleEntity::GetBaseRATT(uint8 skill, uint16 bonusSkill)
@@ -826,23 +850,22 @@ uint16 CBattleEntity::RACC(uint8 skill, float distance, uint16 bonusSkill)
 {
     TracyZoneScoped;
     auto* PWeakness = StatusEffectContainer->GetStatusEffect(EFFECT_WEAKNESS);
-
     if (PWeakness && PWeakness->GetPower() >= 2)
     {
         return 0;
     }
 
-    int16 skill_level = GetSkill(skill == 48 ? 0 : skill) + bonusSkill;
-    int16 acc         = skill_level;
-
+    // make sure to not use fishing skill
+    uint16 baseSkill   = skill == SKILL_FISHING ? 0 : GetSkill(skill);
+    uint16 skill_level = baseSkill + bonusSkill;
+    int16  RACC        = skill_level;
     if (skill_level > 200)
     {
-        acc = (int16)(200 + (skill_level - 200) * 0.9);
+        RACC = (int16)(200 + (skill_level - 200) * 0.9);
     }
-
-    acc += getMod(Mod::RACC);
-    acc += battleutils::GetRangedAccuracyBonuses(this);
-    acc += AGI() / 2;
+    RACC += getMod(Mod::RACC);
+    RACC += battleutils::GetRangedAccuracyBonuses(this);
+    RACC += AGI() /2;
 
     if ((this->objtype == TYPE_PC) || (this->objtype == TYPE_PET && this->PMaster->objtype == TYPE_PC && ((CPetEntity*)this)->getPetType() == PET_TYPE::AUTOMATON)) // PC or PC Automaton
     {
@@ -851,8 +874,8 @@ uint16 CBattleEntity::RACC(uint8 skill, float distance, uint16 bonusSkill)
             acc = int16((float)acc * battleutils::GetRangedDistanceCorrection(this, distance, false));
         }
     }
-
-    return std::clamp(acc + std::min<int16>(((100 + getMod(Mod::FOOD_RACCP) * acc) / 100), getMod(Mod::FOOD_RACC_CAP)), 0, 65535);
+    // use max to prevent underflow
+    return std::max(0, RACC + std::min<int16>(((100 + getMod(Mod::FOOD_RACCP) * RACC) / 100), getMod(Mod::FOOD_RACC_CAP)));
 }
 
 uint16 CBattleEntity::GetBaseRACC(uint8 skill, uint16 bonusSkill)
@@ -886,14 +909,16 @@ uint16 CBattleEntity::ACC(uint8 attackNumber, int8 offsetAccuracy)
 
     if (this->objtype & TYPE_PC)
     {
-        uint8  skill     = 0;
-        uint16 iLvlSkill = 0;
+        uint8  skill       = 0;
+        uint16 iLvlSkill   = 0;
+        auto   PMainWeapon = dynamic_cast<CItemWeapon*>(m_Weapons[SLOT_MAIN]);
+
         if (attackNumber == 0)
         {
-            if (auto* weapon = dynamic_cast<CItemWeapon*>(m_Weapons[SLOT_MAIN]))
+            if (PMainWeapon)
             {
-                skill     = weapon->getSkillType();
-                iLvlSkill = weapon->getILvlSkill();
+                skill     = PMainWeapon->getSkillType();
+                iLvlSkill = PMainWeapon->getILvlSkill();
                 if (skill == SKILL_NONE && GetSkill(SKILL_HAND_TO_HAND) > 0)
                 {
                     skill = SKILL_HAND_TO_HAND;
@@ -929,12 +954,13 @@ uint16 CBattleEntity::ACC(uint8 attackNumber, int8 offsetAccuracy)
         if (auto* weapon = dynamic_cast<CItemWeapon*>(m_Weapons[SLOT_MAIN]); weapon && weapon->isTwoHanded())
         {
             ACC += (int16)(DEX() * 0.75);
+            ACC += m_modStat[Mod::TWOHAND_ACC];
         }
         else
         {
             ACC += (int16)(DEX() * 0.5);
         }
-        ACC         = (ACC + m_modStat[Mod::ACC] + offsetAccuracy);
+        ACC = (ACC + m_modStat[Mod::ACC] + offsetAccuracy);
         auto* PChar = dynamic_cast<CCharEntity*>(this);
         if (PChar)
         {
@@ -956,7 +982,7 @@ uint16 CBattleEntity::ACC(uint8 attackNumber, int8 offsetAccuracy)
     else
     {
         int16 ACC = m_modStat[Mod::ACC];
-        ACC       = ACC + std::min<int16>((ACC * m_modStat[Mod::FOOD_ACCP] / 100), m_modStat[Mod::FOOD_ACC_CAP]) + DEX() / 2; // food mods here for Snatch Morsel
+        ACC = ACC + std::min<int16>((ACC * m_modStat[Mod::FOOD_ACCP] / 100), m_modStat[Mod::FOOD_ACC_CAP]) + DEX() / 2; // Account for food mods here for Snatch Morsel
         return std::max<int16>(0, ACC);
     }
 }
@@ -966,6 +992,8 @@ uint16 CBattleEntity::DEF()
     int32 DEF = 8 + m_modStat[Mod::DEF] + VIT() / 2;
     if (this->StatusEffectContainer->HasStatusEffect(EFFECT_COUNTERSTANCE, 0))
     {
+        // era specific counterstance calculation
+        // not needed on LSB
         DEF = 1 + VIT() / 2;
 
         if (this->StatusEffectContainer->HasStatusEffect(EFFECT_MINNE))
@@ -979,8 +1007,8 @@ uint16 CBattleEntity::DEF()
 
         return std::clamp(DEF + defModApplicatble, 0, 65535);
     }
-
-    return std::clamp(DEF + (DEF * m_modStat[Mod::DEFP] / 100) + std::min<int16>((DEF * m_modStat[Mod::FOOD_DEFP] / 100), m_modStat[Mod::FOOD_DEF_CAP]), 0, 65535); // Clamp to stop underflows of defense
+    // use max to prevent underflow
+    return std::max(1, DEF + (DEF * m_modStat[Mod::DEFP] / 100) + std::min<int16>((DEF * m_modStat[Mod::FOOD_DEFP] / 100), m_modStat[Mod::FOOD_DEF_CAP]));
 }
 
 uint16 CBattleEntity::EVA()
@@ -1066,7 +1094,7 @@ void CBattleEntity::SetMLevel(uint8 mlvl)
 
     if (this->objtype & TYPE_PC)
     {
-        sql->Query("UPDATE char_stats SET mlvl = %u WHERE charid = %u LIMIT 1;", m_mlvl, this->id);
+        _sql->Query("UPDATE char_stats SET mlvl = %u WHERE charid = %u LIMIT 1", m_mlvl, this->id);
     }
 }
 
@@ -1114,7 +1142,7 @@ void CBattleEntity::SetSLevel(uint8 slvl)
 
     if (this->objtype & TYPE_PC)
     {
-        sql->Query("UPDATE char_stats SET slvl = %u WHERE charid = %u LIMIT 1;", m_slvl, this->id);
+        _sql->Query("UPDATE char_stats SET slvl = %u WHERE charid = %u LIMIT 1", m_slvl, this->id);
     }
 }
 
@@ -1136,15 +1164,7 @@ uint8 CBattleEntity::GetDeathType()
 
 void CBattleEntity::addModifier(Mod type, int16 amount)
 {
-    if (type == Mod::MOVE)
-    {
-        m_MSNonItemValues.emplace_back(amount);
-        m_modStat[type] = CalculateMSFromSources();
-    }
-    else
-    {
-        m_modStat[type] += amount;
-    }
+    m_modStat[type] += amount;
 }
 
 void CBattleEntity::addModifiers(std::vector<CModifier>* modList)
@@ -1152,55 +1172,8 @@ void CBattleEntity::addModifiers(std::vector<CModifier>* modList)
     TracyZoneScoped;
     for (auto modifier : *modList)
     {
-        if (modifier.getModID() == Mod::MOVE)
-        {
-            addModifier(modifier.getModID(), modifier.getModAmount()); // Calculations in addModifier already, don't duplicate
-        }
-        else
-        {
-            m_modStat[modifier.getModID()] += modifier.getModAmount();
-        }
+        m_modStat[modifier.getModID()] += modifier.getModAmount();
     }
-}
-
-int16 CBattleEntity::CalculateMSFromSources()
-{
-    int16 highestItemPositiveValue = 0;
-    int16 highestNonItemPositve    = 0;
-    int16 totalItemReducedValue    = 0;
-    int16 totalNonItemReducedValue = 0;
-
-    for (uint16 i = 0; i < m_MSNonItemValues.size(); i++)
-    {
-        if (m_MSNonItemValues[i] >= 0)
-        {
-            if (m_MSNonItemValues[i] > highestNonItemPositve)
-            {
-                highestNonItemPositve = m_MSNonItemValues[i];
-            }
-        }
-        else
-        {
-            totalNonItemReducedValue += m_MSNonItemValues[i];
-        }
-    }
-
-    for (uint16 i = 0; i < m_MSItemValues.size(); i++)
-    {
-        if (m_MSItemValues[i] >= 0)
-        {
-            if (m_MSItemValues[i] > highestItemPositiveValue)
-            {
-                highestItemPositiveValue = m_MSItemValues[i];
-            }
-        }
-        else
-        {
-            totalItemReducedValue += m_MSItemValues[i];
-        }
-    }
-
-    return (highestItemPositiveValue + totalItemReducedValue) + (highestNonItemPositve + totalNonItemReducedValue);
 }
 
 void CBattleEntity::addEquipModifiers(std::vector<CModifier>* modList, uint8 itemLevel, uint8 slotid)
@@ -1223,16 +1196,7 @@ void CBattleEntity::addEquipModifiers(std::vector<CModifier>* modList, uint8 ite
             }
             else
             {
-                // Add item with movement speed and prevent stacking
-                if (i.getModID() == Mod::MOVE)
-                {
-                    m_MSItemValues.emplace_back(i.getModAmount());
-                    m_modStat[i.getModID()] = CalculateMSFromSources();
-                }
-                else
-                {
-                    m_modStat[i.getModID()] += i.getModAmount();
-                }
+                m_modStat[i.getModID()] += i.getModAmount();
             }
         }
     }
@@ -1321,23 +1285,7 @@ void CBattleEntity::setModifiers(std::vector<CModifier>* modList)
 
 void CBattleEntity::delModifier(Mod type, int16 amount)
 {
-    if (type == Mod::MOVE)
-    {
-        for (uint16 x = 0; x < m_MSNonItemValues.size(); x++)
-        {
-            if (m_MSNonItemValues[x] == amount)
-            {
-                m_MSNonItemValues.erase(m_MSNonItemValues.begin() + x);
-                break;
-            }
-        }
-
-        m_modStat[type] = CalculateMSFromSources();
-    }
-    else
-    {
-        m_modStat[type] -= amount;
-    }
+    m_modStat[type] -= amount;
 }
 
 void CBattleEntity::saveModifiers()
@@ -1355,14 +1303,7 @@ void CBattleEntity::delModifiers(std::vector<CModifier>* modList)
     TracyZoneScoped;
     for (auto& i : *modList)
     {
-        if (i.getModID() == Mod::MOVE)
-        {
-            delModifier(i.getModID(), i.getModAmount()); // Calculations in delModifier already, don't duplicate
-        }
-        else
-        {
-            m_modStat[i.getModID()] -= i.getModAmount();
-        }
+        m_modStat[i.getModID()] -= i.getModAmount();
     }
 }
 
@@ -1386,24 +1327,7 @@ void CBattleEntity::delEquipModifiers(std::vector<CModifier>* modList, uint8 ite
             }
             else
             {
-                // Remove item with movement speed and prevent stacking
-                if (i.getModID() == Mod::MOVE)
-                {
-                    for (uint16 x = 0; x < m_MSItemValues.size(); x++)
-                    {
-                        if (m_MSItemValues[x] == i.getModAmount())
-                        {
-                            m_MSItemValues.erase(m_MSItemValues.begin() + x);
-                            break;
-                        }
-                    }
-
-                    m_modStat[i.getModID()] = CalculateMSFromSources();
-                }
-                else
-                {
-                    m_modStat[i.getModID()] -= i.getModAmount();
-                }
+                m_modStat[i.getModID()] -= i.getModAmount();
             }
         }
     }
@@ -1474,6 +1398,41 @@ int16 CBattleEntity::getMod(Mod modID)
 {
     TracyZoneScoped;
     return m_modStat[modID];
+}
+
+/************************************************************************
+ *                                                                      *
+ *  Get the highest value of the specified modifier across all gear     *
+ *                                                                      *
+ ************************************************************************/
+int16 CBattleEntity::getMaxGearMod(Mod modID)
+{
+    TracyZoneScoped;
+    CCharEntity* PChar       = dynamic_cast<CCharEntity*>(this);
+    uint16       maxModValue = 0;
+
+    if (!PChar)
+    {
+        ShowWarning("CBattleEntity::getMaxGearMod() - Entity is not a player.");
+
+        return 0;
+    }
+
+    for (uint8 i = 0; i < SLOT_BACK; ++i)
+    {
+        auto* PItem = PChar->getEquip((SLOTTYPE)i);
+        if (PItem && (PItem->isType(ITEM_EQUIPMENT) || PItem->isType(ITEM_WEAPON)))
+        {
+            uint16 modValue = PItem->getModifier(modID);
+
+            if (modValue > maxModValue)
+            {
+                maxModValue = modValue;
+            }
+        }
+    }
+
+    return maxModValue;
 }
 
 void CBattleEntity::addPetModifier(Mod type, PetModType petmod, int16 amount)
@@ -1591,6 +1550,19 @@ void CBattleEntity::delTrait(CTrait* PTrait)
     TracyZoneScoped;
     delModifier(PTrait->getMod(), PTrait->getValue());
     TraitList.erase(std::remove(TraitList.begin(), TraitList.end(), PTrait), TraitList.end());
+}
+
+bool CBattleEntity::hasTrait(uint16 traitID)
+{
+    for (CTrait* Trait : TraitList)
+    {
+        if (Trait->getID() == traitID)
+        {
+            return true;
+        }
+    }
+
+    return false;
 }
 
 bool CBattleEntity::ValidTarget(CBattleEntity* PInitiator, uint16 targetFlags)
@@ -1715,7 +1687,7 @@ void CBattleEntity::OnCastFinished(CMagicState& state, action_t& action)
     {
         flags |= FINDFLAGS_HIT_ALL;
     }
-    uint8      aoeType    = battleutils::GetSpellAoEType(this, PSpell);
+    uint8 aoeType = battleutils::GetSpellAoEType(this, PSpell);
     AOE_RADIUS radiusType = (PSpell->getFlag() & SPELLFLAG_ATTACKER_RADIUS) != 0 ? AOE_RADIUS::ATTACKER : AOE_RADIUS::TARGET;
 
     if (aoeType == SPELLAOE_RADIAL)
@@ -1894,7 +1866,7 @@ void CBattleEntity::OnCastFinished(CMagicState& state, action_t& action)
         PActionTarget->StatusEffectContainer->DelStatusEffectsByFlag(EFFECTFLAG_DETECTABLE);
     }
 
-    this->StatusEffectContainer->DelStatusEffectsByFlag(EFFECTFLAG_MAGIC_END);
+    StatusEffectContainer->DelStatusEffectsByFlag(EFFECTFLAG_MAGIC_END);
 }
 
 void CBattleEntity::OnCastInterrupted(CMagicState& state, action_t& action, MSGBASIC_ID msg, bool blockedCast)
@@ -1953,6 +1925,8 @@ bool CBattleEntity::CanAttack(CBattleEntity* PTarget, std::unique_ptr<CBasicPack
 
     auto distancecheck = (distance(loc.p, PTarget->loc.p) - PTarget->m_ModelRadius) > GetMeleeRange() || !PAI->GetController()->IsAutoAttackEnabled();
 
+    // commit message: Potentially Fix Verticality Condition for Pathfind
+    // Maybe LSB does not need this?
     if (this->objtype == TYPE_MOB &&
         this->GetHPP() < 100 &&
         !distancecheck &&
@@ -2007,6 +1981,8 @@ bool CBattleEntity::OnAttack(CAttackState& state, action_t& action)
     TracyZoneScoped;
     auto* PTarget = static_cast<CBattleEntity*>(state.GetTarget());
 
+    // EXP penalty (era or era+)
+    // LSB does not need
     if (this->objtype == TYPE_MOB)
     {
         auto* PMob = dynamic_cast<CMobEntity*>(this);
@@ -2077,6 +2053,7 @@ bool CBattleEntity::OnAttack(CAttackState& state, action_t& action)
         else if ((xirand::GetRandomNumber(100) < attack.GetHitRate() || attackRound.GetSATAOccured()) &&
                  !PTarget->StatusEffectContainer->HasStatusEffect(EFFECT_ALL_MISS))
         {
+            // https://github.com/AirSkyBoat/AirSkyBoat/pull/2912
             // attack hit, try to be deflected by parry unless it is a SATA attack round
             if (!(attackRound.GetSATAOccured()) && attack.IsParried())
             {
@@ -2118,10 +2095,23 @@ bool CBattleEntity::OnAttack(CAttackState& state, action_t& action)
                     }
                     else
                     {
-                        int16 naturalh2hDMG = 0;
-                        if (auto* targ_weapon = dynamic_cast<CItemWeapon*>(PTarget->m_Weapons[SLOT_MAIN]);
-                            (targ_weapon && targ_weapon->getSkillType() == SKILL_HAND_TO_HAND) ||
-                            (PTarget->objtype == TYPE_MOB && PTarget->GetMJob() == JOB_MNK))
+                        int16     naturalh2hDMG = 0;
+                        auto*     targ_weapon   = dynamic_cast<CItemWeapon*>(PTarget->m_Weapons[SLOT_MAIN]);
+                        SKILLTYPE skilltype     = SKILLTYPE::SKILL_NONE;
+
+                        if (PTarget->objtype == TYPE_PC)
+                        {
+                            if (targ_weapon)
+                            {
+                                skilltype = static_cast<SKILLTYPE>(targ_weapon->getSkillType());
+                            }
+                            else
+                            {
+                                skilltype = SKILLTYPE::SKILL_HAND_TO_HAND;
+                            }
+                        }
+
+                        if (skilltype == SKILLTYPE::SKILL_HAND_TO_HAND || (PTarget->objtype == TYPE_MOB && PTarget->GetMJob() == JOB_MNK))
                         {
                             naturalh2hDMG = (int16)((PTarget->GetSkill(SKILL_HAND_TO_HAND) * 0.11f) + 3);
                         }
@@ -2129,27 +2119,27 @@ bool CBattleEntity::OnAttack(CAttackState& state, action_t& action)
                         // Calculate attack bonus for Counterstance Effect Job Points
                         // Needs verification, as there appears to be conflicting information regarding an attack bonus based on DEX
                         // vs a base damage increase.
-                        float csJpAtkBonus = 1;
+                        float attBonus = 1.0f;
                         if (PTarget->objtype == TYPE_PC && PTarget->GetMJob() == JOB_MNK && PTarget->StatusEffectContainer->HasStatusEffect(EFFECT_COUNTERSTANCE))
                         {
                             auto*  PChar        = static_cast<CCharEntity*>(PTarget);
                             uint8  csJpModifier = PChar->PJobPoints->GetJobPointValue(JP_COUNTERSTANCE_EFFECT) * 2;
                             uint16 targetDex    = PTarget->DEX();
 
-                            csJpAtkBonus = 1 + ((static_cast<float>(targetDex) / 100) * csJpModifier);
+                            attBonus += ((static_cast<float>(targetDex) / 100) * csJpModifier);
                         }
 
-                        float DamageRatio = battleutils::GetDamageRatio(PTarget, this, attack.IsCritical(), csJpAtkBonus, SLOT_MAIN, 0, false);
-                        auto  damage      = 0;
+                        float DamageRatio = battleutils::GetDamageRatio(PTarget, this, attack.IsCritical(), attBonus, SLOT_MAIN, 0, false);
+                        auto  damage      = (int32)((PTarget->GetMainWeaponDmg() + naturalh2hDMG + battleutils::GetFSTR(PTarget, this, SLOT_MAIN)) * DamageRatio);
+
+
+                        // again a counterstance thing that is probably era or era+
+                        // and not needed on LSB
 
                         if (PTarget->objtype == TYPE_MOB)
                         {
                             int8 mobH2HDamage = PTarget->GetMLevel() + 2;
                             damage            = (int32)((std::floor((mobH2HDamage + battleutils::GetFSTR(PTarget, this, SLOT_MAIN)) * 0.9f) / 2) * DamageRatio);
-                        }
-                        else
-                        {
-                            damage = (int32)((PTarget->GetMainWeaponDmg() + naturalh2hDMG + battleutils::GetFSTR(PTarget, this, SLOT_MAIN)) * DamageRatio);
                         }
 
                         actionTarget.spikesParam =
@@ -2157,9 +2147,7 @@ bool CBattleEntity::OnAttack(CAttackState& state, action_t& action)
                         actionTarget.spikesMessage = 33;
                         if (PTarget->objtype == TYPE_PC)
                         {
-                            auto* targ_weapon = dynamic_cast<CItemWeapon*>(PTarget->m_Weapons[SLOT_MAIN]);
-                            uint8 skilltype   = (targ_weapon == nullptr ? (uint8)SKILL_HAND_TO_HAND : targ_weapon->getSkillType());
-                            charutils::TrySkillUP((CCharEntity*)PTarget, (SKILLTYPE)skilltype, GetMLevel());
+                            charutils::TrySkillUP((CCharEntity*)PTarget, skilltype, GetMLevel());
                         } // In case the Automaton can counter
                         else if (PTarget->objtype == TYPE_PET && PTarget->PMaster && PTarget->PMaster->objtype == TYPE_PC &&
                                  static_cast<CPetEntity*>(PTarget)->getPetType() == PET_TYPE::AUTOMATON)
@@ -2171,23 +2159,13 @@ bool CBattleEntity::OnAttack(CAttackState& state, action_t& action)
             }
             else
             {
+                SLOTTYPE weaponSlot = static_cast<SLOTTYPE>(attack.GetWeaponSlot());
                 // Set this attack's critical flag.
-                SLOTTYPE weaponSlot = (SLOTTYPE)attack.GetWeaponSlot();
                 attack.SetCritical(xirand::GetRandomNumber(100) < battleutils::GetCritHitRate(this, PTarget, !attack.IsFirstSwing(), weaponSlot), weaponSlot, attack.IsGuarded());
 
-                actionTarget.reaction = REACTION::HIT;
+                this->PAI->EventHandler.triggerListener("MELEE_SWING_HIT", CLuaBaseEntity(this), CLuaBaseEntity(PTarget), CLuaAttack(&attack));
 
-                if (this->objtype == TYPE_PC && weaponSlot == SLOT_MAIN && ((CCharEntity*)this)->getCharVar("TREDECIM_COUNTER") > 12)
-                {
-                    // Check for Tredecim
-                    auto* equippedWeapon = dynamic_cast<CItemWeapon*>(this->m_Weapons[SLOT_MAIN]);
-                    if (equippedWeapon->getID() == 18052)
-                    {
-                        // Ensure critical is only set to main weapon slot
-                        attack.SetCritical(true, weaponSlot, attack.IsGuarded());
-                        ((CCharEntity*)this)->setCharVar("TREDECIM_COUNTER", -1);
-                    }
-                }
+                actionTarget.reaction = REACTION::HIT;
 
                 // Critical hit.
                 if (attack.IsCritical())
@@ -2236,7 +2214,7 @@ bool CBattleEntity::OnAttack(CAttackState& state, action_t& action)
                 }
 
                 actionTarget.param =
-                    battleutils::TakePhysicalDamage(this, PTarget, attack.GetAttackType(), attack.GetDamage(), attack.IsBlocked(), weaponSlot, 1,
+                    battleutils::TakePhysicalDamage(this, PTarget, attack.GetAttackType(), attack.GetDamage(), attack.IsBlocked(), attack.GetWeaponSlot(), 1,
                                                     attackRound.GetTAEntity(), true, true, attack.IsCountered(), attack.IsCovered(), POriginalTarget);
                 if (actionTarget.param < 0)
                 {
@@ -2334,7 +2312,8 @@ bool CBattleEntity::OnAttack(CAttackState& state, action_t& action)
             zanshinChance        = std::clamp<uint16>(zanshinChance, 0, 100);
             // zanshin may only proc on a missed/guarded/countered swing or as SAM main with hasso up (at 25% of the base zanshin rate)
             if ((((actionTarget.reaction & REACTION::MISS) != REACTION::NONE || (actionTarget.reaction & REACTION::GUARDED) != REACTION::NONE || actionTarget.spikesEffect == SUBEFFECT_COUNTER) &&
-                 xirand::GetRandomNumber(100) < zanshinChance))
+                 xirand::GetRandomNumber(100) < zanshinChance) ||
+                (GetMJob() == JOB_SAM && this->StatusEffectContainer->HasStatusEffect(EFFECT_HASSO) && xirand::GetRandomNumber(100) < (zanshinChance / 4)))
             {
                 attackRound.AddAttackSwing(PHYSICAL_ATTACK_TYPE::ZANSHIN, PHYSICAL_ATTACK_DIRECTION::RIGHTATTACK, 1);
             }

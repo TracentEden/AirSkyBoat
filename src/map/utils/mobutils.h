@@ -27,8 +27,8 @@
 #include "common/cbasetypes.h"
 #include "common/mmo.h"
 
-#include "../entities/mobentity.h"
-#include "../modifier.h"
+#include "entities/mobentity.h"
+#include "modifier.h"
 
 struct ModsList_t
 {
@@ -37,8 +37,8 @@ struct ModsList_t
     std::vector<CModifier*> mobMods;
 
     ModsList_t()
+    : id(0)
     {
-        id = 0;
     }
 };
 

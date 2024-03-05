@@ -26,170 +26,38 @@ along with this program.  If not, see http://www.gnu.org/licenses/
 #include <cstring>
 #include <vector>
 
-#include "../ability.h"
-#include "../enmity_container.h"
-#include "../entities/automatonentity.h"
-#include "../entities/mobentity.h"
-#include "../grades.h"
-#include "../items/item_weapon.h"
-#include "../job_points.h"
-#include "../latent_effect_container.h"
-#include "../map.h"
-#include "../mob_spell_list.h"
-#include "../status_effect_container.h"
-#include "../zone_instance.h"
+#include "ability.h"
 #include "battleutils.h"
 #include "charutils.h"
-#include "mobutils.h"
+#include "enmity_container.h"
+#include "entities/automatonentity.h"
+#include "entities/mobentity.h"
+#include "grades.h"
+#include "items/item_weapon.h"
+#include "job_points.h"
+#include "latent_effect_container.h"
+#include "map.h"
+#include "mob_spell_list.h"
+#include "notoriety_container.h"
 #include "petutils.h"
 #include "puppetutils.h"
+#include "status_effect_container.h"
+#include "zone_instance.h"
 #include "zoneutils.h"
 
-#include "../ai/ai_container.h"
-#include "../ai/controllers/automaton_controller.h"
-#include "../ai/controllers/mob_controller.h"
-#include "../ai/controllers/pet_controller.h"
-#include "../ai/controllers/spirit_controller.h"
-#include "../ai/states/ability_state.h"
+#include "ai/ai_container.h"
+#include "ai/controllers/automaton_controller.h"
+#include "ai/controllers/mob_controller.h"
+#include "ai/controllers/pet_controller.h"
+#include "ai/states/ability_state.h"
 
-#include "../mob_modifier.h"
-#include "../notoriety_container.h"
-#include "../packets/char_abilities.h"
-#include "../packets/char_sync.h"
-#include "../packets/char_update.h"
-#include "../packets/entity_update.h"
-#include "../packets/message_standard.h"
-#include "../packets/pet_sync.h"
-
-struct Pet_t
-{
-    uint16      PetID;     // ID in pet_list.sql
-    look_t      look;      // внешний вид
-    std::string name;      // имя
-    ECOSYSTEM   EcoSystem; // эко-система
-
-    uint8 minLevel; // минимально-возможный  уровень
-    uint8 maxLevel; // максимально-возможный уровень
-
-    uint8  name_prefix;
-    uint8  radius; // Model Radius - affects melee range etc.
-    uint16 m_Family;
-    uint32 time; // время существования (будет использоваться для задания длительности статус эффекта)
-
-    uint8 mJob;
-    uint8 sJob;
-    uint8 m_Element;
-    float HPscale; // HP boost percentage
-    float MPscale; // MP boost percentage
-
-    uint16 cmbDelay;
-    uint8  speed;
-    // stat ranks
-    uint8 strRank;
-    uint8 dexRank;
-    uint8 vitRank;
-    uint8 agiRank;
-    uint8 intRank;
-    uint8 mndRank;
-    uint8 chrRank;
-    uint8 attRank;
-    uint8 defRank;
-    uint8 evaRank;
-    uint8 accRank;
-
-    uint16 m_MobSkillList;
-
-    // magic stuff
-    bool   hasSpellScript;
-    uint16 spellList;
-
-    // resists
-    int16 slash_sdt;
-    int16 pierce_sdt;
-    int16 hth_sdt;
-    int16 impact_sdt;
-
-    int16 fire_sdt;
-    int16 ice_sdt;
-    int16 wind_sdt;
-    int16 earth_sdt;
-    int16 thunder_sdt;
-    int16 water_sdt;
-    int16 light_sdt;
-    int16 dark_sdt;
-
-    int16 fire_meva;
-    int16 ice_meva;
-    int16 wind_meva;
-    int16 earth_meva;
-    int16 thunder_meva;
-    int16 water_meva;
-    int16 light_meva;
-    int16 dark_meva;
-
-    Pet_t()
-    : EcoSystem(ECOSYSTEM::ECO_ERROR)
-    {
-        PetID = 0;
-
-        minLevel = -1;
-        maxLevel = 99;
-
-        name_prefix = 0;
-        radius      = 0;
-        m_Family    = 0;
-        time        = 0;
-
-        mJob      = 0;
-        sJob      = 0;
-        m_Element = 0;
-        HPscale   = 0.f;
-        MPscale   = 0.f;
-
-        cmbDelay = 0;
-        speed    = 0;
-
-        strRank = 0;
-        dexRank = 0;
-        vitRank = 0;
-        agiRank = 0;
-        intRank = 0;
-        mndRank = 0;
-        chrRank = 0;
-        attRank = 0;
-        defRank = 0;
-        evaRank = 0;
-        accRank = 0;
-
-        m_MobSkillList = 0;
-
-        hasSpellScript = false;
-        spellList      = 0;
-
-        slash_sdt  = 0;
-        pierce_sdt = 0;
-        hth_sdt    = 0;
-        impact_sdt = 0;
-
-        fire_sdt    = 0;
-        ice_sdt     = 0;
-        wind_sdt    = 0;
-        earth_sdt   = 0;
-        thunder_sdt = 0;
-        water_sdt   = 0;
-        light_sdt   = 0;
-        dark_sdt    = 0;
-
-        fire_meva    = 0;
-        ice_meva     = 0;
-        wind_meva    = 0;
-        earth_meva   = 0;
-        thunder_meva = 0;
-        water_meva   = 0;
-        light_meva   = 0;
-        dark_meva    = 0;
-    }
-};
+#include "mob_modifier.h"
+#include "packets/char_abilities.h"
+#include "packets/char_sync.h"
+#include "packets/char_update.h"
+#include "packets/entity_update.h"
+#include "packets/message_standard.h"
+#include "packets/pet_sync.h"
 
 std::vector<Pet_t*> g_PPetList;
 
@@ -229,95 +97,87 @@ namespace petutils
                 mob_family_system.EVA, \
                 hasSpellScript, spellList, \
                 slash_sdt, pierce_sdt, h2h_sdt, impact_sdt, \
-                fire_sdt, ice_sdt, wind_sdt, earth_sdt, lightning_sdt, water_sdt, light_sdt, dark_sdt, \
-                fire_meva, ice_meva, wind_meva, earth_meva, lightning_meva, water_meva, light_meva, dark_meva, \
+                magical_sdt, fire_sdt, ice_sdt, wind_sdt, earth_sdt, lightning_sdt, water_sdt, light_sdt, dark_sdt, \
+                fire_res_rank, ice_res_rank, wind_res_rank, earth_res_rank, lightning_res_rank, water_res_rank, light_res_rank, dark_res_rank, \
                 cmbDelay, name_prefix, mob_pools.skill_list_id, damageType \
                 FROM pet_list, mob_pools, mob_resistances, mob_family_system \
                 WHERE pet_list.poolid = mob_pools.poolid AND mob_resistances.resist_id = mob_pools.resist_id AND mob_pools.familyid = mob_family_system.familyID";
 
-        if (sql->Query(Query) != SQL_ERROR && sql->NumRows() != 0)
+        if (_sql->Query(Query) != SQL_ERROR && _sql->NumRows() != 0)
         {
-            while (sql->NextRow() == SQL_SUCCESS)
+            while (_sql->NextRow() == SQL_SUCCESS)
             {
                 Pet_t* Pet = new Pet_t();
 
-                Pet->PetID = (uint16)sql->GetIntData(0);
-                Pet->name.insert(0, (const char*)sql->GetData(1));
+                Pet->PetID = (uint16)_sql->GetIntData(0);
+                Pet->name.insert(0, (const char*)_sql->GetData(1));
 
                 uint16 sqlModelID[10];
-                memcpy(&sqlModelID, sql->GetData(2), 20);
+                memcpy(&sqlModelID, _sql->GetData(2), 20);
                 Pet->look = look_t(sqlModelID);
 
-                Pet->minLevel  = (uint8)sql->GetIntData(3);
-                Pet->maxLevel  = (uint8)sql->GetIntData(4);
-                Pet->time      = sql->GetUIntData(5);
-                Pet->radius    = sql->GetUIntData(6);
-                Pet->EcoSystem = (ECOSYSTEM)sql->GetIntData(7);
-                Pet->m_Family  = (uint16)sql->GetIntData(8);
-                Pet->mJob      = (uint8)sql->GetIntData(9);
-                Pet->sJob      = (uint8)sql->GetIntData(10);
-                Pet->m_Element = (uint8)sql->GetIntData(11);
+                Pet->minLevel  = (uint8)_sql->GetIntData(3);
+                Pet->maxLevel  = (uint8)_sql->GetIntData(4);
+                Pet->time      = _sql->GetUIntData(5);
+                Pet->radius    = _sql->GetUIntData(6);
+                Pet->EcoSystem = (ECOSYSTEM)_sql->GetIntData(7);
+                Pet->m_Family  = (uint16)_sql->GetIntData(8);
+                Pet->mJob      = (uint8)_sql->GetIntData(9);
+                Pet->sJob      = (uint8)_sql->GetIntData(10);
+                Pet->m_Element = (uint8)_sql->GetIntData(11);
 
-                Pet->HPscale = sql->GetFloatData(12);
-                Pet->MPscale = sql->GetFloatData(13);
+                Pet->HPscale = _sql->GetFloatData(12);
+                Pet->MPscale = _sql->GetFloatData(13);
 
-                Pet->speed = (uint8)sql->GetIntData(14);
+                Pet->speed = (uint8)_sql->GetIntData(14);
 
-                Pet->strRank = (uint8)sql->GetIntData(15);
-                Pet->dexRank = (uint8)sql->GetIntData(16);
-                Pet->vitRank = (uint8)sql->GetIntData(17);
-                Pet->agiRank = (uint8)sql->GetIntData(18);
-                Pet->intRank = (uint8)sql->GetIntData(19);
-                Pet->mndRank = (uint8)sql->GetIntData(20);
-                Pet->chrRank = (uint8)sql->GetIntData(21);
-                Pet->defRank = (uint8)sql->GetIntData(22);
-                Pet->attRank = (uint8)sql->GetIntData(23);
-                Pet->accRank = (uint8)sql->GetIntData(24);
-                Pet->evaRank = (uint8)sql->GetIntData(25);
+                Pet->strRank = (uint8)_sql->GetIntData(15);
+                Pet->dexRank = (uint8)_sql->GetIntData(16);
+                Pet->vitRank = (uint8)_sql->GetIntData(17);
+                Pet->agiRank = (uint8)_sql->GetIntData(18);
+                Pet->intRank = (uint8)_sql->GetIntData(19);
+                Pet->mndRank = (uint8)_sql->GetIntData(20);
+                Pet->chrRank = (uint8)_sql->GetIntData(21);
+                Pet->defRank = (uint8)_sql->GetIntData(22);
+                Pet->attRank = (uint8)_sql->GetIntData(23);
+                Pet->accRank = (uint8)_sql->GetIntData(24);
+                Pet->evaRank = (uint8)_sql->GetIntData(25);
 
-                Pet->hasSpellScript = (bool)sql->GetIntData(26);
+                Pet->hasSpellScript = (bool)_sql->GetIntData(26);
 
-                Pet->spellList = (uint8)sql->GetIntData(27);
+                Pet->spellList = (uint8)_sql->GetIntData(27);
 
                 // Specific Dmage Taken, as a %
-                Pet->slash_sdt  = (uint16)(sql->GetFloatData(28) * 1000);
-                Pet->pierce_sdt = (uint16)(sql->GetFloatData(29) * 1000);
-                Pet->hth_sdt    = (uint16)(sql->GetFloatData(30) * 1000);
-                Pet->impact_sdt = (uint16)(sql->GetFloatData(31) * 1000);
+                Pet->slash_sdt  = (uint16)(_sql->GetFloatData(28) * 1000);
+                Pet->pierce_sdt = (uint16)(_sql->GetFloatData(29) * 1000);
+                Pet->hth_sdt    = (uint16)(_sql->GetFloatData(30) * 1000);
+                Pet->impact_sdt = (uint16)(_sql->GetFloatData(31) * 1000);
 
-                Pet->fire_sdt    = (int16)sql->GetIntData(32); // Modifier 54, base 10000 stored as signed integer. Positives signify less damage.
-                Pet->ice_sdt     = (int16)sql->GetIntData(33); // Modifier 55, base 10000 stored as signed integer. Positives signify less damage.
-                Pet->wind_sdt    = (int16)sql->GetIntData(34); // Modifier 56, base 10000 stored as signed integer. Positives signify less damage.
-                Pet->earth_sdt   = (int16)sql->GetIntData(35); // Modifier 57, base 10000 stored as signed integer. Positives signify less damage.
-                Pet->thunder_sdt = (int16)sql->GetIntData(36); // Modifier 58, base 10000 stored as signed integer. Positives signify less damage.
-                Pet->water_sdt   = (int16)sql->GetIntData(37); // Modifier 59, base 10000 stored as signed integer. Positives signify less damage.
-                Pet->light_sdt   = (int16)sql->GetIntData(38); // Modifier 60, base 10000 stored as signed integer. Positives signify less damage.
-                Pet->dark_sdt    = (int16)sql->GetIntData(39); // Modifier 61, base 10000 stored as signed integer. Positives signify less damage.
+                Pet->magical_sdt = (int16)_sql->GetIntData(32); // Modifier 389, base 10000 stored as signed integer. Positives signify less damage.
+
+                Pet->fire_sdt    = (int16)_sql->GetIntData(33); // Modifier 54, base 10000 stored as signed integer. Positives signify less damage.
+                Pet->ice_sdt     = (int16)_sql->GetIntData(34); // Modifier 55, base 10000 stored as signed integer. Positives signify less damage.
+                Pet->wind_sdt    = (int16)_sql->GetIntData(35); // Modifier 56, base 10000 stored as signed integer. Positives signify less damage.
+                Pet->earth_sdt   = (int16)_sql->GetIntData(36); // Modifier 57, base 10000 stored as signed integer. Positives signify less damage.
+                Pet->thunder_sdt = (int16)_sql->GetIntData(37); // Modifier 58, base 10000 stored as signed integer. Positives signify less damage.
+                Pet->water_sdt   = (int16)_sql->GetIntData(38); // Modifier 59, base 10000 stored as signed integer. Positives signify less damage.
+                Pet->light_sdt   = (int16)_sql->GetIntData(39); // Modifier 60, base 10000 stored as signed integer. Positives signify less damage.
+                Pet->dark_sdt    = (int16)_sql->GetIntData(40); // Modifier 61, base 10000 stored as signed integer. Positives signify less damage.
 
                 // resistances
-                Pet->fire_meva    = (int16)sql->GetIntData(40);
-                Pet->ice_meva     = (int16)sql->GetIntData(41);
-                Pet->wind_meva    = (int16)sql->GetIntData(42);
-                Pet->earth_meva   = (int16)sql->GetIntData(43);
-                Pet->thunder_meva = (int16)sql->GetIntData(44);
-                Pet->water_meva   = (int16)sql->GetIntData(45);
-                Pet->light_meva   = (int16)sql->GetIntData(46);
-                Pet->dark_meva    = (int16)sql->GetIntData(47);
-                /* Todo
-                Pet->fire_res_rank    = (int16)sql->GetIntData(??);
-                Pet->ice_res_rank     = (int16)sql->GetIntData(??);
-                Pet->wind_res_rank    = (int16)sql->GetIntData(??);
-                Pet->earth_res_rank   = (int16)sql->GetIntData(??);
-                Pet->thunder_res_rank = (int16)sql->GetIntData(??);
-                Pet->water_res_rank   = (int16)sql->GetIntData(??);
-                Pet->light_res_rank   = (int16)sql->GetIntData(??);
-                Pet->dark_res_rank    = (int16)sql->GetIntData(??);
-                */
+                Pet->fire_res_rank    = (int8)_sql->GetIntData(41);
+                Pet->ice_res_rank     = (int8)_sql->GetIntData(42);
+                Pet->wind_res_rank    = (int8)_sql->GetIntData(43);
+                Pet->earth_res_rank   = (int8)_sql->GetIntData(44);
+                Pet->thunder_res_rank = (int8)_sql->GetIntData(45);
+                Pet->water_res_rank   = (int8)_sql->GetIntData(46);
+                Pet->light_res_rank   = (int8)_sql->GetIntData(47);
+                Pet->dark_res_rank    = (int8)_sql->GetIntData(48);
 
-                Pet->cmbDelay       = (uint16)sql->GetIntData(48);
-                Pet->name_prefix    = (uint8)sql->GetUIntData(49);
-                Pet->m_MobSkillList = (uint16)sql->GetUIntData(50);
-                Pet->m_dmgType      = (DAMAGE_TYPE)sql->GetUIntData(52);
+                Pet->cmbDelay       = (uint16)_sql->GetIntData(49);
+                Pet->name_prefix    = (uint8)_sql->GetUIntData(50);
+                Pet->m_MobSkillList = (uint16)_sql->GetUIntData(51);
+                Pet->m_dmgType      = (DAMAGE_TYPE)_sql->GetUIntData(52);
 
                 g_PPetList.emplace_back(Pet);
             }
@@ -942,17 +802,15 @@ namespace petutils
     void LoadAvatarStats(CBattleEntity* PMaster, CPetEntity* PPet)
     {
         // Declaration of variables needed for calculation.
-        float raceStat  = 0; // final HP for level based on race.
-        float jobStat   = 0; // final number of HP for the level based on the main job.
-        float sJobStat  = 0; // final number of HP for the level based on the sub job.
-        int32 bonusStat = 0; // bonus number of HP that is added under certain conditions.
-
-        // Table Columns
-        int32 baseValueColumn   = 0; // Column number with base number HP
-        int32 scaleTo60Column   = 1; // Column number with modifier up to 60 levels
-        int32 scaleOver30Column = 2; // Column number with modifier after level 30
-        int32 scaleOver60Column = 3; // Column number with modifier after level 60
-        int32 scaleOver60       = 2; // Column number with a modifier for calculating MP after level 60
+        float raceStat          = 0; // final HP for level based on race.
+        float jobStat           = 0; // final number of HP for the level based on the primary profession.
+        float sJobStat          = 0; // finite number of HP for the level based on the secondary profession.
+        int32 bonusStat         = 0; // bonus number of HP that is added under certain conditions.
+        int32 baseValueColumn   = 0; // number of the column with the base amount of HP
+        int32 scaleTo60Column   = 1; // column number with modifier up to level 60
+        int32 scaleOver30Column = 2; // column number with modifier after level 30
+        int32 scaleOver60Column = 3; // column number with modifier after level 60
+        int32 scaleOver60       = 2; // column number with a modifier for calculating MP after level 60
 
         uint8 grade = 5; // Grade for HP
 
@@ -961,19 +819,18 @@ namespace petutils
         JOBTYPE mjob = PPet->GetMJob();
         JOBTYPE sjob = PPet->GetSJob();
 
-        // Calculate level ranges from main job
-        int32 mainLevelOver30     = std::clamp(mLvl - 30, 0, 30); // Calculation of the condition + 1HP each LVL after level 30
-        int32 mainLevelUpTo60     = (mLvl < 60 ? mLvl - 1 : 59);  // The first time spent up to level 60 (is also used for MP)
-        int32 mainLevelOver60To75 = std::clamp(mLvl - 60, 0, 15); // The second calculation mode after level 60
-        int32 mainLevelOver60     = (mLvl < 60 ? 0 : mLvl - 60);
+        // Calculate HP gain from main job
+        int32 mainLevelOver30     = std::clamp(mlvl - 30, 0, 30); // Calculate condition +1HP every lvl after level 30
+        int32 mainLevelUpTo60     = (mlvl < 60 ? mlvl - 1 : 59);  // First calculation mode up to level 60 (Used the same for MP)
+        int32 mainLevelOver60To75 = std::clamp(mlvl - 60, 0, 15); // Second calculation mode after level 60
 
         // Calculate level ranges of sub job
         int32 subLevelOver10 = std::clamp(sLvl - 10, 0, 20); // + 1HP for each level after 10 (/ 2)
         int32 subLevelOver30 = (sLvl < 30 ? 0 : sLvl - 30);  // + 1HP for each level after 30
 
         // Calculate the bonus amount of HP
-        int32 mainLevelOver10           = (mLvl < 10 ? 0 : mLvl - 10);  // + 2hp at each level after 10
-        int32 mainLevelOver50andUnder60 = std::clamp(mLvl - 50, 0, 10); // + 2hp at each level between 50 to 60 level
+        int32 mainLevelOver10           = (mlvl < 10 ? 0 : mlvl - 10);  // +2HP on every level after 10
+        int32 mainLevelOver50andUnder60 = std::clamp(mlvl - 50, 0, 10); // +2HP at each level between level 50 and 60
 
         // Calculate raceStat jobStat bonusStat sJobStat
         // Calculate by race
@@ -993,7 +850,7 @@ namespace petutils
                        (grade::GetHPScale(grade, scaleOver30Column) * subLevelOver30) + subLevelOver30 + subLevelOver10;
         }
 
-        // Bonus HP Calculation
+        // Bonus HP calculation
         bonusStat = (mainLevelOver10 + mainLevelOver50andUnder60) * 2;
         if (PPet->m_PetID == PETID_ODIN || PPet->m_PetID == PETID_ALEXANDER)
         {
@@ -1573,6 +1430,8 @@ namespace petutils
             PPet->setModifier(Mod::HTH_SDT, petData->hth_sdt);
             PPet->setModifier(Mod::IMPACT_SDT, petData->impact_sdt);
 
+            PPet->setModifier(Mod::UDMGMAGIC, petData->magical_sdt);
+
             PPet->setModifier(Mod::FIRE_SDT, petData->fire_sdt);
             PPet->setModifier(Mod::ICE_SDT, petData->ice_sdt);
             PPet->setModifier(Mod::WIND_SDT, petData->wind_sdt);
@@ -1582,24 +1441,14 @@ namespace petutils
             PPet->setModifier(Mod::LIGHT_SDT, petData->light_sdt);
             PPet->setModifier(Mod::DARK_SDT, petData->dark_sdt);
 
-            PPet->setModifier(Mod::FIRE_MEVA, petData->fire_meva); // These are stored as signed integers which
-            PPet->setModifier(Mod::ICE_MEVA, petData->ice_meva);   // is directly the modifier starting value.
-            PPet->setModifier(Mod::WIND_MEVA, petData->wind_meva); // Positives signify increased resist chance.
-            PPet->setModifier(Mod::EARTH_MEVA, petData->earth_meva);
-            PPet->setModifier(Mod::THUNDER_MEVA, petData->thunder_meva);
-            PPet->setModifier(Mod::WATER_MEVA, petData->water_meva);
-            PPet->setModifier(Mod::LIGHT_MEVA, petData->light_meva);
-            PPet->setModifier(Mod::DARK_MEVA, petData->dark_meva);
-            /* Todo
-            fire_res_rank
-            ice_res_rank
-            wind_res_rank
-            earth_res_rank
-            thunder_res_rank
-            water_res_rank
-            light_res_rank
-            dark_res_rank
-            */
+            PPet->setModifier(Mod::FIRE_RES_RANK, petData->fire_res_rank);
+            PPet->setModifier(Mod::ICE_RES_RANK, petData->ice_res_rank);
+            PPet->setModifier(Mod::WIND_RES_RANK, petData->wind_res_rank);
+            PPet->setModifier(Mod::EARTH_RES_RANK, petData->earth_res_rank);
+            PPet->setModifier(Mod::THUNDER_RES_RANK, petData->thunder_res_rank);
+            PPet->setModifier(Mod::WATER_RES_RANK, petData->water_res_rank);
+            PPet->setModifier(Mod::LIGHT_RES_RANK, petData->light_res_rank);
+            PPet->setModifier(Mod::DARK_RES_RANK, petData->dark_res_rank);
         }
     }
 
@@ -1680,6 +1529,24 @@ namespace petutils
             PMob->PMaster    = nullptr;
 
             PMob->PAI->SetController(std::make_unique<CMobController>(PMob));
+
+            // clear all enmity towards a charmed mob when it is released
+            // use two loops to avoid modifying the container while iterating over it
+            std::list<CMobEntity*> mobsToPacify;
+
+            // first collect the mobs with hate towards the formerly charmed mob
+            for (auto* entityWithEnmity : *PMob->PNotorietyContainer)
+            {
+                if (auto* mobToPacify = dynamic_cast<CMobEntity*>(entityWithEnmity))
+                {
+                    mobsToPacify.emplace_back(mobToPacify);
+                }
+            }
+            // then remove the formerly charmed mob from those mobs enmity containers
+            for (const auto* mobToPacify : mobsToPacify)
+            {
+                mobToPacify->PEnmityContainer->Clear(PMob->id);
+            }
         }
         else if (PPet->objtype == TYPE_PET)
         {
@@ -2003,8 +1870,20 @@ namespace petutils
             return;
         }
 
-        Pet_t* PPetData = *std::find_if(g_PPetList.begin(), g_PPetList.end(), [PetID](Pet_t* t)
-                                        { return t->PetID == PetID; });
+        // clang-format off
+        auto maybePetData = std::find_if(g_PPetList.begin(), g_PPetList.end(), [PetID](Pet_t* t)
+        {
+            return t->PetID == PetID;
+        });
+        // clang-format on
+
+        if (maybePetData == g_PPetList.end())
+        {
+            ShowError(fmt::format("Could not look up pet data for id: {}", PetID));
+            return;
+        }
+
+        auto* PPetData = *maybePetData;
 
         if (PMaster->GetMJob() != JOB_DRG && PetID == PETID_WYVERN)
         {
@@ -2034,16 +1913,16 @@ namespace petutils
                 WHERE pet_name.id = char_pet.wyvernid AND \
                 char_pet.charid = %u";
 
-            if (sql->Query(Query, PMaster->id) != SQL_ERROR && sql->NumRows() != 0)
+            if (_sql->Query(Query, PMaster->id) != SQL_ERROR && _sql->NumRows() != 0)
             {
-                while (sql->NextRow() == SQL_SUCCESS)
+                while (_sql->NextRow() == SQL_SUCCESS)
                 {
-                    uint16 wyvernid = (uint16)sql->GetIntData(1);
+                    uint16 wyvernid = (uint16)_sql->GetIntData(1);
 
                     if (wyvernid != 0)
                     {
                         PPetData->name.clear();
-                        PPetData->name.insert(0, (const char*)sql->GetData(0));
+                        PPetData->name.insert(0, (const char*)_sql->GetData(0));
                     }
                 }
             }
@@ -2057,11 +1936,11 @@ namespace petutils
                 FROM char_pet\
                 char_pet.charid = %u";
 
-            if (sql->Query(Query, PMaster->id) != SQL_ERROR && sql->NumRows() != 0)
+            if (_sql->Query(Query, PMaster->id) != SQL_ERROR && _sql->NumRows() != 0)
             {
-                while (sql->NextRow() == SQL_SUCCESS)
+                while (_sql->NextRow() == SQL_SUCCESS)
                 {
-                    uint32 chocoboid = (uint32)sql->GetIntData(0);
+                    uint32 chocoboid = (uint32)_sql->GetIntData(0);
 
                     if (chocoboid != 0)
                     {
@@ -2075,13 +1954,13 @@ namespace petutils
                             FROM pet_name\
                             WHERE pet_name.id = %u OR pet_name.id = %u";
 
-                        if (sql->Query(Query, chocoboname1, chocoboname2) != SQL_ERROR && sql->NumRows() != 0)
+                        if (_sql->Query(Query, chocoboname1, chocoboname2) != SQL_ERROR && _sql->NumRows() != 0)
                         {
-                            while (sql->NextRow() == SQL_SUCCESS)
+                            while (_sql->NextRow() == SQL_SUCCESS)
                             {
                                 if (chocoboname1 != 0 && chocoboname2 != 0)
                                 {
-                                    PPetData->name.insert(0, (const char*)sql->GetData(0));
+                                    PPetData->name.insert(0, (const char*)_sql->GetData(0));
                                 }
                             }
                         }
@@ -2148,8 +2027,6 @@ namespace petutils
         {
             PPet->look.size = MODEL_AUTOMATON;
         }
-
-
         PPet->m_name_prefix  = PPetData->name_prefix;
         PPet->m_Family       = PPetData->m_Family;
         PPet->m_MobSkillList = PPetData->m_MobSkillList;

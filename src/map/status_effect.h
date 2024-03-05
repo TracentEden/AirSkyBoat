@@ -72,6 +72,7 @@ enum EFFECTFLAG
     EFFECTFLAG_AURA            = 0x04000000, // Is an aura type effect
     EFFECTFLAG_HIDE_TIMER      = 0x08000000, // Sends "Always" in the packet, even though timer is tracked
     EFFECTFLAG_ON_ZONE_PATHOS  = 0x10000000, // removes the effect zoning into a non instanced zone
+    EFFECTFLAG_ALWAYS_EXPIRING = 0x20000000, // Timer is always 4 seconds from now to have an illusion permanent "expiring", used for Auras
 };
 DECLARE_FORMAT_AS_UNDERLYING(EFFECTFLAG);
 
@@ -700,6 +701,8 @@ enum EFFECT
     EFFECT_MOOGLE_AMPLIFIER        = 629,
     EFFECT_TAINT                   = 630,
     EFFECT_HAUNT                   = 631,
+    EFFECT_BLACK_SANCTUS           = 632,
+    EFFECT_ANIMATED                = 633,
 
     // Effect icons in packet can go from 0-767, so no custom effects should go in that range.
 
@@ -754,11 +757,12 @@ enum EFFECT
     EFFECT_WATER_EEM_MOD       = 905,
     EFFECT_LIGHT_EEM_MOD       = 906,
     EFFECT_DARK_EEM_MOD        = 907,
-    // EFFECT_PLACEHOLDER           = 806  // Description
-    // 806-1022
+
+    // 789
+    // 807-1022
     // EFFECT_PLACEHOLDER           = 1023 // The client dat file seems to have only this many "slots", results of exceeding that are untested.
 };
-#define MAX_EFFECTID 1023 // 768 real + 232 custom
+#define MAX_EFFECTID 807 // 768 real + 39 custom
 DECLARE_FORMAT_AS_UNDERLYING(EFFECT);
 
 /************************************************************************
@@ -781,9 +785,9 @@ public:
     uint16 GetPower() const;
     uint16 GetSubPower() const;
     uint16 GetTier() const;
-    uint32 GetFlag() const;
-    uint16 GetType() const;
-    uint8  GetSlot() const;
+    uint32 GetEffectFlags() const;
+    uint16 GetEffectType() const;
+    uint8  GetEffectSlot() const;
     uint16 GetItemSourceID() const;
 
     uint32         GetTickTime() const;
@@ -792,10 +796,12 @@ public:
     time_point     GetStartTime();
     CBattleEntity* GetOwner();
 
-    void SetFlag(uint32 Flag);
-    void UnsetFlag(uint32 Flag);
-    void SetType(uint16 Type);
-    void SetSlot(uint8 Slot);
+    void SetEffectFlags(uint32 Flags);
+    void AddEffectFlag(uint32 Flag);
+    void DelEffectFlag(uint32 Flag);
+    bool HasEffectFlag(uint32 Flag);
+    void SetEffectType(uint16 Type);
+    void SetEffectSlot(uint8 Slot);
     void SetIcon(uint16 Icon);
     void SetPower(uint16 Power);
     void SetSubPower(uint16 subPower);
@@ -810,7 +816,7 @@ public:
 
     void addMod(Mod modType, int16 amount);
 
-    void SetName(std::string name);
+    void SetEffectName(std::string name);
 
     const std::string& GetName();
 

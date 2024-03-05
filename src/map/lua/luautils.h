@@ -50,6 +50,7 @@ extern sol::state lua;
 
 #include "lua_ability.h"
 #include "lua_action.h"
+#include "lua_attack.h"
 #include "lua_baseentity.h"
 #include "lua_battlefield.h"
 #include "lua_instance.h"
@@ -62,6 +63,15 @@ extern sol::state lua;
 #include "lua_trigger_area.h"
 #include "lua_zone.h"
 
+enum class SendToDBoxReturnCode : uint8
+{
+    SUCCESS                       = 0,
+    SUCCESS_LIMITED_TO_STACK_SIZE = 1,
+    PLAYER_NOT_FOUND              = 2,
+    ITEM_NOT_FOUND                = 3,
+    QUERY_ERROR                   = 4
+};
+
 class CAbility;
 class CSpell;
 class CBaseEntity;
@@ -71,6 +81,7 @@ class CPetEntity;
 class CCharEntity;
 class CBattlefield;
 class CItem;
+class CInstance;
 class CMobSkill;
 class CPetSkill;
 class CTriggerArea;
@@ -83,6 +94,7 @@ class CItemFurnishing;
 class CInstance;
 class CWeaponSkill;
 class CZone;
+class CZoneInstance;
 
 class CLuaAbility;
 class CLuaAction;
@@ -124,12 +136,13 @@ namespace luautils
     auto GetCacheEntryFromFilename(std::string const& filename) -> sol::table;
     void OnEntityLoad(CBaseEntity* PEntity);
 
-    void PopulateIDLookups(std::optional<uint16> maybeZoneId = std::nullopt);
+    void PopulateIDLookupsByFilename(std::optional<std::string> maybeFilename = std::nullopt);
+    void PopulateIDLookupsByZone(std::optional<uint16> maybeZoneId = std::nullopt);
 
     void SendEntityVisualPacket(uint32 npcid, const char* command);
     void InitInteractionGlobal();
     auto GetZone(uint16 zoneId) -> std::optional<CLuaZone>;
-    bool IsZoneActive(uint16 zoneId);
+    auto GetItemByID(uint32 itemId) -> std::optional<CLuaItem>;
     auto GetNPCByID(uint32 npcid, sol::object const& instanceObj) -> std::optional<CLuaBaseEntity>;
     auto GetMobByID(uint32 mobid, sol::object const& instanceObj) -> std::optional<CLuaBaseEntity>;
     auto GetEntityByID(uint32 mobid, sol::object const& instanceObj, sol::object const& arg3) -> std::optional<CLuaBaseEntity>;
@@ -151,15 +164,13 @@ namespace luautils
     void DespawnMob(uint32 mobid, sol::object const& arg2);                                                         // Despawn (Fade Out) Mob By Id
     auto GetPlayerByName(std::string const& name) -> std::optional<CLuaBaseEntity>;
     auto GetPlayerByID(uint32 pid) -> std::optional<CLuaBaseEntity>;
-    uint32 GetPlayerIDAnywhere(std::string const& name);
     void   SendToJailOffline(uint32 playerId, int8 cellId, float posX, float posY, float posZ, uint8 rot);
 
-    auto GetMagianTrial(sol::variadic_args va) -> sol::table;
-    auto GetMagianTrialsWithParent(int32 parentTrial) -> sol::table;
-
+    uint32 GetSystemTime();
     uint32 JstMidnight();
     uint32 JstWeekday();
-    uint64 ServerEpochTimeMS();
+    uint32 NextGameTime(uint32 intervalSeconds);
+    uint32 NextJstWeek();
     uint32 VanadielTime();
     uint8  VanadielTOTD();
     uint32 VanadielHour();
@@ -318,9 +329,9 @@ namespace luautils
     uint32 GetMobRespawnTime(uint32 mobid);
     void   DisallowRespawn(uint32 mobid, bool allowRespawn);
     void   UpdateNMSpawnPoint(uint32 mobid);
+
+    std::string GetServerMessage(uint8 language);               // Get the message to be delivered to player on first zone in of a session
     bool   CheckNMSpawnPoint(uint32 mobid);                        // Check to see if NM has extra spawn points
-    void   SetDropRate(uint16 dropid, uint16 itemid, uint16 rate); // Set drop rate of a mob SetDropRate(dropid,itemid,newrate)
-    int32  UpdateServerMessage();                                  // update server message, first modify in conf and update
     auto   GetRecentFishers() -> sol::table;                       // returns a list of recently active fishers (Fished in the last 5 minutes)
 
     int32 OnAdditionalEffect(CBattleEntity* PAttacker, CBattleEntity* PDefender, actionTarget_t* Action, int32 damage);                                      // for mobs with additional effects
@@ -337,7 +348,6 @@ namespace luautils
     void OnPlayerMount(CCharEntity* PChar);
     void OnPlayerEmote(CCharEntity* PChar, Emote EmoteID);
     void OnPlayerVolunteer(CCharEntity* PChar, std::string const& text);
-    void OnPlayerCraftLevelUp(CCharEntity* PChar, uint8 skillID);
 
     bool OnChocoboDig(CCharEntity* PChar, bool pre); // chocobo digging, pre = check
 
@@ -357,9 +367,12 @@ namespace luautils
 
     // Retrive the first itemId that matches a name
     uint16 GetItemIDByName(std::string const& name);
-    // Retrieve item name given an itemId
-    std::string GetItemNameByID(uint16 const& name);
-    int         SendItemToDeliveryBox(std::string const& playerName, uint16 itemId, uint32 quantity, std::string senderText);
+    auto   SendItemToDeliveryBox(std::string const& playerName, uint16 itemId, uint32 quantity, std::string senderText) -> SendToDBoxReturnCode;
+
+    std::optional<CLuaBaseEntity> GenerateDynamicEntity(CZone* PZone, CInstance* PInstance, sol::table table);
+
+    template <typename... Targs>
+    int32 invokeBattlefieldEvent(uint16 battlefieldId, const std::string& eventName, Targs... args);
 
     // Fishing Contest Utilities
     void NewFishingContest();
@@ -370,7 +383,9 @@ namespace luautils
     void SetContestFish(uint32 fishId);
     void InitializeFishingContestSystem();
     void ProgressFishingContest();
+}; // namespace luautils
 
+// template impl
 template <typename... Targs>
 int32 luautils::invokeBattlefieldEvent(uint16 battlefieldId, const std::string& eventName, Targs... args)
 {
@@ -381,29 +396,28 @@ int32 luautils::invokeBattlefieldEvent(uint16 battlefieldId, const std::string& 
         return -1;
     }
 
-        auto battlefield = contents[battlefieldId];
-        if (!battlefield.valid())
-        {
-            return -1;
-        }
-
-        auto content = battlefield.get<sol::table>();
-        auto handler = content[eventName];
-        if (!handler.valid())
-        {
-            return -1;
-        }
-
-        auto result = handler.get<sol::protected_function>()(content, args...);
-        if (!result.valid())
-        {
-            sol::error err = result;
-            ShowError("luautils::%s: %s", eventName, err.what());
-            return -1;
-        }
-
-        return 0;
+    auto battlefield = contents[battlefieldId];
+    if (!battlefield.valid())
+    {
+        return -1;
     }
-}; // namespace luautils
+
+    auto content = battlefield.get<sol::table>();
+    auto handler = content[eventName];
+    if (!handler.valid())
+    {
+        return -1;
+    }
+
+    auto result = handler.get<sol::protected_function>()(content, args...);
+    if (!result.valid())
+    {
+        sol::error err = result;
+        ShowError("luautils::%s: %s", eventName, err.what());
+        return -1;
+    }
+
+    return 0;
+}
 
 #endif // _LUAUTILS_H -

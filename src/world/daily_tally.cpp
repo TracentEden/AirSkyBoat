@@ -32,7 +32,7 @@ namespace dailytally
             SET char_points.daily_tally = LEAST(%u, char_points.daily_tally + %u) \
             WHERE char_points.daily_tally > -1;";
 
-        int32 ret = sql->Query(fmtQuery, dailyTallyLimit, dailyTallyAmount);
+        int32 ret = _sql->Query(fmtQuery, dailyTallyLimit, dailyTallyAmount);
 
         if (ret == SQL_ERROR)
         {
@@ -45,7 +45,7 @@ namespace dailytally
 
         fmtQuery = "DELETE FROM char_vars WHERE varname = 'gobbieBoxUsed';";
 
-        if (sql->Query(fmtQuery, dailyTallyAmount) == SQL_ERROR)
+        if (_sql->Query(fmtQuery, dailyTallyAmount) == SQL_ERROR)
         {
             ShowError("Failed to delete daily tally char_vars entries");
         }

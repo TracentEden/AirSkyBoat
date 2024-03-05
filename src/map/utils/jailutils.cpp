@@ -21,11 +21,11 @@
 
 #include "jailutils.h"
 
-#include "../conquest_system.h"
-#include "../entities/charentity.h"
+#include "conquest_system.h"
+#include "entities/charentity.h"
 
-#include "../ai/ai_container.h"
-#include "../ai/controllers/player_controller.h"
+#include "ai/ai_container.h"
+#include "ai/controllers/player_controller.h"
 
 /************************************************************************
  *                                                                       *
@@ -38,19 +38,19 @@ namespace jailutils
     bool InPrison(CCharEntity* PChar)
     {
         TracyZoneScoped;
-        return PChar->getCharVar("[JAIL]inJail") > 0;
+        return PChar->m_GMlevel == 0 && PChar->getZone() == ZONE_MORDION_GAOL;
     }
 
     void Add(CCharEntity* PChar)
     {
-        // PChar->PAI->SetController(nullptr);
+        PChar->PAI->SetController(nullptr);
 
         // TODO:
     }
 
     void Del(CCharEntity* PChar)
     {
-        // PChar->PAI->SetController(std::make_unique<CPlayerController>(PChar));
+        PChar->PAI->SetController(std::make_unique<CPlayerController>(PChar));
 
         // TODO:
     }

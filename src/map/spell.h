@@ -1054,7 +1054,6 @@ public:
 
     uint16             getTotalTargets() const;
     SpellID            getID();
-    uint32             getPrimaryTargetID() const;
     uint8              getJob(JOBTYPE JobID);
     uint16             getMPCost() const;
     uint32             getCastTime() const;
@@ -1083,6 +1082,7 @@ public:
     uint8              getFlag() const;
     const std::string& getContentTag();
     float              getRange() const;
+    uint32             getPrimaryTargetID() const;
     uint16             getConeAngle();
     bool               tookEffect() const; // returns true if the spell landed, not resisted or missed
     bool               hasMPCost();        // checks if spell costs mp to use
@@ -1097,7 +1097,6 @@ public:
     void setRadius(float radius);
     void setTotalTargets(uint16 total);
     void setID(SpellID id);
-    void setPrimaryTargetID(uint32);
     void setJob(int8* jobs);
     void setMPCost(uint16 MP);
     void setCastTime(uint32 CastTime);
@@ -1117,6 +1116,7 @@ public:
     void setMagicBurstMessage(uint16 message);
     auto getModifier() -> MODIFIER;
     void setModifier(MODIFIER modifier); // set Spell modifier message, MUST reset the modifier on use otherwise it will be stale
+    void setPrimaryTargetID(uint32);
 
     void setCE(uint16 ce);
     void setVE(uint16 ve);

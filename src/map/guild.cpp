@@ -57,14 +57,14 @@ void CGuild::updateGuildPointsPattern(uint8 pattern)
 
         std::string query = "SELECT itemid, points, max_points FROM guild_item_points WHERE "
                             "guildid = %u AND pattern = %u AND rank = %u";
-        int         ret   = sql->Query(query.c_str(), m_id, pattern, m_GPItemsRank[i]);
+        int         ret   = _sql->Query(query.c_str(), m_id, pattern, m_GPItemsRank[i]);
 
-        if (ret != SQL_ERROR && sql->NumRows() > 0)
+        if (ret != SQL_ERROR && _sql->NumRows() > 0)
         {
-            while (sql->NextRow() == SQL_SUCCESS)
+            while (_sql->NextRow() == SQL_SUCCESS)
             {
                 m_GPItems[i].emplace_back(
-                    GPItem_t(itemutils::GetItemPointer(sql->GetUIntData(0)), sql->GetUIntData(2), sql->GetUIntData(1)));
+                    GPItem_t(itemutils::GetItemPointer(_sql->GetUIntData(0)), _sql->GetUIntData(2), _sql->GetUIntData(1)));
             }
         }
     }
@@ -78,6 +78,8 @@ std::pair<uint8, int16> CGuild::addGuildPoints(CCharEntity* PChar, CItem* PItem)
 
     if (PItem)
     {
+        // https://github.com/HorizonFFXI/HorizonXI/pull/430
+        // Check guild underflow issue
         uint16 curPoints = PChar->getCharVar("[GUILD]daily_points");
         if (curPoints != 1)
         {

@@ -133,12 +133,12 @@ public:
 private:
     bool onSameFloor(const position_t& start, float* spos, const position_t& end, float* epos, dtQueryFilter& filter);
 
-    std::string                m_filename;
-    uint16                     m_zoneID;
-    dtRaycastHit               m_hit{};
-    dtPolyRef                  m_hitPath[20]{};
+    std::string    m_filename;
+    uint16         m_zoneID;
+    dtRaycastHit   m_hit{};
+    dtPolyRef      m_hitPath[20]{};
     std::shared_ptr<dtNavMesh> m_navMesh;
-    dtNavMeshQuery             m_navMeshQuery;
+    dtNavMeshQuery m_navMeshQuery;
 };
 
 #endif

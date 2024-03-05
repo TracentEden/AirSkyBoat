@@ -58,11 +58,11 @@ void view_session::read_func()
             auto sql = std::make_unique<SqlConnection>();
 
             uint32 accountID = 0;
-            int32  ret       = sql->Query("SELECT accid FROM chars WHERE charid = %u and charname = '%s' LIMIT 1;",
+            int32  ret       = _sql->Query("SELECT accid FROM chars WHERE charid = %u and charname = '%s' LIMIT 1;",
                                           requestedCharacterID, requestedCharacter);
-            if (ret != SQL_ERROR && sql->NumRows() != 0 && sql->NextRow() == SQL_SUCCESS)
+            if (ret != SQL_ERROR && _sql->NumRows() != 0 && _sql->NextRow() == SQL_SUCCESS)
             {
-                accountID                    = sql->GetUIntData(0);
+                accountID                    = _sql->GetUIntData(0);
                 session.requestedCharacterID = requestedCharacterID;
             }
             else
@@ -120,11 +120,11 @@ void view_session::read_func()
                                  CharID, ipAddress));
 
             uint32 accountID = 0;
-            int32  ret       = sql->Query("SELECT accid FROM chars WHERE charid = %u LIMIT 1;", CharID);
+            int32  ret       = _sql->Query("SELECT accid FROM chars WHERE charid = %u LIMIT 1;", CharID);
 
-            if (ret != SQL_ERROR && sql->NumRows() != 0 && sql->NextRow() == SQL_SUCCESS)
+            if (ret != SQL_ERROR && _sql->NumRows() != 0 && _sql->NextRow() == SQL_SUCCESS)
             {
-                accountID = sql->GetUIntData(0);
+                accountID = _sql->GetUIntData(0);
             }
 
             if (accountID != session.accountID)
@@ -138,7 +138,7 @@ void view_session::read_func()
             // Instead of performing an actual character deletion, we simply set accid to 0, and original_accid to old accid.
             // This allows character recovery.
 
-            sql->Query("UPDATE chars SET accid = 0, original_accid = %i WHERE charid = %i AND accid = %i",
+            _sql->Query("UPDATE chars SET accid = 0, original_accid = %i WHERE charid = %i AND accid = %i",
                        session.accountID, CharID, session.accountID);
         }
         break;
@@ -194,7 +194,7 @@ void view_session::read_func()
 
                 // Sanitize name
                 char escapedCharName[16 * 2 + 1];
-                sql->EscapeString(escapedCharName, CharName);
+                _sql->EscapeString(escapedCharName, CharName);
 
                 std::optional<std::string> invalidNameReason = std::nullopt;
 
@@ -218,11 +218,11 @@ void view_session::read_func()
                 }
 
                 // Check if the name is already in use by another character
-                if (sql->Query("SELECT charname FROM chars WHERE charname LIKE '%s'", escapedCharName) == SQL_ERROR)
+                if (_sql->Query("SELECT charname FROM chars WHERE charname LIKE '%s'", escapedCharName) == SQL_ERROR)
                 {
                     invalidNameReason = "Internal entity name query failed.";
                 }
-                else if (sql->NumRows() != 0)
+                else if (_sql->NumRows() != 0)
                 {
                     invalidNameReason = "Name already in use.";
                 }
@@ -239,11 +239,11 @@ void view_session::read_func()
                         ") "
                         "SELECT * FROM results WHERE REPLACE(REPLACE(UPPER(`name`), '-', ''), '_', '') LIKE REPLACE(REPLACE(UPPER('%s'), '-', ''), '_', '');";
 
-                    if (sql->Query(query, nameStr) == SQL_ERROR)
+                    if (_sql->Query(query, nameStr) == SQL_ERROR)
                     {
                         invalidNameReason = "Internal entity name query failed";
                     }
-                    else if (sql->NumRows() != 0)
+                    else if (_sql->NumRows() != 0)
                     {
                         invalidNameReason = "Name already in use.";
                     }
