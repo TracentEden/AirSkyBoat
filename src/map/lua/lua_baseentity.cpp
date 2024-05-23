@@ -4731,6 +4731,27 @@ int8 CLuaBaseEntity::getShieldSize()
 }
 
 /************************************************************************
+ *  Function: getShieldDefense()
+ *  Purpose : Return the defense of the equipped shield
+ *  Example : player:getShieldDefense()
+ *  Notes   : Returns 0 if player does not have shield equipped
+ ************************************************************************/
+
+int16 CLuaBaseEntity::getShieldDefense()
+{
+    if (m_PBaseEntity->objtype == TYPE_PC)
+    {
+        return static_cast<CCharEntity*>(m_PBaseEntity)->getShieldDefense();
+    }
+    else
+    {
+        ShowWarning("Entity is not a Player: (%s).", m_PBaseEntity->getName());
+    }
+
+    return 0;
+}
+
+/************************************************************************
  *  Function: addGearSetMod()
  *  Purpose : Need to research functionality more to provide description
  *  Example : player:addGearSetMod(setId, modId, modValue)
@@ -5934,8 +5955,10 @@ void CLuaBaseEntity::changeJob(uint8 newJob)
 
         PChar->resetPetZoningInfo();
 
+        charutils::RemoveAllEquipMods(PChar);
         PChar->jobs.unlocked |= (1 << newJob);
         PChar->SetMJob(newJob);
+        charutils::ApplyAllEquipMods(PChar);
 
         if (newJob == JOB_BLU)
         {
@@ -6228,10 +6251,12 @@ void CLuaBaseEntity::setLevel(uint8 level)
 
     if (auto* PChar = dynamic_cast<CCharEntity*>(m_PBaseEntity))
     {
+        charutils::RemoveAllEquipMods(PChar);
         PChar->SetMLevel(level);
         PChar->jobs.job[PChar->GetMJob()] = level;
         PChar->SetSLevel(PChar->jobs.job[PChar->GetSJob()]);
         PChar->jobs.exp[PChar->GetMJob()] = charutils::GetExpNEXTLevel(PChar->jobs.job[PChar->GetMJob()]) - 1;
+        charutils::ApplyAllEquipMods(PChar);
 
         charutils::SetStyleLock(PChar, false);
         blueutils::ValidateBlueSpells(PChar);
@@ -17622,6 +17647,7 @@ void CLuaBaseEntity::Register()
     SOL_REGISTER("unlockEquipSlot", CLuaBaseEntity::unlockEquipSlot);
 
     SOL_REGISTER("getShieldSize", CLuaBaseEntity::getShieldSize);
+    SOL_REGISTER("getShieldDefense", CLuaBaseEntity::getShieldDefense);
 
     SOL_REGISTER("addGearSetMod", CLuaBaseEntity::addGearSetMod);
     SOL_REGISTER("clearGearSetMods", CLuaBaseEntity::clearGearSetMods);
