@@ -270,10 +270,10 @@ xi.battlefield.id =
     DESIRES_OF_EMPTINESS                       = 864, -- Converted
     PULLING_THE_PLUG                           = 865,
     EMPTY_ASPIRATIONS                          = 866,
-    STORMS_OF_FATE                             = 896,
+    STORMS_OF_FATE                             = 896, -- Converted
     WYRMKING_DESCENDS                          = 897,
     OURYU_COMETH                               = 928,
-    ANCIENT_VOWS                               = 960,
+    ANCIENT_VOWS                               = 960, -- Converted
     SAVAGE                                     = 961,
     FIRE_IN_THE_SKY                            = 962,
     BAD_SEED                                   = 963,
@@ -290,17 +290,17 @@ xi.battlefield.id =
     COMPLIMENTS_TO_THE_CHEF                    = 1089,
     PUPPETMASTER_BLUES                         = 1090,
     BREAKING_THE_BONDS_OF_FATE                 = 1091,
-    LEGACY_OF_THE_LOST                         = 1092,
+    LEGACY_OF_THE_LOST                         = 1092, -- Converted
     TOUGH_NUT_TO_CRACK                         = 1120,
     HAPPY_CASTER                               = 1121,
-    OMENS                                      = 1122,
+    OMENS                                      = 1122, -- Converted
     ACHIEVING_TRUE_POWER                       = 1123,
-    SHIELD_OF_DIPLOMACY                        = 1124,
+    SHIELD_OF_DIPLOMACY                        = 1124, -- Converted
     MAKING_A_MOCKERY                           = 1152,
     SHADOWS_OF_THE_MIND                        = 1153,
     BEAST_WITHIN                               = 1154,
     MOMENT_OF_TRUTH                            = 1155,
-    PUPPET_IN_PERIL                            = 1156,
+    PUPPET_IN_PERIL                            = 1156, -- Converted
     RIDER_COMETH                               = 1184,
     NW_APOLLYON                                = 1290, -- Converted
     SW_APOLLYON                                = 1291, -- Converted
@@ -320,7 +320,7 @@ xi.battlefield.id =
     CENTRAL_TEMENOS_3RD_FLOOR                  = 1305, -- Converted
     CENTRAL_TEMENOS_4TH_FLOOR                  = 1306, -- Converted
     CENTRAL_TEMENOS_4TH_FLOOR_II               = 1307, -- Converted
-    PURPLE_THE_NEW_BLACK                       = 2721,
+    PURPLE_THE_NEW_BLACK                       = 2721, -- Converted
 }
 
 xi.battlefield.itemUses =
@@ -412,6 +412,7 @@ function Battlefield:new(data)
     obj.lossEventParams  = data.lossEventParams or {}
     obj.armouryCrates    = data.armouryCrates or false
     obj.experimental     = data.experimental or false
+    obj.allowedAreas     = data.allowedAreas
 
     obj.sections = { { [obj.zoneId] = {} } }
     obj.groups   = {}
@@ -748,11 +749,37 @@ function Battlefield.redirectEventUpdate(player, csid, option, npc)
     end
 end
 
+-- NOTE: Return values from this function impact if the server will honor update position
+-- requests or not.  The client will request each area, and so long as we return 0, it
+-- will still send the appropriate position packet, but not change the values for the player.
+
 function Battlefield:onEntryEventUpdate(player, csid, option, npc)
     local clearTime = 1
     local name      = 'Meme'
     local partySize = 1
     local area      = self.area or (player:getLocalVar('[battlefield]area') + 1)
+
+    -- NOTE: 'area' is used when there are not multiple arenas present, and cannot be used
+    -- if there are indeed multiple areas, but the implementation is partial.  allowedAreas
+    -- is used for this purpose, and additional logic on increment request below.  Setting area
+    -- for this purpose will cause issues with mob spawning if the implementation has placeholder
+    -- areas!  This should be used sparingly and removed upon proper captures for BCNM areas, as
+    -- this bypasses all registration logic if the battlefield area is flagged as disabled.
+
+    if
+        self.allowedAreas and
+        not self.allowedAreas[area]
+    then
+        if area < 3 then
+            player:setLocalVar('[battlefield]area', area)
+        else
+            player:updateEvent(xi.battlefield.returnCode.WAIT)
+        end
+
+        -- TODO: Remove the localVar when issue with function return is resolved
+        player:setLocalVar('noPosUpdate', 1)
+        return 0
+    end
 
     if self.area then
         area = self.area
@@ -766,12 +793,13 @@ function Battlefield:onEntryEventUpdate(player, csid, option, npc)
             if area < 3 then
                 player:setLocalVar('[battlefield]area', area)
             else
-                result = xi.battlefield.returnCode.WAIT
-                player:updateEvent(result)
+                player:updateEvent(xi.battlefield.returnCode.WAIT)
             end
         end
 
-        return false
+        -- TODO: Remove the localVar when issue with function return is resolved
+        player:setLocalVar('noPosUpdate', 1)
+        return 0
     end
 
     -- Only allow entrance if battlefield is open and player has battlefield effect, witch can be lost mid battlefield selection.
@@ -823,7 +851,7 @@ function Battlefield:onEntryEventUpdate(player, csid, option, npc)
     player:updateEvent(result, self.index, autoSkipCS, clearTime, partySize, self:checkSkipCutscene(player))
     player:updateEventString(name)
 
-    return status < xi.battlefield.status.LOCKED and result < xi.battlefield.returnCode.LOCKED
+    return (status < xi.battlefield.status.LOCKED and result < xi.battlefield.returnCode.LOCKED) and 1 or 0
 end
 
 function Battlefield.redirectEventCall(eventName, player, csid, option)
@@ -887,6 +915,11 @@ end
 function Battlefield:onEventFinishBattlefield(player, csid, option, npc)
 end
 
+-- Override this function if necessary to perform additional steps in battlefield
+-- initialise.
+function Battlefield:setupBattlefield(battlefield)
+end
+
 function Battlefield:onBattlefieldInitialise(battlefield)
     if self.loot and #self.loot > 0 then
         battlefield:setLocalVar('loot', 1)
@@ -907,6 +940,8 @@ function Battlefield:onBattlefieldInitialise(battlefield)
     for mobId, path in pairs(self.paths) do
         GetMobByID(mobId):pathThrough(path, xi.path.flag.PATROL)
     end
+
+    self:setupBattlefield(battlefield)
 end
 
 function Battlefield:onBattlefieldTick(battlefield, tick)
@@ -974,6 +1009,9 @@ function Battlefield:onBattlefieldStatusChange(battlefield, status)
             end
         end
     end
+end
+
+function Battlefield:battlefieldEntry(player, battlefield)
 end
 
 function Battlefield:onBattlefieldEnter(player, battlefield)
@@ -1057,6 +1095,8 @@ function Battlefield:onBattlefieldEnter(player, battlefield)
     if self.experimental then
         player:printToPlayer('This battlefield has been marked as experimental.  Enemy levels have increased!', xi.msg.channel.NS_SHOUT)
     end
+
+    self:battlefieldEntry(player, battlefield)
 end
 
 function Battlefield:onBattlefieldDestroy(battlefield)
