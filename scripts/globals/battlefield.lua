@@ -125,6 +125,8 @@ xi.battlefield.id =
     KINDERGARTEN_CAP                           = 18,
     LAST_ORC_SHUNNED_HERO                      = 19,
     BEYOND_INFINITY_HORLAIS_PEAK               = 20,  -- Converted
+    AMAN_TROVE_MARS_HORLAIS_PEAK               = 24,  -- Incomplete
+    AMAN_TROVE_VENUS_HORLAIS_PEAK              = 25,  -- Incomplete
     SAVE_THE_CHILDREN                          = 32,  -- Converted
     HOLY_CREST                                 = 33,  -- Converted
     WINGS_OF_FURY                              = 34,  -- Converted
@@ -183,7 +185,7 @@ xi.battlefield.id =
     WHERE_TWO_PATHS_CONVERGE                   = 161,
     KINDRED_SPIRITS                            = 162,
     SURVIVAL_OF_THE_WISEST                     = 163,
-    SMASH_A_MALEVOLENT_MENACE                  = 164,
+    SMASH_A_MALEVOLENT_MENACE                  = 164, -- Experimental
     THROUGH_THE_QUICKSAND_CAVES                = 192, -- Converted
     LEGION_XI_COMITATENSIS                     = 193, -- Converted
     SHATTERING_STARS_SAM                       = 194, -- Converted
@@ -192,7 +194,7 @@ xi.battlefield.id =
     CACTUAR_SUAVE                              = 197,
     EYE_OF_THE_STORM                           = 198, -- Converted
     SCARLET_KING                               = 199,
-    CAT_BURGLAR_BARES_FANGS                    = 200,
+    CAT_BURGLAR_BARES_FANGS                    = 200, -- Experimental
     DRAGON_SCALES                              = 201,
     MOONLIT_PATH                               = 224, -- Converted
     MOON_READING                               = 225, -- Converted
@@ -432,6 +434,7 @@ function Battlefield:new(data)
     obj.grantXP          = data.grantXP
     obj.levelCap         = data.levelCap or 0
     obj.allowSubjob      = (data.allowSubjob == nil or data.allowSubjob) or false
+    obj.allowTrusts      = data.allowTrusts and data.allowTrusts or false
     obj.hasWipeGrace     = (data.hasWipeGrace == nil or data.hasWipeGrace) or false
     obj.isMission        = data.isMission and data.isMission or false
     obj.canLoseExp       = (data.canLoseExp == nil or data.canLoseExp) or false
