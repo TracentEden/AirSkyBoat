@@ -108,15 +108,14 @@ enum class Mod
 
     RATTP = 66, // % Ranged Attack
 
-    EVA             = 68,  // Evasion
-    RDEF            = 69,  // Ranged Defense
-    REVA            = 70,  // Ranged Evasion
-    MPHEAL          = 71,  // MP Recovered while healing
-    HPHEAL          = 72,  // HP Recovered while healing
-    STORETP         = 73,  // Increases the rate at which TP is gained
-    TACTICAL_PARRY  = 486, // Tactical Parry Tp Bonus
-    MAG_BURST_BONUS = 487, // Magic Burst Bonus Modifier (percent)
-    INHIBIT_TP      = 488, // Inhibits TP Gain (percent)
+    EVA            = 68,  // Evasion
+    RDEF           = 69,  // Ranged Defense
+    REVA           = 70,  // Ranged Evasion
+    MPHEAL         = 71,  // MP Recovered while healing
+    HPHEAL         = 72,  // HP Recovered while healing
+    STORETP        = 73,  // Increases the rate at which TP is gained
+    TACTICAL_PARRY = 486, // Tactical Parry Tp Bonus
+    INHIBIT_TP     = 488, // Inhibits TP Gain (percent)
 
     // Working Skills (weapon combat skills)
     // These are NOT item Level skill, they are skill in your status menu. iLvl "skill" happens in item_weapon.sql
@@ -189,18 +188,20 @@ enum class Mod
     FISHING_SKILL_GAIN    = 155, // food for fishing skill ups
 
     // Damage - 10000 base, 375 = 3.75%
-    DMG         = 160, // Damage Taken %
-    DMGPHYS     = 161, // Physical Damage Taken %
-    DMGPHYS_II  = 190, // Physical Damage Taken II % (Burtgang)
-    UDMGPHYS    = 387, // Uncapped Damage Multipliers
-    DMGBREATH   = 162, // Breath Damage Taken %
-    UDMGBREATH  = 388, // Used in sentinel, invincible, physical shield etc
-    DMGMAGIC    = 163, // Magic Damage Taken %
-    DMGMAGIC_II = 831, // Magic Damage Taken II % (Aegis)
-    UDMGMAGIC   = 389,
-    DMGRANGE    = 164, // Range Damage Taken %
-    UDMGRANGE   = 390,
-    DMG_AOE     = 158, // Damage Taken % when not main target of an AoE action. (Ex: Locus Mobs)
+    DMG                     = 160, // Damage Taken %
+    DMGPHYS                 = 161, // Physical Damage Taken %
+    DMGPHYS_II              = 190, // Physical Damage Taken II % (Burtgang)
+    UDMGPHYS                = 387, // Uncapped Damage Multipliers
+    DMGBREATH               = 162, // Breath Damage Taken %
+    UDMGBREATH              = 388, // Used in sentinel, invincible, physical shield etc
+    DMGMAGIC                = 163, // Magic Damage Taken %
+    DMGMAGIC_II             = 831, // Magic Damage Taken II % (Aegis)
+    UDMGMAGIC               = 389,
+    DMGRANGE                = 164, // Range Damage Taken %
+    UDMGRANGE               = 390,
+    DMG_AOE                 = 158, // Damage Taken % when not main target of an AoE action. (Ex: Locus Mobs)
+    RECEIVED_DAMAGE_CAP     = 221, // Caps the damage taken recieved by the attacker
+    RECEIVED_DAMAGE_VARIANT = 222, // The variance that you want the damage cap to changed by. Ex: If you want the damage to be from 90-100 instead of a flat 100 you can set this to 10. It will random the value between 90-100 if the damage is above 100.
 
     // Specific Damage Taken vs physical damage type
     // Value is stored as a percentage of damage reduction (to within 1000)
@@ -1011,14 +1012,16 @@ enum class Mod
     DAMAGE_LIMIT  = 1080, // Damage Limit increase, found on some traits. It's a flat value added to max pDIF (maxpDIF + DL/100) https://www.bg-wiki.com/ffxi/Damage_Limit%2B
     DAMAGE_LIMITP = 1081, // Damage Limit +% increase, found on some gear. It's a multiplier added after flat Damage Limit ((maxpDIF + DL/100)*(100 + DLP/100)/100) https://www.ffxiah.com/forum/topic/56649/physical-damage-limit/
 
+    MAGIC_BURST_BONUS_CAPPED   = 487, // Magic Burst Bonus I from gear, Ancient Magic Merits, Innin merits and Atmas. Cap at 40% bonus (1.4 multiplier)
+    MAGIC_BURST_BONUS_UNCAPPED = 274, // Magic Burst Bonus II from gear, JP Gifts, BLM JPs and Job traits. No known cap.
+
     // IF YOU ADD ANY NEW MODIFIER HERE, ADD IT IN scripts/enum/mod.lua ASWELL!
 
     // The spares take care of finding the next ID to use so long as we don't forget to list IDs that have been freed up by refactoring.
     // 570 through 825 used by WS DMG mods these are not spares.
     //
     // SPARE IDs:
-    // 221 to 222
-    // 274 to 275
+    // 275
     //
     // SPARE = 1083 and onward
 };

@@ -183,6 +183,8 @@ xi.mod =
     DMGRANGE                        = 164, -- Modifies ranged damage taken. Caps at 50%
     UDMGRANGE                       = 390, -- Uncaped.
     DMG_AOE                         = 158, -- Mob only. Damage Taken % when not main target of an AoE action. (Ex: Locus Mobs). Uncaped.
+    RECEIVED_DAMAGE_CAP             = 221, -- Caps the damage taken recieved by the attacker
+    RECEIVED_DAMAGE_VARIANT         = 222, -- The variance that you want the damage cap to changed by. Ex: If you want the damage to be from 90-100 instead of a flat 100 you can set this to 10. It will random the value between 90-100 if the damage is above 100.
     SLASH_SDT                       =  49, -- Overrides mob_resistances.sql. NOT base 10000. TODO: Change to work as all the others.
     PIERCE_SDT                      =  50, -- Overrides mob_resistances.sql. NOT base 10000. TODO: Change to work as all the others.
     IMPACT_SDT                      =  51, -- Overrides mob_resistances.sql. NOT base 10000. TODO: Change to work as all the others.
@@ -662,7 +664,6 @@ xi.mod =
     WARCRY_DURATION                 = 483, -- Warcy duration bonus from gear
     AUSPICE_EFFECT                  = 484, -- Auspice Subtle Blow Bonus
     TACTICAL_PARRY                  = 486, -- Tactical Parry TP Bonus
-    MAG_BURST_BONUS                 = 487, -- Magic Burst Bonus
     INHIBIT_TP                      = 488, -- Inhibits TP Gain (percent)
 
     GOV_CLEARS                      = 496, -- Tracks GoV page completion (for 4% bonus on rewards).
@@ -948,6 +949,9 @@ xi.mod =
 
     DAMAGE_LIMIT  = 1080, -- Damage Limit increase, found on some traits.  It's a flat value added to pDIF (maxpDIF + DL/100) https://www.bg-wiki.com/ffxi/Damage_Limit%2B
     DAMAGE_LIMITP = 1081, -- Damage Limit +% increase, found on some gear.  It's a multiplier added after flat Damage Limit ((maxpDIF + DL/100)*(100 + DLP/100)/100) https://www.ffxiah.com/forum/topic/56649/physical-damage-limit/
+
+    MAGIC_BURST_BONUS_CAPPED   = 487, -- Magic Burst Bonus I from gear, Ancient Magic Merits, Atmas. Cap at 40% bonus (1.4 multiplier)
+    MAGIC_BURST_BONUS_UNCAPPED = 274, -- Magic Burst Bonus II from gear, JP Gifts, BLM JPs and Job traits. No known cap.
 
     -- IF YOU ADD ANY NEW MODIFIER HERE, ADD IT IN src/map/modifier.h ASWELL!
 
