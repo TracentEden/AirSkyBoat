@@ -74,12 +74,12 @@ CTCPRequestPacket::~CTCPRequestPacket()
 #endif
 }
 
-uint8* CTCPRequestPacket::GetData()
+uint8* CTCPRequestPacket::getData()
 {
     return m_data;
 }
 
-int32 CTCPRequestPacket::GetSize() const
+int32 CTCPRequestPacket::getSize() const
 {
     return m_size;
 }

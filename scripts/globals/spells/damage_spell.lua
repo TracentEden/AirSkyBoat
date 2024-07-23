@@ -1214,6 +1214,8 @@ xi.spells.damage.useDamageSpell = function(caster, target, spell)
 
     -- Handle final adjustments. Most are located in core. TODO: Decide if we want core handling this.
     else
+        -- for Crustacean conundrum however actual retail mechanism is unknown
+        -- so cannot go on LSB for now (so consider era+ as also used for HENM)
         -- Modifier that causes mob to take either 0 or 1 damage.
         if target:getLocalVar("DAMAGE_NULL") == 1 then
             finalDamage = finalDamage % 2

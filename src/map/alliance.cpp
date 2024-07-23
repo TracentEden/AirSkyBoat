@@ -142,12 +142,6 @@ uint32 CAlliance::loadPartyCount() const
 
 void CAlliance::removeParty(CParty* party)
 {
-    // Make sure we're not trying to delete a nullptr party
-    if (party == nullptr)
-    {
-        return;
-    }
-
     // if main party then pass alliance lead to the next (d/c fix)
     if (this->getMainParty() == party)
     {

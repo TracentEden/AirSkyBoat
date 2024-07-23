@@ -47,6 +47,7 @@
 #include "utils/battleutils.h"
 #include "utils/petutils.h"
 #include "utils/puppetutils.h"
+#include "utils/zoneutils.h"
 #include "weapon_skill.h"
 
 CBattleEntity::CBattleEntity()
@@ -679,6 +680,8 @@ int32 CBattleEntity::takeDamage(int32 amount, CBattleEntity* attacker /* = nullp
 {
     TracyZoneScoped;
 
+    // for Crustacean conundrum however actual retail mechanism is unknown
+    // so cannot go on LSB for now (so consider era+ as also used for HENM)
     if (this->GetLocalVar("DAMAGE_NULL") == 1)
     {
         amount %= 2;
@@ -774,6 +777,7 @@ uint16 CBattleEntity::ATT(SLOTTYPE slot)
     int32 ATT    = 8 + m_modStat[Mod::ATT];
     auto  ATTP   = m_modStat[Mod::ATTP];
     auto* weapon = dynamic_cast<CItemWeapon*>(m_Weapons[slot]);
+    // these are era specific values and thus do not belong on LSB
     if (weapon && weapon->isTwoHanded())
     {
         ATT += (STR() * 3) / 4;
@@ -940,6 +944,11 @@ uint16 CBattleEntity::ACC(uint8 attackNumber, int8 offsetAccuracy)
                     }
                 }
             }
+            else if (PMainWeapon && PMainWeapon->isHandToHand())
+            {
+                iLvlSkill = PMainWeapon->getILvlSkill();
+                skill     = SKILL_HAND_TO_HAND;
+            }
         }
         else if (attackNumber == 2)
         {
@@ -958,9 +967,12 @@ uint16 CBattleEntity::ACC(uint8 attackNumber, int8 offsetAccuracy)
         }
         else
         {
+            // this is era specific value and thus does not belong on LSB
             ACC += (int16)(DEX() * 0.5);
         }
         ACC = (ACC + m_modStat[Mod::ACC] + offsetAccuracy);
+        // Enlight acc might be era accurate (need to check)
+        // it is not era+ accurate
         auto* PChar = dynamic_cast<CCharEntity*>(this);
         if (PChar)
         {
@@ -976,12 +988,16 @@ uint16 CBattleEntity::ACC(uint8 attackNumber, int8 offsetAccuracy)
         ACC       = (ACC > 200 ? (int16)(((ACC - 200) * 0.9) + 200) : ACC);
         ACC += (int16)(DEX() * 0.5);
         ACC += m_modStat[Mod::ACC] + offsetAccuracy;
+        // Enlight acc might be era accurate (need to check)
+        // it is not era+ accurate
         ACC = ACC + std::min<int16>((ACC * m_modStat[Mod::FOOD_ACCP] / 100), m_modStat[Mod::FOOD_ACC_CAP]);
         return std::max<int16>(0, ACC);
     }
     else
     {
         int16 ACC = m_modStat[Mod::ACC];
+        // Enlight acc might be era accurate (need to check)
+        // it is not era+ accurate
         ACC = ACC + std::min<int16>((ACC * m_modStat[Mod::FOOD_ACCP] / 100), m_modStat[Mod::FOOD_ACC_CAP]) + DEX() / 2; // Account for food mods here for Snatch Morsel
         return std::max<int16>(0, ACC);
     }
@@ -1603,7 +1619,7 @@ bool CBattleEntity::ValidTarget(CBattleEntity* PInitiator, uint16 targetFlags)
 bool CBattleEntity::CanUseSpell(CSpell* PSpell)
 {
     TracyZoneScoped;
-    return spell::CanUseSpell(this, PSpell);
+    return spell::CanUseSpell(this, PSpell) && !PRecastContainer->Has(RECAST_MAGIC, static_cast<uint16>(PSpell->getID()));
 }
 
 void CBattleEntity::Spawn()

@@ -20,6 +20,7 @@ along with this program.  If not, see http://www.gnu.org/licenses/
 */
 #include <cstring>
 
+#include "common/database.h"
 #include "common/logging.h"
 #include "common/mmo.h"
 #include "common/settings.h"
@@ -29,6 +30,11 @@ along with this program.  If not, see http://www.gnu.org/licenses/
 
 #include "data_loader.h"
 #include "search.h"
+
+namespace
+{
+    uint8 JOB_MON = 23;
+} // namespace
 
 CDataLoader::CDataLoader()
 : sql(std::make_unique<SqlConnection>())
@@ -45,7 +51,7 @@ CDataLoader::~CDataLoader()
  *                                                                       *
  ************************************************************************/
 
-std::vector<ahHistory*> CDataLoader::GetAHItemHystory(uint16 ItemID, bool stack)
+std::vector<ahHistory*> CDataLoader::GetAHItemHistory(uint16 ItemID, bool stack)
 {
     std::vector<ahHistory*> HistoryList;
 
@@ -55,21 +61,21 @@ std::vector<ahHistory*> CDataLoader::GetAHItemHystory(uint16 ItemID, bool stack)
                            "ORDER BY sell_date DESC "
                            "LIMIT 10";
 
-    int32 ret = _sql->Query(fmtQuery, ItemID, stack);
+    auto rset = db::query(fmt::sprintf(fmtQuery, ItemID, stack));
 
-    if (ret != SQL_ERROR && _sql->NumRows() != 0)
+    if (rset && rset->rowsCount())
     {
-        while (_sql->NextRow() == SQL_SUCCESS)
+        while (rset->next())
         {
             ahHistory* PAHHistory = new ahHistory;
 
-            PAHHistory->Price = _sql->GetUIntData(0);
-            PAHHistory->Data  = _sql->GetUIntData(1);
+            PAHHistory->Price = rset->getUInt("sale");
+            PAHHistory->Data  = rset->getUInt("sell_date");
 
-            PAHHistory->Name1 = _sql->GetStringData(2);
-            PAHHistory->Name2 = _sql->GetStringData(3);
+            PAHHistory->Name1 = rset->getString("seller_name");
+            PAHHistory->Name2 = rset->getString("buyer_name");
 
-            HistoryList.push_back(PAHHistory);
+            HistoryList.emplace_back(PAHHistory);
         }
         std::reverse(HistoryList.begin(), HistoryList.end());
     }
@@ -103,22 +109,22 @@ std::vector<ahItem*> CDataLoader::GetAHItemsToCategory(uint8 AHCategoryID, const
 
     if (ret != SQL_ERROR && _sql->NumRows() != 0)
     {
-        while (_sql->NextRow() == SQL_SUCCESS)
+        while (rset->next())
         {
             ahItem* PAHItem = new ahItem;
 
-            PAHItem->ItemID = _sql->GetIntData(0);
+            PAHItem->ItemID = rset->getInt("itemid");
 
-            PAHItem->SingleAmount = _sql->GetIntData(2);
-            PAHItem->StackAmount  = _sql->GetIntData(3);
+            PAHItem->SingleAmount = rset->getInt("COUNT(*)-SUM(stack)");
+            PAHItem->StackAmount  = rset->getInt("SUM(stack)");
             PAHItem->Category     = AHCategoryID;
 
-            if (_sql->GetIntData(1) == 1)
+            if (rset->getInt("stackSize") == 1)
             {
                 PAHItem->StackAmount = -1;
             }
 
-            ItemList.push_back(PAHItem);
+            ItemList.emplace_back(PAHItem);
         }
     }
 
@@ -204,12 +210,14 @@ std::list<SearchEntity*> CDataLoader::GetPlayersList(search_req sr, int* count)
 {
     std::list<SearchEntity*> PlayersList;
     std::string              filterQry;
+
     if (sr.jobid > 0 && sr.jobid < 21)
     {
         filterQry.append(" AND ");
         filterQry.append(" mjob = ");
         filterQry.append(std::to_string(static_cast<unsigned long long>(sr.jobid)));
     }
+
     if (sr.zoneid[0] > 0)
     {
         std::string zoneList;

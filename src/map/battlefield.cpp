@@ -591,13 +591,6 @@ bool CBattlefield::RemoveEntity(CBaseEntity* PEntity, uint8 leavecode)
             mob->PEnmityContainer->Clear(PChar->id);
         };
 
-        // Remove the player's pet as well
-        if (PChar->PPet)
-        {
-            PChar->PPet->StatusEffectContainer->DelStatusEffectsByFlag(EFFECTFLAG_CONFRONTATION, true);
-            PChar->PPet->StatusEffectContainer->DelStatusEffect(EFFECT_LEVEL_RESTRICTION);
-        }
-
         ForEachRequiredEnemy(func);
         ForEachAdditionalEnemy(func);
     }

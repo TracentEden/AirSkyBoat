@@ -260,7 +260,8 @@ public:
     void lockEquipSlot(uint8 slot);
     void unlockEquipSlot(uint8 slot);
 
-    int8 getShieldSize();
+    int8  getShieldSize();
+    int16 getShieldDefense();
 
     bool hasGearSetMod(uint8 modNameId);
     void addGearSetMod(uint8 modNameId, Mod modId, uint16 modValue);
@@ -408,6 +409,10 @@ public:
     void   toggleReceivedDeedRewards();
     void   setClaimedDeed(uint16 deedBitNum);
     void   resetClaimedDeeds();
+
+    void setUniqueEvent(uint16 uniqueEventId);
+    void delUniqueEvent(uint16 uniqueEventId);
+    bool hasCompletedUniqueEvent(uint16 uniqueEventId);
 
     void  addAssault(uint8 missionID);
     void  delAssault(uint8 missionID);
@@ -713,12 +718,17 @@ public:
     void  handleAfflatusMiseryDamage(double damage);
 
     bool   isWeaponTwoHanded();
+
+    // these are used to get rates for lua land calculations like weaponkills and mobskills
+    // Tracent working on LSB PR that would do the calculations directly in lua rather than
+    // calling down
     uint8  getGuardRate(CLuaBaseEntity* PLuaBaseEntity);                                                                                    // Returns the guard rate for an attack.
     uint8  getBlockRate(CLuaBaseEntity* PLuaBaseEntity);                                                                                    // Returns the block rate for an attack.
-    uint8  getParryRate(CLuaBaseEntity* PLuaBaseEntity);                                                                                    // Returns the parry rate for an attack.
+    uint8  getParryRate(CLuaBaseEntity* PLuaBaseEntity);
+    uint8  getShieldAbsorptionRate();
+                                                                                                       // Returns the shield absorption for an attack.                                                                                    // Returns the parry rate for an attack.
     uint8  getCHitRate(CLuaBaseEntity* PLuaBaseEntity, uint8 attackNum = 0, int8 accBonus = 0);                                             // Returns the hit rate for an attack. Defaults to main weapon.
     uint8  getCRangedHitRate(CLuaBaseEntity* PLuaBaseEntity, int8 accBonus = 0);                                                            // Returns the ranged hit rate for an attack.
-    uint8  getShieldAbsorptionRate();                                                                                                       // Returns the shield absorption for an attack.
     
     uint16 getWeaponDmg();                  // gets the current equipped weapons' DMG rating
     uint16 getMobWeaponDmg(uint8 slot = 0);                                                                                                 // gets the Mob's current equipped weapons' DMG rating
@@ -791,6 +801,8 @@ public:
     uint8 getActiveManeuverCount();
     void  removeOldestManeuver();
     void  removeAllManeuvers();
+    auto  getAttachment(uint8 slotId) -> std::optional<CLuaItem>;
+    auto  getAttachments() -> sol::table;
     void  updateAttachments();
     void  reduceBurden(float percentReduction, sol::object const& intReductionObj);
     bool  isExceedingElementalCapacity();
@@ -874,8 +886,9 @@ public:
     void castSpell(sol::object const& spell, sol::object const& entity); // forces a mob to cast a spell (parameter = spell ID, otherwise picks a spell from its list)
     void useJobAbility(uint16 skillID, sol::object const& pet);          // forces a job ability use (players/pets only)
     void useMobAbility(sol::variadic_args va);                           // forces a mob to use a mobability (parameter = skill ID)
-    int32 triggerDrawIn(CLuaBaseEntity* PMobEntity, sol::object const& includePt, sol::object const& drawRange, sol::object const& maxReach, sol::object const& target, sol::object const& incDeadAndMount); // forces a mob to draw in target    
+    auto getAbilityDistance(uint16 skillID) -> float;                    // Returns the specified distance for mob skill
     bool hasTPMoves();
+    void drawIn(sol::variadic_args va); // Forces a mob to draw-in the specified target, or its current target with no args
 
     void weaknessTrigger(uint8 level);
     void restoreFromChest(CLuaBaseEntity* PLuaBaseEntity, uint32 restoreType);
@@ -944,6 +957,11 @@ public:
 
     void addPacketMod(uint16 packetId, uint16 offset, uint8 value);
     void clearPacketMods();
+
+    bool operator==(const CLuaBaseEntity& other) const
+    {
+        return this->m_PBaseEntity == other.m_PBaseEntity;
+    }
 
     static void Register();
 };

@@ -1024,8 +1024,7 @@ bool CCharEntity::ValidTarget(CBattleEntity* PInitiator, uint16 targetFlags)
 bool CCharEntity::CanUseSpell(CSpell* PSpell)
 {
     TracyZoneScoped;
-    return charutils::hasSpell(this, static_cast<uint16>(PSpell->getID())) && CBattleEntity::CanUseSpell(PSpell) &&
-           !PRecastContainer->Has(RECAST_MAGIC, static_cast<uint16>(PSpell->getID()));
+    return charutils::hasSpell(this, static_cast<uint16>(PSpell->getID())) && CBattleEntity::CanUseSpell(PSpell);
 }
 
 void CCharEntity::OnChangeTarget(CBattleEntity* PNewTarget)
@@ -1060,20 +1059,12 @@ bool CCharEntity::CanAttack(CBattleEntity* PTarget, std::unique_ptr<CBasicPacket
 {
     TracyZoneScoped;
 
-    auto modelRadius = PTarget->m_ModelRadius;
-
     if (PTarget->PAI->IsUntargetable())
     {
         return false;
     }
 
-    if (auto PMob = dynamic_cast<CMobEntity*>(PTarget))
-    {
-        modelRadius = PMob->m_Type & MOBTYPE_NORMAL ? modelRadius - 1 : modelRadius;
-    }
-
     float dist = distance(loc.p, PTarget->loc.p);
-    float distNoY = distance(loc.p, PTarget->loc.p, true);
 
     if (!IsMobOwner(PTarget))
     {
@@ -1093,7 +1084,7 @@ bool CCharEntity::CanAttack(CBattleEntity* PTarget, std::unique_ptr<CBasicPacket
         errMsg = std::make_unique<CMessageBasicPacket>(this, PTarget, 0, 0, MSGBASIC_UNABLE_TO_SEE_TARG);
         return false;
     }
-    else if (distNoY - modelRadius > GetMeleeRange() || abs(loc.p.y - PTarget->loc.p.y) > 3)
+    else if ((dist - PTarget->m_ModelRadius) > GetMeleeRange())
     {
         errMsg = std::make_unique<CMessageBasicPacket>(this, PTarget, 0, 0, MSGBASIC_TARG_OUT_OF_RANGE);
         return false;
@@ -1130,8 +1121,6 @@ void CCharEntity::OnCastFinished(CMagicState& state, action_t& action)
     }
 
     CBattleEntity::OnCastFinished(state, action);
-
-    PRecastContainer->Add(RECAST_MAGIC, static_cast<uint16>(PSpell->getID()), action.recast);
 
     for (auto&& actionList : action.actionLists)
     {
@@ -1322,11 +1311,11 @@ void CCharEntity::OnWeaponSkillFinished(CWeaponSkillState& state, action_t& acti
         // TODO: revise parameters
         if (PWeaponSkill->isAoE())
         {
-            PAI->TargetFind->findWithinArea(PBattleTarget, AOE_RADIUS::TARGET, 10);
+            PAI->TargetFind->findWithinArea(PBattleTarget, AOE_RADIUS::TARGET, 10, FINDFLAGS_NONE, TARGET_NONE);
         }
         else
         {
-            PAI->TargetFind->findSingleTarget(PBattleTarget);
+            PAI->TargetFind->findSingleTarget(PBattleTarget, FINDFLAGS_NONE, TARGET_NONE);
         }
 
         // Assumed, it's very difficult to produce this due to WS being nearly instant
@@ -2055,6 +2044,11 @@ void CCharEntity::OnRangedAttack(CRangeState& state, action_t& action)
             actionTarget.speceffect = SPECEFFECT::CRITICAL_HIT;
         }
 
+        if (slot == SLOT_RANGED)
+        {
+            auto attackType = (state.IsRapidShot()) ? PHYSICAL_ATTACK_TYPE::RAPID_SHOT : PHYSICAL_ATTACK_TYPE::RANGED;
+            totalDamage     = attackutils::CheckForDamageMultiplier(this, PItem, totalDamage, attackType, true);
+        }
         actionTarget.param =
             battleutils::TakePhysicalDamage(this, PTarget, PHYSICAL_ATTACK_TYPE::RANGED, totalDamage, false, slot, realHits, nullptr, true, true);
 

@@ -1703,84 +1703,67 @@ namespace battleutils
 
     bool TryInterruptSpell(CBattleEntity* PAttacker, CBattleEntity* PDefender, CSpell* PSpell)
     {
-        if (PDefender->objtype == TYPE_TRUST)
+        // Exceptions.
+        if (PDefender->objtype == TYPE_TRUST ||                                   // Caster is a trust.
+            PDefender->StatusEffectContainer->HasStatusEffect(EFFECT_MANAFONT) || // Caster has Manafont.
+            (SKILLTYPE)PSpell->getSkillType() == SKILL_SINGING)                   // Spell is a song.
         {
             return false;
         }
 
-        // cannot interrupt when manafont is active
-        if (PDefender->StatusEffectContainer->HasStatusEffect(EFFECT_MANAFONT))
+        // Calculate level ratio.
+        int   baseRate   = (PDefender->objtype == TYPE_MOB) ? 5 : 50;
+        float levelRatio = (float)(baseRate + PAttacker->GetMLevel() - PDefender->GetMLevel()) / 100.0f;
+
+        if (levelRatio < 0.01)
         {
-            return false;
+            levelRatio = 0.01f;
         }
 
-        // Songs cannot be interrupted by physical attacks.
-        if ((SKILLTYPE)PSpell->getSkillType() == SKILL_SINGING)
-        {
-            return false;
-        }
-
-        // Reasonable assumption for the time being.
-        int base = 40;
-
-        int diff = PAttacker->GetMLevel() - PDefender->GetMLevel();
-
-        if (PDefender->objtype == TYPE_MOB)
-        {
-            base = 5;
-        }
-
-        float check          = (float)(base + diff);
+        // Calculate skill ratio.
+        float skillRatio     = 1.0f;
         uint8 meritReduction = 0;
 
         if (PDefender->objtype == TYPE_PC)
-        { // Check player's skill.
-            // For mobs, we can assume their skill is capped at their level, so this term is 1 anyway.
-            CCharEntity* PChar = (CCharEntity*)PDefender;
-            float        skill = PChar->GetSkill(PSpell->getSkillType());
-            if (skill <= 0)
+        {
+            CCharEntity* PChar      = (CCharEntity*)PDefender;
+            float        skillCap   = GetMaxSkill((SKILLTYPE)PSpell->getSkillType(), PChar->GetMJob(), PChar->GetMLevel());
+            float        skillLevel = PChar->GetSkill(PSpell->getSkillType());
+
+            // If skill cap is 0, player may be using a spell from their subjob.
+            if (skillCap == 0)
             {
-                skill = 1;
+                skillCap = GetMaxSkill((SKILLTYPE)PSpell->getSkillType(), PChar->GetSJob(), PChar->GetMLevel()); // This may need to be re-investigated in the future.
             }
 
-            float cap = GetMaxSkill((SKILLTYPE)PSpell->getSkillType(), PChar->GetMJob(), PChar->GetMLevel());
-
-            // if cap is 0 then player is using a spell from their subjob
-            if (cap == 0)
+            // If skill level is 0, set ratio to 10.
+            if (skillLevel <= 0)
             {
-                cap = GetMaxSkill((SKILLTYPE)PSpell->getSkillType(), PChar->GetSJob(),
-                                  PChar->GetMLevel()); // This may need to be re-investigated in the future...
+                skillRatio = 10.0f;
+            }
+            else
+            {
+                skillRatio = skillCap / skillLevel;
             }
 
-            if (skill > cap)
-            {
-                skill = cap;
-            }
-
-            float ratio = cap / skill;
-            check *= ratio;
-
-            // prevent from spilling over 100 - resulting in players never being interupted
-            if (check > 100)
-            {
-                check = 100;
-            }
-
-            // apply any merit reduction
+            // Fetch player-only interruption rate reduction from merits.
             meritReduction = ((CCharEntity*)PDefender)->PMeritPoints->GetMeritValue(MERIT_SPELL_INTERUPTION_RATE, (CCharEntity*)PDefender);
         }
 
-        float interruptRate = ((100.0f - (meritReduction + (float)PDefender->getMod(Mod::SPELLINTERRUPT))) / 100.0f);
-        check *= interruptRate;
-        uint8 chance = xirand::GetRandomNumber(100);
+        // SIRD reduces the interrupt after all the calculations are done -- as evidenced by the infamous "102% SIRD" builds.
+        // Anything less than 102% interrupt results in the ability to be interrupted.
+        // Note: the 102% is probably an x/256 x/1024 nonsense -- sometimes 101% works.
+        float SIRDRatio = (100.0f - meritReduction - (float)PDefender->getMod(Mod::SPELLINTERRUPT)) / 100.0f;
+        float chance    = xirand::GetRandomNumber<float>(1.0f);
 
-        // caps, always give a 1% chance of interrupt
-        if (check < 1)
-        {
-            check = 0;
-        }
+        // This are all ratios.
+        // levelRatio : 0.01 to infinity.
+        // skillRatio:  1.0 to infinity.
+        // SIRDRatio:   No limits. Can be negative. A negative value will guarantee NOT being interrupted.
+        float finalRatio = levelRatio * skillRatio * SIRDRatio; // TL;DR Higher = Worse = More chances to get interrupted.
 
-        if (chance < check)
+        // You get interrupted. Handle aquaveil.
+        if (chance < finalRatio)
         {
             return true;
         }
@@ -6147,12 +6130,6 @@ namespace battleutils
         nearEntity.y -= 1.0f;
 
         bool success = false;
-        // float drawInDistance = (float)(PMob->getMobMod(MOBMOD_DRAW_IN) > 1 ? PMob->getMobMod(MOBMOD_DRAW_IN) : PMob->GetMeleeRange() * 2);
-
-        // if (std::chrono::time_point_cast<std::chrono::seconds>(server_clock::now()).time_since_epoch().count() - PMob->GetLocalVar("DrawInTime") < 2)
-        // {
-        //     return false;
-        // }
 
         std::function<void(CBattleEntity*)> drawInFunc = [PMob, drawInRange, maximumReach, includeDeadAndMount, &nearEntity, &success](CBattleEntity* PMember)
         {
@@ -6160,10 +6137,7 @@ namespace battleutils
             if (PMob->loc.zone == PMember->loc.zone && pDistance > drawInRange && pDistance < maximumReach &&
                 PMember->status != STATUS_TYPE::CUTSCENE_ONLY &&
                 (includeDeadAndMount || (!PMember->isDead() && !PMember->isMounted())))
-            // if (PMob->loc.zone == PMember->loc.zone && dist > drawInRange && dist < maximumReach &&
-            //     PMember->status != STATUS_TYPE::STATUS_CUTSCENE_ONLY && !PMember->isDead() && !PMember->isMounted())
             {
-                // draw in!
                 if (PMob->getMobMod(MOBMOD_DRAW_IN_FRONT))
                 {
                     PMember->loc.p.x = nearEntity.x;
