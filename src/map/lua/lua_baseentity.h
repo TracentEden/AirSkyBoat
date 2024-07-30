@@ -141,6 +141,8 @@ public:
     void  continuePath();                                                          // resumes previous pathfind if it was paused
     float checkDistance(sol::variadic_args va);                                    // Check Distance and returns distance number
     void  wait(sol::object const& milliseconds);                                   // make the npc wait a number of ms and then back into roam
+    void  follow(CLuaBaseEntity* target, uint8 followType);                        // makes an npc follow or runaway from another target
+    void  unfollow();                                                              // makes an npc stop following
     // int32 WarpTo(lua_Stat* L);           // warp to the given point -- These don't exist, breaking them just in case someone uncomments
     // int32 RoamAround(lua_Stat* L);       // pick a random point to walk to
     // int32 LimitDistance(lua_Stat* L);    // limits the current path distance to given max distance
@@ -159,7 +161,7 @@ public:
     void  setWeather(uint8 weatherType); // Set Weather condition (GM COMMAND)
 
     // PC Instructions
-    void changeMusic(uint8 blockID, uint8 musicTrackID);                    // Sets the specified music Track for specified music block.
+    void changeMusic(uint16 blockID, uint16 musicTrackID);                  // Sets the specified music Track for specified music block.
     void sendMenu(uint32 menu);                                             // Displays a menu (AH,Raise,Tractor,MH etc)
     bool sendGuild(uint16 guildID, uint8 open, uint8 close, uint8 holiday); // Sends guild shop menu
     void openSendBox();                                                     // Opens send box (to deliver items)
@@ -187,6 +189,7 @@ public:
     void   updateToEntireZone(uint8 statusID, uint8 animation, sol::object const& matchTime); // Forces an update packet to update the NPC entity zone-wide
 
     void sendEntityUpdateToPlayer(CLuaBaseEntity* entityToUpdate, uint8 entityUpdate, uint8 updateMask);
+    void sendEmptyEntityUpdateToPlayer(CLuaBaseEntity* entityToUpdate);
 
     void forceRezone();
     void forceLogout();
@@ -659,7 +662,8 @@ public:
     bool   canGainStatusEffect(uint16 effect, sol::object const& powerObj);
     bool   hasStatusEffect(uint16 StatusID, sol::object const& SubType);
     uint16 hasStatusEffectByFlag(uint16 StatusID);
-    uint8  countEffect(uint16 StatusID); // Gets the number of effects of a specific type on the player
+    uint8  countEffect(uint16 StatusID);     // Gets the number of effects of a specific type on the entity
+    uint8  countEffectWithFlag(uint32 flag); // Gets the number of effects with a flag on the entity
 
     bool   delStatusEffect(uint16 StatusID, sol::object const& SubType, sol::object const& ItemSourceID); // Removes Status Effect
     void   delStatusEffectsByFlag(uint32 flag, sol::object const& silent);
@@ -709,6 +713,7 @@ public:
     uint16 getRATT();
     uint16 getILvlMacc();
     uint16 getILvlSkill();
+    uint16 getILvlParry();
     bool   isSpellAoE(uint16 spellId);
 
     int32 physicalDmgTaken(double damage, sol::variadic_args va);
@@ -777,6 +782,7 @@ public:
     auto   getMaster() -> std::optional<CLuaBaseEntity>;
     uint8  getPetElement();
     void   setPet(sol::object const& petObj);
+    uint8  getMinimumPetLevel(); // Returns the minimum level of the pet, such as level 23 for Courier Carrie or 0 if non applicable.
 
     auto getPetName() -> const std::string;
     void setPetName(uint8 pType, uint16 value, sol::object const& arg2);
@@ -825,6 +831,7 @@ public:
     bool   isNM();
 
     uint8  getModelSize();
+    void   setMeleeRange(float range);
     void   setMobFlags(uint32 flags, sol::object const& mobId); // Used to manipulate the mob's flags, such as changing size.
     uint32 getMobFlags();
 
@@ -852,7 +859,6 @@ public:
     bool getUntargetable();
     void setIsAggroable(bool isAggroable);
     bool isAggroable();
-    void setAlwaysRender(bool alwaysRender);
 
     void setDelay(uint16 delay);
     int16 getDelay();                         // return the delay value

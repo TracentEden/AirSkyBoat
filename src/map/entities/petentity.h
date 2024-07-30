@@ -75,7 +75,8 @@ public:
     virtual void      OnAbility(CAbilityState&, action_t&) override;
     virtual bool      ValidTarget(CBattleEntity* PInitiator, uint16 targetFlags) override;
     void              OnPetSkillFinished(CPetSkillState& state, action_t& action);
-
+    virtual bool      CanAttack(CBattleEntity* PTarget, std::unique_ptr<CBasicPacket>& errMsg) override;
+    // structures for elemental spirit logic
     std::vector<uint16> m_buffSpells;
     std::vector<uint16> m_offensiveSpells;
     std::vector<uint16> m_healSingleSpells;

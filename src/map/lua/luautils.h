@@ -160,10 +160,12 @@ namespace luautils
     auto GetAbility(uint16 id) -> std::optional<CLuaAbility>;
     auto GetSpell(uint16 id) -> std::optional<CLuaSpell>;
 
-    auto SpawnMob(uint32 mobid, sol::object const& arg2, sol::object const& arg3) -> std::optional<CLuaBaseEntity>; // Spawn Mob By Mob Id - NMs, BCNM...
-    void DespawnMob(uint32 mobid, sol::object const& arg2);                                                         // Despawn (Fade Out) Mob By Id
-    auto GetPlayerByName(std::string const& name) -> std::optional<CLuaBaseEntity>;
-    auto GetPlayerByID(uint32 pid) -> std::optional<CLuaBaseEntity>;
+    auto   SpawnMob(uint32 mobid, sol::object const& arg2, sol::object const& arg3) -> std::optional<CLuaBaseEntity>; // Spawn Mob By Mob Id - NMs, BCNM...
+    void   DespawnMob(uint32 mobid, sol::object const& arg2);                                                         // Despawn (Fade Out) Mob By Id
+    auto   GetPlayerByName(std::string const& name) -> std::optional<CLuaBaseEntity>;
+    auto   GetPlayerByID(uint32 pid) -> std::optional<CLuaBaseEntity>;
+    bool   PlayerHasValidSession(uint32 playerId);
+    uint32 GetPlayerIDByName(std::string const& name);
     void   SendToJailOffline(uint32 playerId, int8 cellId, float posX, float posY, float posZ, uint8 rot);
 
     uint32 GetSystemTime();
@@ -227,9 +229,8 @@ namespace luautils
     void OnTimeServerTick();
 
     int32 OnTrigger(CCharEntity* PChar, CBaseEntity* PNpc);
-    int32 OnEventUpdate(CCharEntity* PChar, uint16 eventID, uint32 result, uint16 extras); // triggered when game triggers event update during cutscene with extra parameters (battlefield)
-    int32 OnEventUpdate(CCharEntity* PChar, uint16 eventID, uint32 result);                // triggered when game triggers event update during cutscene
-    int32 OnEventUpdate(CCharEntity* PChar, std::string const& updateString);              // triggered when game triggers event update during cutscene
+    int32 OnEventUpdate(CCharEntity* PChar, uint16 eventID, uint32 result);   // triggered when game triggers event update during cutscene
+    int32 OnEventUpdate(CCharEntity* PChar, std::string const& updateString); // triggered when game triggers event update during cutscene
     int32 OnEventFinish(CCharEntity* PChar, uint16 eventID, uint32 result);
     int32 OnTrade(CCharEntity* PChar, CBaseEntity* PNpc);
 
@@ -268,6 +269,8 @@ namespace luautils
     int32 OnMobRoam(CBaseEntity* PMob);
     int32 OnMobEngage(CBaseEntity* PMob, CBaseEntity* PTarget);
     int32 OnMobDisengage(CBaseEntity* PMob);
+    int32 OnMobFollow(CBaseEntity* PMob, CBaseEntity* PTarget);
+    int32 OnMobUnfollow(CBaseEntity* PMob, CBaseEntity* PTarget);
     int32 OnMobDrawIn(CBaseEntity* PMob, CBaseEntity* PTarget);
     int32 OnMobFight(CBaseEntity* PMob, CBaseEntity* PTarget);
     int32 OnCriticalHit(CBattleEntity* PMob, CBattleEntity* PAttacker);
@@ -332,7 +335,7 @@ namespace luautils
 
     std::string GetServerMessage(uint8 language);               // Get the message to be delivered to player on first zone in of a session
     bool   CheckNMSpawnPoint(uint32 mobid);                        // Check to see if NM has extra spawn points
-    auto   GetRecentFishers() -> sol::table;                       // returns a list of recently active fishers (Fished in the last 5 minutes)
+    auto        GetRecentFishers(uint16 minutes) -> sol::table; // returns a list of recently active fishers (that fished in the last specified minutes)
 
     int32 OnAdditionalEffect(CBattleEntity* PAttacker, CBattleEntity* PDefender, actionTarget_t* Action, int32 damage);                                      // for mobs with additional effects
     int32 OnSpikesDamage(CBattleEntity* PDefender, CBattleEntity* PAttacker, actionTarget_t* Action, int32 damage);                                          // for mobs with spikes

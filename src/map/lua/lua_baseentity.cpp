@@ -16309,20 +16309,6 @@ bool CLuaBaseEntity::isAggroable()
 }
 
 /************************************************************************
- *  Function: setAlwaysRender()
- *  Purpose : Determines wheter or not an NPC will always render for the player
- *  Example : npc:setAlwaysRender(true)
- *  Notes   : This is only used in specific cases: fireworks / festival deco
- *          : or other instances where an NPC should always render in a zone.
- ************************************************************************/
-
-void CLuaBaseEntity::setAlwaysRender(bool alwaysRender)
-{
-    XI_DEBUG_BREAK_IF(m_PBaseEntity->objtype != TYPE_NPC);
-    static_cast<CNpcEntity*>(m_PBaseEntity)->m_alwaysRender = alwaysRender;
-}
-
-/************************************************************************
  *  Function: setDelay()
  *  Purpose : Override default delay settings for a Mob
  *  Example : mob:setDelay(2400)
@@ -18333,6 +18319,7 @@ void CLuaBaseEntity::Register()
     SOL_REGISTER("injectActionPacket", CLuaBaseEntity::injectActionPacket);
     SOL_REGISTER("entityVisualPacket", CLuaBaseEntity::entityVisualPacket);
     SOL_REGISTER("entityAnimationPacket", CLuaBaseEntity::entityAnimationPacket);
+    SOL_REGISTER("sendDebugPacket", CLuaBaseEntity::sendDebugPacket);
 
     SOL_REGISTER("startEvent", CLuaBaseEntity::startEvent);
     SOL_REGISTER("startCutscene", CLuaBaseEntity::startCutscene);
@@ -18384,6 +18371,8 @@ void CLuaBaseEntity::Register()
     SOL_REGISTER("continuePath", CLuaBaseEntity::continuePath);
     SOL_REGISTER("checkDistance", CLuaBaseEntity::checkDistance);
     SOL_REGISTER("wait", CLuaBaseEntity::wait);
+    SOL_REGISTER("follow", CLuaBaseEntity::follow);
+    SOL_REGISTER("unfollow", CLuaBaseEntity::unfollow);
     SOL_REGISTER("setCarefulPathing", CLuaBaseEntity::setCarefulPathing);
 
     SOL_REGISTER("openDoor", CLuaBaseEntity::openDoor);
@@ -18457,6 +18446,7 @@ void CLuaBaseEntity::Register()
     SOL_REGISTER("getItemCount", CLuaBaseEntity::getItemCount);
     SOL_REGISTER("addItem", CLuaBaseEntity::addItem);
     SOL_REGISTER("delItem", CLuaBaseEntity::delItem);
+    SOL_REGISTER("delContainerItems", CLuaBaseEntity::delContainerItems);
     SOL_REGISTER("addUsedItem", CLuaBaseEntity::addUsedItem);
     SOL_REGISTER("addTempItem", CLuaBaseEntity::addTempItem);
     SOL_REGISTER("getWornUses", CLuaBaseEntity::getWornUses);
@@ -18488,8 +18478,10 @@ void CLuaBaseEntity::Register()
     SOL_REGISTER("setEquipBlock", CLuaBaseEntity::setEquipBlock);
     SOL_REGISTER("lockEquipSlot", CLuaBaseEntity::lockEquipSlot);
     SOL_REGISTER("unlockEquipSlot", CLuaBaseEntity::unlockEquipSlot);
+    SOL_REGISTER("hasSlotEquipped", CLuaBaseEntity::hasSlotEquipped);
 
     SOL_REGISTER("getShieldSize", CLuaBaseEntity::getShieldSize);
+    SOL_REGISTER("getShieldDefense", CLuaBaseEntity::getShieldDefense);
 
     SOL_REGISTER("addGearSetMod", CLuaBaseEntity::addGearSetMod);
     SOL_REGISTER("clearGearSetMods", CLuaBaseEntity::clearGearSetMods);
@@ -18747,6 +18739,7 @@ void CLuaBaseEntity::Register()
 
     SOL_REGISTER("recalculateSkillsTable", CLuaBaseEntity::recalculateSkillsTable);
     SOL_REGISTER("recalculateAbilitiesTable", CLuaBaseEntity::recalculateAbilitiesTable);
+    SOL_REGISTER("getEntitiesInRange", CLuaBaseEntity::getEntitiesInRange);
 
     // Parties and Alliances
     SOL_REGISTER("getParty", CLuaBaseEntity::getParty);
@@ -18840,6 +18833,7 @@ void CLuaBaseEntity::Register()
 
     SOL_REGISTER("isDualWielding", CLuaBaseEntity::isDualWielding);
     SOL_REGISTER("isUsingH2H", CLuaBaseEntity::isUsingH2H);
+    SOL_REGISTER("getBaseWeaponDelay", CLuaBaseEntity::getBaseWeaponDelay);
     SOL_REGISTER("getBaseDelay", CLuaBaseEntity::getBaseDelay);
     SOL_REGISTER("getBaseRangedDelay", CLuaBaseEntity::getBaseRangedDelay);
 
@@ -18924,6 +18918,7 @@ void CLuaBaseEntity::Register()
     SOL_REGISTER("getRATT", CLuaBaseEntity::getRATT);
     SOL_REGISTER("getILvlMacc", CLuaBaseEntity::getILvlMacc);
     SOL_REGISTER("getILvlSkill", CLuaBaseEntity::getILvlSkill);
+    SOL_REGISTER("getILvlParry", CLuaBaseEntity::getILvlParry);
 
     SOL_REGISTER("isSpellAoE", CLuaBaseEntity::isSpellAoE);
 
@@ -18963,10 +18958,10 @@ void CLuaBaseEntity::Register()
     SOL_REGISTER("spawnPet", CLuaBaseEntity::spawnPet);
     SOL_REGISTER("despawnPet", CLuaBaseEntity::despawnPet);
 
-    SOL_REGISTER("hasJugPet", CLuaBaseEntity::hasJugPet);
     SOL_REGISTER("hasValidJugPetItem", CLuaBaseEntity::hasValidJugPetItem);
 
     SOL_REGISTER("hasPet", CLuaBaseEntity::hasPet);
+    SOL_REGISTER("hasJugPet", CLuaBaseEntity::hasJugPet);
     SOL_REGISTER("getPet", CLuaBaseEntity::getPet);
     SOL_REGISTER("getPetID", CLuaBaseEntity::getPetID);
     SOL_REGISTER("isAutomaton", CLuaBaseEntity::isAutomaton);
@@ -19032,6 +19027,7 @@ void CLuaBaseEntity::Register()
     SOL_REGISTER("isNM", CLuaBaseEntity::isNM);
 
     SOL_REGISTER("getModelSize", CLuaBaseEntity::getModelSize);
+    SOL_REGISTER("setMeleeRange", CLuaBaseEntity::setMeleeRange);
     SOL_REGISTER("setMobFlags", CLuaBaseEntity::setMobFlags);
     SOL_REGISTER("getMobFlags", CLuaBaseEntity::getMobFlags);
     SOL_REGISTER("setNpcFlags", CLuaBaseEntity::setNpcFlags);
@@ -19058,7 +19054,6 @@ void CLuaBaseEntity::Register()
     SOL_REGISTER("getUntargetable", CLuaBaseEntity::getUntargetable);
     SOL_REGISTER("setIsAggroable", CLuaBaseEntity::setIsAggroable);
     SOL_REGISTER("isAggroable", CLuaBaseEntity::isAggroable);
-    SOL_REGISTER("setAlwaysRender", CLuaBaseEntity::setAlwaysRender);
 
     SOL_REGISTER("setDelay", CLuaBaseEntity::setDelay);
     SOL_REGISTER("setDamage", CLuaBaseEntity::setDamage);

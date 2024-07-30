@@ -460,7 +460,7 @@ DECLARE_FORMAT_AS_UNDERLYING(SKILLCHAIN_ELEMENT);
 enum IMMUNITY : uint32
 {
     IMMUNITY_NONE        = 0x00000000,
-    IMMUNITY_SLEEP       = 0x00000001,
+    IMMUNITY_ADDLE       = 0x00000001,
     IMMUNITY_GRAVITY     = 0x00000002,
     IMMUNITY_BIND        = 0x00000004,
     IMMUNITY_STUN        = 0x00000008,
@@ -622,7 +622,7 @@ public:
 
     // Deals damage and updates the last attacker which is used when sending a player death message
     virtual int32 takeDamage(int32 amount, CBattleEntity* attacker = nullptr, ATTACK_TYPE attackType = ATTACK_TYPE::NONE,
-                             DAMAGE_TYPE damageType = DAMAGE_TYPE::NONE);
+                             DAMAGE_TYPE damageType = DAMAGE_TYPE::NONE, bool isSkillchainDamage = false);
 
     int16 getMod(Mod modID);
     int16 getMaxGearMod(Mod modID);

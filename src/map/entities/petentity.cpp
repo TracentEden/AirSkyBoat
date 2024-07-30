@@ -379,6 +379,18 @@ void CPetEntity::OnAbility(CAbilityState& state, action_t& action)
             actionTarget.param     = -value;
         }
     }
+    else // Can't target anything, just cancel the animation.
+    {
+        action.actiontype         = ACTION_MOBABILITY_INTERRUPT;
+        action.actionid           = 28787; // Some hardcoded magic for interrupts
+        actionList_t& actionList  = action.getNewActionList();
+        actionList.ActionTargetID = id;
+
+        actionTarget_t& actionTarget = actionList.getNewActionTarget();
+        actionTarget.animation       = 0x1FC;
+        actionTarget.messageID       = 0;
+        actionTarget.reaction        = REACTION::ABILITY | REACTION::HIT;
+    }
 }
 
 bool CPetEntity::ValidTarget(CBattleEntity* PInitiator, uint16 targetFlags)
@@ -388,6 +400,23 @@ bool CPetEntity::ValidTarget(CBattleEntity* PInitiator, uint16 targetFlags)
         return false;
     }
     return CMobEntity::ValidTarget(PInitiator, targetFlags);
+}
+
+bool CPetEntity::CanAttack(CBattleEntity* PTarget, std::unique_ptr<CBasicPacket>& errMsg)
+{
+    // prevent pets from attacking mobs that the PC master does not own
+    if (this->PMaster)
+    {
+        auto* PChar = dynamic_cast<CCharEntity*>(this->PMaster);
+        if (PChar && !PChar->IsMobOwner(PTarget))
+        {
+            errMsg = std::make_unique<CMessageBasicPacket>(this, PTarget, 0, 0, MSGBASIC_ALREADY_CLAIMED);
+            PAI->Disengage();
+            return false;
+        }
+    }
+
+    return CBattleEntity::CanAttack(PTarget, errMsg);
 }
 
 void CPetEntity::OnPetSkillFinished(CPetSkillState& state, action_t& action)
@@ -425,6 +454,11 @@ void CPetEntity::OnPetSkillFinished(CPetSkillState& state, action_t& action)
         findFlags |= FINDFLAGS_IGNORE_BATTLEID;
     }
 
+    if ((PSkill->getValidTargets() & TARGET_PLAYER_DEAD) == TARGET_PLAYER_DEAD)
+    {
+        findFlags |= FINDFLAGS_DEAD;
+    }
+
     action.id         = id;
     action.actiontype = (ACTIONTYPE)PSkill->getSkillFinishCategory();
     action.actionid   = PSkill->getID();
@@ -433,7 +467,7 @@ void CPetEntity::OnPetSkillFinished(CPetSkillState& state, action_t& action)
     {
         if (PSkill->isAoE())
         {
-            PAI->TargetFind->findWithinArea(PTarget, static_cast<AOE_RADIUS>(PSkill->getAoe()), PSkill->getRadius(), findFlags);
+            PAI->TargetFind->findWithinArea(PTarget, static_cast<AOE_RADIUS>(PSkill->getAoe()), PSkill->getRadius(), findFlags, PSkill->getValidTargets());
         }
         else if (PSkill->isConal())
         {
@@ -451,7 +485,7 @@ void CPetEntity::OnPetSkillFinished(CPetSkillState& state, action_t& action)
                 }
             }
 
-            PAI->TargetFind->findSingleTarget(PTarget, findFlags);
+            PAI->TargetFind->findSingleTarget(PTarget, findFlags, PSkill->getValidTargets());
         }
     }
     else // Out of range
@@ -486,6 +520,7 @@ void CPetEntity::OnPetSkillFinished(CPetSkillState& state, action_t& action)
     }
 
     PSkill->setTotalTargets(targets);
+    PSkill->setPrimaryTargetID(PTarget->id);
     PSkill->setTP(state.GetSpentTP());
     PSkill->setHPP(GetHPP());
 

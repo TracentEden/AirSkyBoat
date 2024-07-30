@@ -203,35 +203,25 @@ void CMobController::TryLink()
     // my pet should help as well
     if (PMob->PPet != nullptr && PMob->PPet->PAI->IsRoaming())
     {
-        ((CMobEntity*)PMob->PPet)->PEnmityContainer->AddBaseEnmity(PTarget);
+        PMob->PPet->PAI->Engage(PTarget->targid);
     }
 
-    if (!PMob->PMaster)
+    // Handle monster linking if they are close enough
+    if (PMob->PParty != nullptr && !PMob->getMobMod(MOBMOD_ONE_WAY_LINKING))
     {
-        // Handle monster linking if they are close enough
-        if (PMob->PParty != nullptr && !PMob->getMobMod(MOBMOD_ONE_WAY_LINKING))
+        for (auto& member : PMob->PParty->members)
         {
-            for (auto& member : PMob->PParty->members)
+            CMobEntity* PPartyMember = dynamic_cast<CMobEntity*>(member);
+            // Note if the mob to link with this one is a pet then do not link
+            // Pets only link with their masters
+            if (!PPartyMember || (PPartyMember && PPartyMember->PMaster))
             {
-                CMobEntity* PPartyMember = dynamic_cast<CMobEntity*>(member);
-                // Note if the mob to link with this one is a pet then do not link
-                // Pets only link with their masters
-                if (!PPartyMember || (PPartyMember && PPartyMember->PMaster))
-                {
-                    continue;
-                }
+                continue;
+            }
 
-                if (PPartyMember->isAlive() && PPartyMember->PAI->IsRoaming() && PPartyMember->CanLink(&PMob->loc.p, PMob->getMobMod(MOBMOD_SUPERLINK)))
-                {
-                    PPartyMember->PEnmityContainer->AddBaseEnmity(PTarget);
-
-                    if (PPartyMember->m_roamFlags & ROAMFLAG_IGNORE)
-                    {
-                        // force into attack action
-                        // TODO
-                        PPartyMember->PAI->Engage(PTarget->targid);
-                    }
-                }
+            if (PPartyMember->isAlive() && PPartyMember->PAI->IsRoaming() && PPartyMember->CanLink(&PMob->loc.p, PMob->getMobMod(MOBMOD_SUPERLINK)))
+            {
+                PPartyMember->PAI->Engage(PTarget->targid);
             }
         }
     }
@@ -243,7 +233,7 @@ void CMobController::TryLink()
 
         if (PMaster->PAI->IsRoaming() && PMaster->CanLink(&PMob->loc.p, PMob->getMobMod(MOBMOD_SUPERLINK)))
         {
-            PMaster->PEnmityContainer->AddBaseEnmity(PTarget);
+            PMaster->PAI->Engage(PTarget->targid);
         }
     }
 }
@@ -518,9 +508,7 @@ bool CMobController::TryCastSpell()
         CastSpell(chosenSpellId.value());
         return true;
     }
-    // era or era+ change (not current retail accurate)
-    // no need in LSB
-    TapDeaggroTime();
+
     return false;
 }
 
@@ -553,7 +541,7 @@ bool CMobController::CanCastSpells()
     // smn can only cast spells if it has no pet
     if (PMob->GetMJob() == JOB_SMN)
     {
-        if (PMob->PPet == nullptr || !PMob->PPet->isDead())
+        if (PMob->PPet && !PMob->PPet->isDead())
         {
             return false;
         }
@@ -1038,7 +1026,6 @@ void CMobController::DoRoamTick(time_point tick)
 
         if (PTarget != nullptr)
         {
-            PMob->PEnmityContainer->AddBaseEnmity(PTarget);
             Engage(PTarget->targid);
         }
 
@@ -1055,6 +1042,12 @@ void CMobController::DoRoamTick(time_point tick)
     {
         // don't claim me if I ignore
         PMob->m_OwnerID.clean();
+    }
+
+    if (PFollowTarget != nullptr && m_followType == FollowType::Roam && distance(PMob->loc.p, PFollowTarget->loc.p) > FollowRoamDistance)
+    {
+        PMob->PAI->PathFind->PathAround(PFollowTarget->loc.p, 2.0f, PATHFLAG_RUN | PATHFLAG_WALLHACK);
+        PMob->PAI->PathFind->FollowPath(m_Tick);
     }
 
     if (m_Tick >= m_mobHealTime + 10s && PMob->getMobMod(MOBMOD_NO_REST) == 0 && PMob->CanRest())
@@ -1198,8 +1191,7 @@ void CMobController::DoRoamTick(time_point tick)
                     luautils::OnMobRoamAction(PMob);
                     m_LastActionTime = m_Tick;
                 }
-                else if (PMob->CanRoam() && PMob->PAI->PathFind->RoamAround(PMob->m_SpawnPoint, PMob->GetRoamDistance(),
-                                                                            (uint8)PMob->getMobMod(MOBMOD_ROAM_TURNS), PMob->m_roamFlags))
+                else if (PMob->CanRoam() && PMob->PAI->PathFind->RoamAround(PMob->m_SpawnPoint, PMob->GetRoamDistance(), (uint8)PMob->getMobMod(MOBMOD_ROAM_TURNS), PMob->m_roamFlags))
                 {
                     // TODO: #AIToScript (event probably)
                     if (PMob->m_roamFlags & ROAMFLAG_WORM && !PMob->PAI->IsCurrentState<CMagicState>())
@@ -1324,6 +1316,7 @@ void CMobController::Reset()
     m_NeutralTime   = m_Tick;
 
     PTarget = nullptr;
+    ClearFollowTarget();
 }
 
 bool CMobController::MobSkill(uint16 targid, uint16 wsid)
@@ -1373,6 +1366,11 @@ bool CMobController::Engage(uint16 targid)
     {
         m_firstSpell = true;
 
+        if (PFollowTarget != nullptr && m_followType == FollowType::Roam)
+        {
+            ClearFollowTarget();
+        }
+
         // If mob is a worm, reallow players to engage
         if (PMob->m_roamFlags & ROAMFLAG_WORM && PMob->animationsub == 1)
         {
@@ -1401,6 +1399,11 @@ bool CMobController::Engage(uint16 targid)
         }
     }
     return ret;
+}
+
+bool CMobController::CanFollowTarget(CBattleEntity* PTarget)
+{
+    return !PMob->m_neutral && (PMob->m_roamFlags & ROAMFLAG_FOLLOW) && PFollowTarget == nullptr && m_followType == FollowType::None && CanAggroTarget(PTarget);
 }
 
 bool CMobController::CanAggroTarget(CBattleEntity* PTarget)
@@ -1479,11 +1482,49 @@ bool CMobController::Cast(uint16 targid, SpellID spellid)
     return CController::Cast(targid, spellid);
 }
 
+void CMobController::SetFollowTarget(CBaseEntity* PTarget, FollowType followType)
+{
+    if (PFollowTarget == PTarget && m_followType == followType)
+    {
+        return;
+    }
+
+    if (PTarget != nullptr)
+    {
+        luautils::OnMobFollow(PMob, PTarget);
+    }
+    else if (m_followType == FollowType::Roam)
+    {
+        PMob->m_neutral = true;
+        m_NeutralTime   = m_Tick + 30s;
+        luautils::OnMobUnfollow(PMob, PFollowTarget);
+        if (PMob->health.hp == PMob->GetMaxHP())
+        {
+            PMob->m_OwnerID.clean();
+            PMob->PEnmityContainer->Clear();
+        }
+    }
+
+    PFollowTarget = PTarget;
+    m_followType  = followType;
+}
+
+void CMobController::ClearFollowTarget()
+{
+    PFollowTarget = nullptr;
+    m_followType  = FollowType::None;
+}
+
 bool CMobController::CanMoveForward(float currentDistance)
 {
     TracyZoneScoped;
 
     uint16 standbackRange = 20;
+
+    if (PMob->getMobMod(MOBMOD_STANDBACK_RANGE) > 0)
+    {
+        standbackRange = PMob->getMobMod(MOBMOD_STANDBACK_RANGE);
+    }
 
     if (PMob->m_Behaviour & BEHAVIOUR_STANDBACK && currentDistance < standbackRange && PMob->CanSeeTarget(PTarget))
     {

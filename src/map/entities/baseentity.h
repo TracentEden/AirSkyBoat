@@ -322,6 +322,7 @@ public:
     bool   animStart; // Is this starting an animation?
 
     bool manualConfig; // Is this entity configured with script
+    bool            priorityRender; // CliPriorityFlag, will force this entity to render on clients if set. See https://github.com/atom0s/XiPackets/tree/main/world/server/0x0037 (also applies to 0x00E)
 
     bool isRenamed; // tracks if the entity's name has been overidden. Defaults to false.
 

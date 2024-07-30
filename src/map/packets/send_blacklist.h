@@ -19,38 +19,20 @@
 ===========================================================================
 */
 
-#ifndef _NPCENTITY_H
-#define _NPCENTITY_H
+#ifndef _CSTOPDOWNLOADINGPACKET_H
+#define _CSTOPDOWNLOADINGPACKET_H
 
+#include "basic.h"
 #include "common/cbasetypes.h"
-#include "common/taskmgr.h"
+#include "common/mmo.h"
+#include <vector>
 
-#include "baseentity.h"
+class CCharEntity;
 
-class CNpcEntity : public CBaseEntity
+class CSendBlacklist : public CBasicPacket
 {
 public:
-    uint32       m_flags;
-    uint8        name_prefix;
-    uint8        widescan;
-    bool         m_triggerable = false;
-    uint32       getEntityFlags() const;             // Returns the current value in m_flags
-    void         setEntityFlags(uint32 EntityFlags); // Change the current value in m_flags
-    void         HideHP(bool hide);
-    bool         IsHPHidden() const;
-    void         SetUntargetable(bool untargetable);
-    bool         GetUntargetable() const override;
-    bool         IsTriggerable() const;
-    virtual bool isWideScannable() override;
-    virtual void PostTick() override;
-    virtual void Tick(time_point) override
-    {
-    }
-
-    CNpcEntity();
-    ~CNpcEntity();
-
-private:
+    CSendBlacklist(CCharEntity* PChar, std::vector<std::pair<uint32, std::string>> blacklist, bool resetClientBlist, bool lastBlistPacket);
 };
 
 #endif

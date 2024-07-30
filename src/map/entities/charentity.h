@@ -551,7 +551,9 @@ public:
     CharCrafting_t  m_charCrafting;
     CharFishing_t   m_fishHistory; // Player fishing data
 
-    int8 getShieldSize();
+    int8  getShieldSize();
+    int16 getShieldDefense();
+    bool  hasBazaar();
 
     bool getStyleLocked() const;
     void setStyleLocked(bool isStyleLocked);

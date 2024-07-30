@@ -51,12 +51,15 @@ public:
     uint8  getLocationID(); // get the location id (container id)
     uint8  getSlotID();     // get the slot id
     uint16 getTrialNumber();
-    auto   getMatchingTrials() -> sol::table; // returns a table of trial #'s which match this item precisely
     uint8  getWornUses();  // check if the item has been used
     uint32 getBasePrice(); // get the base sell price
 
     bool isType(uint8 type);        // check the item type
+    void setSubType(uint8 subtype); // set the item's sub type
     bool isSubType(uint8 subtype);  // check the item's sub type
+
+    void  setReservedValue(uint8 reserved); // set the item's reserved value
+    uint8 getReservedValue();               // get the item's reserved value
 
     auto   getName() -> std::string; // get the item's name
     uint16 getILvl();                // get the item's ilvl
@@ -72,22 +75,26 @@ public:
     uint8  getSkillType();         // get skill type
     uint16 getWeaponskillPoints(); // get current ws points
 
-    bool isTwoHanded();  // is a two handed weapon
-    bool isHandToHand(); // is a hand to hand weapon (or unarmed H2H)
-    bool isShield();     // is a Shield
+    bool  isTwoHanded();             // is a two handed weapon
+    bool  isHandToHand();            // is a hand to hand weapon (or unarmed H2H)
+    bool  isShield();                // is a Shield
+    uint8 getShieldSize();           // get the shield size (used for block rate calculation)
+    uint8 getShieldAbsorptionRate(); // get the shield absorbtion rate (used for block rate calculation)
 
     auto getSignature() -> std::string;
 
     uint8 getAppraisalID();         // get an appraisal ID
     void  setAppraisalID(uint8 id); // set an appraisal ID
 
-    uint8 getMaxCharges();     // Get the maximum charges
     uint8 getCurrentCharges(); // Get remaining charges
 
     bool isInstalled();
 
     void setSoulPlateData(std::string const& name, uint16 mobFamily, uint8 zeni, uint16 skillIndex, uint8 fp);
     auto getSoulPlateData() -> sol::table;
+
+    auto getExData() -> sol::table;            // NOTE: This is 0-indexed, to be in line with the underlying C++ data
+    void setExData(sol::table const& newData); // NOTE: This is 0-indexed, to be in line with the underlying C++ data
 
     auto getFishData() -> sol::table;
     bool operator==(const CLuaItem& other) const

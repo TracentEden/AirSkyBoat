@@ -93,9 +93,24 @@ bool CLuaItem::isType(uint8 type)
     return m_PLuaItem->isType(static_cast<ITEM_TYPE>(type));
 }
 
+void CLuaItem::setSubType(uint8 subtype)
+{
+    m_PLuaItem->setSubType(static_cast<ITEM_SUBTYPE>(subtype));
+}
+
 bool CLuaItem::isSubType(uint8 subtype)
 {
     return m_PLuaItem->isSubType(static_cast<ITEM_SUBTYPE>(subtype));
+}
+
+void CLuaItem::setReservedValue(uint8 reserved)
+{
+    m_PLuaItem->setReserve(reserved);
+}
+
+uint8 CLuaItem::getReservedValue()
+{
+    return m_PLuaItem->getReserve();
 }
 
 auto CLuaItem::getName() -> std::string
@@ -221,6 +236,48 @@ bool CLuaItem::isShield()
     return false;
 }
 
+uint8 CLuaItem::getShieldSize()
+{
+    if (CItemEquipment* PArmor = dynamic_cast<CItemEquipment*>(m_PLuaItem))
+    {
+        if (PArmor->IsShield())
+        {
+            return PArmor->getShieldSize();
+        }
+        else
+        {
+            ShowError("CLuaItem::getShieldSize - not a valid Shield.");
+        }
+    }
+    else
+    {
+        ShowError("CLuaItem::getShieldSize - not a valid Armor.");
+    }
+
+    return 0;
+}
+
+uint8 CLuaItem::getShieldAbsorptionRate()
+{
+    if (CItemEquipment* PArmor = dynamic_cast<CItemEquipment*>(m_PLuaItem))
+    {
+        if (PArmor->IsShield())
+        {
+            return PArmor->getShieldAbsorption();
+        }
+        else
+        {
+            ShowError("CLuaItem::getShieldSize - not a valid Shield.");
+        }
+    }
+    else
+    {
+        ShowError("CLuaItem::getShieldSize - not a valid Armor.");
+    }
+
+    return 0;
+}
+
 auto CLuaItem::getSignature() -> std::string
 {
     char signature[DecodeStringLength] = {};
@@ -235,16 +292,6 @@ auto CLuaItem::getSignature() -> std::string
     }
 
     return signature;
-}
-
-uint8 CLuaItem::getMaxCharges()
-{
-    if (auto* PUsableItem = dynamic_cast<CItemUsable*>(m_PLuaItem))
-    {
-        return PUsableItem->getMaxCharges();
-    }
-
-    return 0;
 }
 
 uint8 CLuaItem::getCurrentCharges()
@@ -296,6 +343,33 @@ auto CLuaItem::getSoulPlateData() -> sol::table
     return table;
 }
 
+auto CLuaItem::getExData() -> sol::table
+{
+    sol::table table = lua.create_table();
+    for (std::size_t idx = 0; idx < m_PLuaItem->extra_size; ++idx)
+    {
+        table[idx] = m_PLuaItem->m_extra[idx];
+    }
+    return table;
+}
+
+void CLuaItem::setExData(sol::table const& newData)
+{
+    for (auto const& [keyObj, valObj] : newData)
+    {
+        uint8 key = keyObj.as<uint8>();
+        uint8 val = valObj.as<uint8>();
+
+        if (key >= CItem::extra_size)
+        {
+            ShowWarning("Tried to write to key too large for item exdata array: %s[%i]", m_PLuaItem->getName(), key);
+            continue;
+        }
+
+        m_PLuaItem->m_extra[key] = val;
+    }
+}
+
 auto CLuaItem::getFishData() -> sol::table
 {
     if (auto PFish = static_cast<CItemFish*>(m_PLuaItem))
@@ -327,7 +401,10 @@ void CLuaItem::Register()
     SOL_REGISTER("getTrialNumber", CLuaItem::getTrialNumber);
     SOL_REGISTER("getWornUses", CLuaItem::getWornUses);
     SOL_REGISTER("isType", CLuaItem::isType);
+    SOL_REGISTER("setSubType", CLuaItem::setSubType);
     SOL_REGISTER("isSubType", CLuaItem::isSubType);
+    SOL_REGISTER("setReservedValue", CLuaItem::setReservedValue);
+    SOL_REGISTER("getReservedValue", CLuaItem::getReservedValue);
     SOL_REGISTER("getName", CLuaItem::getName);
     SOL_REGISTER("getILvl", CLuaItem::getILvl);
     SOL_REGISTER("getReqLvl", CLuaItem::getReqLvl);
@@ -340,14 +417,17 @@ void CLuaItem::Register()
     SOL_REGISTER("isTwoHanded", CLuaItem::isTwoHanded);
     SOL_REGISTER("isHandToHand", CLuaItem::isHandToHand);
     SOL_REGISTER("isShield", CLuaItem::isShield);
+    SOL_REGISTER("getShieldSize", CLuaItem::getShieldSize);
+    SOL_REGISTER("getShieldAbsorptionRate", CLuaItem::getShieldAbsorptionRate);
     SOL_REGISTER("getSignature", CLuaItem::getSignature);
     SOL_REGISTER("getAppraisalID", CLuaItem::getAppraisalID);
     SOL_REGISTER("setAppraisalID", CLuaItem::setAppraisalID);
-    SOL_REGISTER("getMaxCharges", CLuaItem::getMaxCharges);
     SOL_REGISTER("getCurrentCharges", CLuaItem::getCurrentCharges);
     SOL_REGISTER("isInstalled", CLuaItem::isInstalled);
     SOL_REGISTER("setSoulPlateData", CLuaItem::setSoulPlateData);
     SOL_REGISTER("getSoulPlateData", CLuaItem::getSoulPlateData);
+    SOL_REGISTER("getExData", CLuaItem::getExData);
+    SOL_REGISTER("setExData", CLuaItem::setExData);
     SOL_REGISTER("getFishData", CLuaItem::getFishData);
 }
 

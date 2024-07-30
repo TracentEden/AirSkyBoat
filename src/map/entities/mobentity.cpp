@@ -392,7 +392,7 @@ uint16 CMobEntity::TPUseChance()
         return 0;
     }
 
-    if (health.tp == 3000 || (GetHPP() <= 50 && health.tp >= 2000) || (GetHPP() <= 25 && health.tp >= 1000))
+    if (health.tp == 3000 || (GetHPP() <= 25 && health.tp >= 1000))
     {
         return 10000;
     }
@@ -542,7 +542,9 @@ bool CMobEntity::ValidTarget(CBattleEntity* PInitiator, uint16 targetFlags)
     {
         return false;
     }
-
+    // the is for pulling the strings ENM
+    // https://github.com/AirSkyBoat/AirSkyBoat/pull/458
+    // https://github.com/AirSkyBoat/AirSkyBoat/pull/500
     if (targetFlags & TARGET_PLAYER_PARTY)
     {
         if (!isDead())
@@ -678,325 +680,10 @@ void CMobEntity::OnWeaponSkillFinished(CWeaponSkillState& state, action_t& actio
 void CMobEntity::OnMobSkillFinished(CMobSkillState& state, action_t& action)
 {
     TracyZoneScoped;
-    auto* PSkill  = state.GetSkill();
-    auto* PTarget = dynamic_cast<CBattleEntity*>(state.GetTarget());
 
-    if (PTarget == nullptr)
-    {
-        ShowWarning("CMobEntity::OnMobSkillFinished: PTarget is null");
-        return;
-    }
+    CBattleEntity::OnMobSkillFinished(state, action);
 
     TapDeaggroTime();
-
-    // store the skill used
-    m_UsedSkillIds[PSkill->getID()] = GetMLevel();
-
-    PAI->TargetFind->reset();
-
-    float distance  = PSkill->getDistance();
-    uint8 findFlags = 0;
-    if (PSkill->getFlag() & SKILLFLAG_HIT_ALL)
-    {
-        findFlags |= FINDFLAGS_HIT_ALL;
-    }
-
-    // Mob buff abilities also hit monster's pets
-    if (PSkill->getValidTargets() == TARGET_SELF)
-    {
-        findFlags |= FINDFLAGS_PET;
-    }
-
-    if ((PSkill->getValidTargets() & TARGET_IGNORE_BATTLEID) == TARGET_IGNORE_BATTLEID)
-    {
-        findFlags |= FINDFLAGS_IGNORE_BATTLEID;
-    }
-
-    action.id = id;
-    if (objtype == TYPE_PET && static_cast<CPetEntity*>(this)->getPetType() == PET_TYPE::AVATAR)
-    {
-        action.actiontype = ACTION_PET_MOBABILITY_FINISH;
-    }
-    // Damaging mob abilities to use proper humanoid animnation IDs
-    else if (PSkill->getID() < 256 || PSkill->getID() == 1431 || PSkill->getID() == 1432 || PSkill->getID() == 1437)
-    {
-        action.actiontype = ACTION_WEAPONSKILL_FINISH;
-    }
-    // Non-damaging mob abilities to use proper humanoid animation IDs
-    else if (PSkill->getID() == 1428 || PSkill->getID() == 1429 || (PSkill->getID() >= 1433 && PSkill->getID() <= 1436) || PSkill->getID() == 1438 ||
-             (PSkill->getID() >= 1992 && PSkill->getID() <= 1997))
-    {
-        action.actiontype = ACTION_JOBABILITY_FINISH;
-    }
-    else
-    {
-        action.actiontype = ACTION_MOBABILITY_FINISH;
-    }
-    action.actionid = PSkill->getID();
-
-    if (PAI->TargetFind->isWithinRange(&PTarget->loc.p, distance) && !this->StatusEffectContainer->HasStatusEffect(EFFECT_HYSTERIA))
-    {
-        if (PSkill->isAoE())
-        {
-            PAI->TargetFind->findWithinArea(PTarget, static_cast<AOE_RADIUS>(PSkill->getAoe()), PSkill->getRadius(), findFlags);
-        }
-        else if (PSkill->isConal())
-        {
-            float angle = 0.0f;
-            if (this->m_Family == 62 || this->m_Family == 164) // Cerb and Hydra families have wide Conals
-            {
-                angle = 90.0f;
-            }
-            else if (this->m_Family >= 259 && (this->m_Family <= 264 || (this->m_Family >= 391 && this->m_Family <= 393))) // Wyrms have slightly wider than normal
-            {
-                angle = 60.0f;
-            }
-            else if (PSkill->getID() == 2335) // Ixion's Lightning Spear is the only 120º Conal that we know of
-            {
-                angle = 120.0f;
-            }
-            else
-            {
-                angle = 45.0f;
-            }
-
-            // for mobs that do not turn to face the target
-            if (m_Behaviour & BEHAVIOUR_NO_TURN)
-            {
-                // need to always add the single main target as otherwise player can interrupt cone skill
-                // by spinning around the mob which should not be possible
-                PAI->TargetFind->findSingleTarget(PTarget, findFlags);
-            }
-
-            if (PSkill->m_Aoe == 6) // Conal from center of mob
-            {
-                PAI->TargetFind->findWithinCone(PTarget, AOE_RADIUS::ATTACKER, distance, angle, findFlags, 0);
-            }
-            else if (PSkill->m_Aoe == 7) // Conal from center of mob in front and behind
-            {
-                PAI->TargetFind->findWithinCone(PTarget, AOE_RADIUS::ATTACKER, distance, angle, findFlags, 128);
-                PAI->TargetFind->findWithinCone(PTarget, AOE_RADIUS::ATTACKER, distance, angle, findFlags, 0);
-            }
-            else // Conal in front centered on target, m_AoE 5 sets conal to rear
-            {
-                PAI->TargetFind->findWithinCone(PTarget, AOE_RADIUS::TARGET, distance, angle, findFlags, (PSkill->m_Aoe == 5) * 128);
-            }
-        }
-        else
-        {
-            if (this->objtype == TYPE_MOB && PTarget->objtype == TYPE_PC)
-            {
-                CBattleEntity* PCoverAbilityUser = battleutils::GetCoverAbilityUser(PTarget, this);
-                if (PCoverAbilityUser != nullptr)
-                {
-                    PTarget = PCoverAbilityUser;
-                }
-            }
-
-            PAI->TargetFind->findSingleTarget(PTarget, findFlags);
-        }
-    }
-    else // Out of range
-    {
-        action.actiontype         = ACTION_MOBABILITY_INTERRUPT;
-        action.actionid           = 0;
-        actionList_t& actionList  = action.getNewActionList();
-        actionList.ActionTargetID = PTarget->id;
-
-        actionTarget_t& actionTarget = actionList.getNewActionTarget();
-        actionTarget.animation       = 0x1FC; // Hardcoded magic sent from the server
-        actionTarget.messageID       = MSGBASIC_TOO_FAR_AWAY;
-        actionTarget.speceffect      = SPECEFFECT::BLOOD;
-        return;
-    }
-
-    uint16 targets = static_cast<uint16>(PAI->TargetFind->m_targets.size());
-
-    // No targets, perhaps something like Super Jump or otherwise untargetable
-    if (targets == 0)
-    {
-        action.actiontype         = ACTION_MOBABILITY_INTERRUPT;
-        action.actionid           = 28787; // Some hardcoded magic for interrupts
-        actionList_t& actionList  = action.getNewActionList();
-        actionList.ActionTargetID = id;
-
-        actionTarget_t& actionTarget = actionList.getNewActionTarget();
-        actionTarget.animation       = 0x1FC; // Hardcoded magic sent from the server
-        actionTarget.messageID       = 0;
-        actionTarget.reaction        = REACTION::ABILITY | REACTION::HIT;
-
-        return;
-    }
-
-    PSkill->setTotalTargets(targets);
-    PSkill->setTP(state.GetSpentTP());
-    PSkill->setHP(health.hp);
-    PSkill->setHPP(GetHPP());
-
-    // Spend MP for blood pacts here so MP is only deducted if successful
-    if (objtype == TYPE_PET && static_cast<CPetEntity*>(this)->getPetType() == PET_TYPE::AVATAR &&
-        PMaster && PMaster->objtype == TYPE_PC)
-    {
-        CAbility* PPactAbility = ability::GetAbility(PSkill->getBloodPactAbilityID());
-
-        if (PPactAbility->getID() >= ABILITY_HEALING_RUBY && PPactAbility->getID() <= ABILITY_PERFECT_DEFENSE)
-        {
-            // Blood Pact mp cost stored in animation ID
-            float mpCost = PPactAbility->getAnimationID();
-
-            if (PMaster->StatusEffectContainer->HasStatusEffect(EFFECT_APOGEE))
-            {
-                mpCost *= 1.5f;
-                PMaster->StatusEffectContainer->DelStatusEffectsByFlag(EFFECTFLAG_BLOODPACT);
-            }
-
-            // Blood Boon (does not affect Astral Flow BPs)
-            if ((PPactAbility->getAddType() & ADDTYPE_ASTRAL_FLOW) == 0)
-            {
-                int16 bloodBoonRate = PMaster->getMod(Mod::BLOOD_BOON);
-                if (xirand::GetRandomNumber(100) < bloodBoonRate)
-                {
-                    mpCost *= xirand::GetRandomNumber(8.f, 16.f) / 16.f;
-                }
-            }
-
-            PMaster->addMP((int32)-mpCost);
-        }
-    }
-
-    uint16 msg            = 0;
-    uint16 defaultMessage = PSkill->getMsg();
-
-    bool first{ true };
-    for (auto&& PTargetFound : PAI->TargetFind->m_targets)
-    {
-        actionList_t& list = action.getNewActionList();
-
-        list.ActionTargetID = PTargetFound->id;
-
-        actionTarget_t& target = list.getNewActionTarget();
-
-        list.ActionTargetID = PTargetFound->id;
-        target.reaction     = REACTION::HIT;
-        target.speceffect   = SPECEFFECT::HIT;
-        target.animation    = PSkill->getAnimationID();
-        target.messageID    = PSkill->getMsg();
-
-        // reset the skill's message back to default
-        PSkill->setMsg(defaultMessage);
-        int32 damage = 0;
-        if (objtype == TYPE_PET && static_cast<CPetEntity*>(this)->getPetType() != PET_TYPE::JUG_PET)
-        {
-            PET_TYPE petType = static_cast<CPetEntity*>(this)->getPetType();
-
-            if (static_cast<CPetEntity*>(this)->getPetType() == PET_TYPE::AVATAR || static_cast<CPetEntity*>(this)->getPetType() == PET_TYPE::WYVERN)
-            {
-                target.animation = PSkill->getPetAnimationID();
-            }
-
-            if (petType == PET_TYPE::AUTOMATON)
-            {
-                damage = luautils::OnAutomatonAbility(PTargetFound, this, PSkill, PMaster, &action);
-            }
-            else
-            {
-                damage = luautils::OnPetAbility(PTargetFound, this, PSkill, PMaster, &action);
-            }
-        }
-        else
-        {
-            damage = luautils::OnMobWeaponSkill(PTargetFound, this, PSkill, &action);
-            this->PAI->EventHandler.triggerListener("WEAPONSKILL_USE", CLuaBaseEntity(this), CLuaBaseEntity(PTargetFound), PSkill->getID(), state.GetSpentTP(), CLuaAction(&action));
-            PTarget->PAI->EventHandler.triggerListener("WEAPONSKILL_TAKE", CLuaBaseEntity(PTargetFound), CLuaBaseEntity(this), PSkill->getID(), state.GetSpentTP(), CLuaAction(&action));
-        }
-
-        if (msg == 0)
-        {
-            msg = PSkill->getMsg();
-        }
-        else
-        {
-            msg = PSkill->getAoEMsg();
-        }
-
-        if (damage < 0)
-        {
-            msg          = MSGBASIC_SKILL_RECOVERS_HP; // TODO: verify this message does/does not vary depending on mob/avatar/automaton use
-            target.param = std::clamp(-damage, 0, PTargetFound->GetMaxHP() - PTargetFound->health.hp);
-        }
-        else
-        {
-            target.param = damage;
-        }
-
-        target.messageID = msg;
-
-        if (PSkill->hasMissMsg())
-        {
-            target.reaction   = REACTION::MISS;
-            target.speceffect = SPECEFFECT::NONE;
-            if (msg == PSkill->getAoEMsg())
-            {
-                msg = 282;
-            }
-        }
-        else
-        {
-            target.reaction   = REACTION::HIT;
-            target.speceffect = SPECEFFECT::HIT;
-        }
-
-        // TODO: Should this be reaction and not speceffect?
-        if (target.speceffect == SPECEFFECT::HIT) // Formerly bitwise and, though nothing in this function adds additional bits to the field
-        {
-            target.speceffect = SPECEFFECT::RECOIL;
-            target.knockback  = PSkill->getKnockback();
-            if (first && (PSkill->getPrimarySkillchain() != 0))
-            {
-                SUBEFFECT effect = battleutils::GetSkillChainEffect(PTargetFound, PSkill->getPrimarySkillchain(), PSkill->getSecondarySkillchain(),
-                                                                    PSkill->getTertiarySkillchain());
-                if (effect != SUBEFFECT_NONE)
-                {
-                    int32 skillChainDamage = battleutils::TakeSkillchainDamage(this, PTargetFound, target.param, nullptr);
-                    if (skillChainDamage < 0)
-                    {
-                        target.addEffectParam   = -skillChainDamage;
-                        target.addEffectMessage = 384 + effect;
-                    }
-                    else
-                    {
-                        target.addEffectParam   = skillChainDamage;
-                        target.addEffectMessage = 287 + effect;
-                    }
-                    target.additionalEffect = effect;
-                }
-
-                first = false;
-            }
-        }
-
-        if (PSkill->getValidTargets() & TARGET_ENEMY)
-        {
-            PTargetFound->StatusEffectContainer->DelStatusEffectsByFlag(EFFECTFLAG_DETECTABLE);
-        }
-
-        if (PTargetFound->isDead())
-        {
-            battleutils::ClaimMob(PTargetFound, this);
-        }
-        battleutils::DirtyExp(PTargetFound, this);
-    }
-
-    PTarget = dynamic_cast<CBattleEntity*>(state.GetTarget()); // TODO: why is this recast here? can state change between now and the original cast?
-
-    if (PTarget)
-    {
-        if (PTarget->objtype == TYPE_MOB && (PTarget->isDead() || (objtype == TYPE_PET && static_cast<CPetEntity*>(this)->getPetType() == PET_TYPE::AVATAR)))
-        {
-            battleutils::ClaimMob(PTarget, this);
-        }
-        battleutils::DirtyExp(PTarget, this);
-    }
 }
 
 void CMobEntity::DistributeRewards()
@@ -1380,8 +1067,8 @@ void CMobEntity::DropItems(CCharEntity* PChar)
         // clang-format on
     }
 
-    ZONE_TYPE zoneType  = zoneutils::GetZone(PChar->getZone())->GetType();
-    bool      validZone = zoneType != ZONE_TYPE::BATTLEFIELD && zoneType != ZONE_TYPE::DYNAMIS;
+    ZONE_TYPE zoneType  = zoneutils::GetZone(PChar->getZone())->GetTypeMask();
+    bool      validZone = !(this->m_Type & MOBTYPE_BATTLEFIELD) && !(zoneType & ZONE_TYPE::DYNAMIS);
 
     // Check if mob can drop seals -- mobmod to disable drops, zone type isnt battlefield/dynamis, mob is stronger than Too Weak, or mobmod for EXP bonus is -100 or lower (-100% exp)
     if (!getMobMod(MOBMOD_NO_DROPS) && !getMobMod(MOBMOD_NO_CRYSTAL_SEAL_DROPS) && validZone && charutils::CheckMob(m_HiPCLvl, GetMLevel()) > EMobDifficulty::TooWeak && getMobMod(MOBMOD_EXP_BONUS) > -100)
@@ -1674,6 +1361,7 @@ void CMobEntity::DropItems(CCharEntity* PChar)
 
         for (uint8 i = 0; i < crystalRolls; i++)
         {
+            // era or era+
             if (xirand::GetRandomNumber(100) < 35 && AddItemToPool(4095 + m_Element, ++dropCount))
             {
                 return;
@@ -1739,6 +1427,10 @@ void CMobEntity::OnEngage(CAttackState& state)
             PPet    = state.GetTarget();
             PTarget = ((CPetEntity*)PTarget)->PMaster;
         }
+
+        // TODO: Supertanking might be effected by this block when we don't want it to be.
+        // Things like Ambuscade "don't have" supertanking, though.
+        // This block apparently only effects rare things like NW apollyon, so might be ok for now.
         if (PTarget->objtype == TYPE_PC)
         {
             // clang-format off
@@ -1796,7 +1488,6 @@ void CMobEntity::OnDespawn(CDespawnState& /*unused*/)
 
     PAI->Internal_Respawn(std::chrono::milliseconds(m_RespawnTime));
     luautils::OnMobDespawn(this);
-    PAI->ClearActionQueue();
     // #event despawn
     PAI->EventHandler.triggerListener("DESPAWN", CLuaBaseEntity(this));
 }
@@ -1887,4 +1578,9 @@ bool CMobEntity::OnAttack(CAttackState& state, action_t& action)
     {
         return CBattleEntity::OnAttack(state, action);
     }
+}
+
+bool CMobEntity::isWideScannable()
+{
+    return CBaseEntity::isWideScannable() && !getMobMod(MOBMOD_NO_WIDESCAN);
 }

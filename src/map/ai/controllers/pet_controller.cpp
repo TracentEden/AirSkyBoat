@@ -62,17 +62,29 @@ void CPetController::DoRoamTick(time_point tick)
         return;
     }
 
-    // automaton, wyvern
-    if (PPet->getPetType() == PET_TYPE::WYVERN || PPet->getPetType() == PET_TYPE::AUTOMATON)
+    if (PPet->objtype == TYPE_PET)
     {
-        if (PetIsHealing())
+        CPetEntity* PetEntity = static_cast<CPetEntity*>(PPet);
+        // automaton, wyvern
+        if (PetEntity->getPetType() == PET_TYPE::WYVERN || PetEntity->getPetType() == PET_TYPE::AUTOMATON)
+        {
+            if (PetIsHealing())
+            {
+                return;
+            }
+        }
+        else if (PetEntity->isBstPet() && PPet->StatusEffectContainer->GetStatusEffect(EFFECT_HEALING))
         {
             return;
         }
-    }
-    else if (PPet->isBstPet() && PPet->StatusEffectContainer->GetStatusEffect(EFFECT_HEALING))
-    {
-        return;
+        else if (PetEntity->m_PetID <= PETID_DARKSPIRIT)
+        {
+            // this will respect the pet's mob casting cooldown properties via MOBMOD_MAGIC_COOL
+            if (CMobController::IsSpellReady(0) && CMobController::TryCastSpell())
+            {
+                return;
+            }
+        }
     }
 
     float currentDistance = distance(PPet->loc.p, PPet->PMaster->loc.p);
@@ -81,6 +93,14 @@ void CPetController::DoRoamTick(time_point tick)
     {
         if (currentDistance < 35.0f && PPet->PAI->PathFind->PathAround(PPet->PMaster->loc.p, 2.0f, PATHFLAG_RUN))
         {
+            if (!PPet->PAI->PathFind->IsFollowingPath() ||
+                distance(PPet->PAI->PathFind->GetDestination(), PPet->PMaster->loc.p) > 2.0f) // recalculate path only if owner moves more than X yalms
+            {
+                if (!PPet->PAI->PathFind->PathAround(PPet->PMaster->loc.p, 2.0f, PATHFLAG_RUN | PATHFLAG_WALLHACK))
+                {
+                    PPet->PAI->PathFind->PathInRange(PPet->PMaster->loc.p, 2.0f, PATHFLAG_RUN | PATHFLAG_WALLHACK);
+                }
+            }
             PPet->PAI->PathFind->FollowPath(m_Tick);
         }
         else if (PPet->GetSpeed() > 0)
