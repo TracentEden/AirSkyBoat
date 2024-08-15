@@ -1023,7 +1023,7 @@ namespace charutils
         if (rset)
         {
             // equipSlotData[equipSlotId] = { slotId, containerId }
-            std::unordered_map<uint8, std::pair<uint8, uint8>> equipSlotData;
+            std::map<uint8, std::pair<uint8, uint8>> equipSlotData;
 
             // NOTE: This data is stored in the above map since if the item has an augment, another db
             // query will occur, which will destroy the current query results.
@@ -1968,8 +1968,6 @@ namespace charutils
             {
                 case SLOT_MAIN:
                 {
-                    CItemWeapon* weapon = dynamic_cast<CItemWeapon*>(PChar->getEquip(SLOT_MAIN));
-
                     if (PItem->isType(ITEM_WEAPON))
                     {
                         switch (static_cast<CItemWeapon*>(PItem)->getSkillType())
@@ -2014,11 +2012,6 @@ namespace charutils
                             }
                         }
                         PChar->m_Weapons[SLOT_MAIN] = PItem;
-
-                        if (weapon && weapon->isTwoHanded())
-                        {
-                            PChar->StatusEffectContainer->DelStatusEffect(EFFECT_SEIGAN); // TODO: make seigan-specific effects not function without a 2H weapon so it doesn't have to be deleted if a weapon is removed
-                        }
                     }
                     PChar->look.main = PItem->getModelId();
                     UpdateWeaponStyle(PChar, equipSlotID, (CItemWeapon*)PItem);
